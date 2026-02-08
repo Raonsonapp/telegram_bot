@@ -2,24 +2,29 @@ import '../core/api.dart';
 import '../core/http_service.dart';
 
 class FollowService {
-  static Future<void> follow(String username) async {
+  static Future<void> followUser(int userId) async {
     await HttpService.post(
-      '${Api.baseUrl}/follow',
-      {'username': username},
+      '${Api.followEndpoint}/follow',
+      {'user_id': userId},
     );
   }
 
-  static Future<void> unfollow(String username) async {
+  static Future<void> unfollowUser(int userId) async {
     await HttpService.post(
-      '${Api.baseUrl}/unfollow',
-      {'username': username},
+      '${Api.followEndpoint}/unfollow',
+      {'user_id': userId},
     );
   }
 
-  static Future<Map<String, dynamic>> getCounts(String username) async {
-    final res = await HttpService.get(
-      '${Api.baseUrl}/profile/$username/counts',
+  static Future<List<dynamic>> getFollowers(String username) async {
+    return await HttpService.get(
+      '${Api.followEndpoint}/$username/followers',
     );
-    return Map<String, dynamic>.from(res);
+  }
+
+  static Future<List<dynamic>> getFollowing(String username) async {
+    return await HttpService.get(
+      '${Api.followEndpoint}/$username/following',
+    );
   }
 }
