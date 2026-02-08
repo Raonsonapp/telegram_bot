@@ -10,52 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Java 17 — ҳатмӣ
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # ⬇️ Flutter version FIXED (на stable)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.3'
           cache: true
 
-      - name: Flutter doctor
-        run: flutter doctor -v
-
       - name: Create Flutter project
         run: |
           flutter create raonson
           rm -rf raonson/lib
           cp -r lib raonson/lib
-          cp pubspec.yaml raonson/pubspec.yaml
+          # ❗ pubspec.yaml ИВАЗ НАМЕШАВАД
+          # ❗ android/ios untouched
 
       - name: Install dependencies
         run: |
           cd raonson
           flutter pub get
 
-      - name: Clean
-        run: |
-          cd raonson
-          flutter clean
-
-      # R8 OFF
-      - name: Disable R8
-        run: |
-          echo "android.enableR8=false" >> raonson/android/gradle.properties
-
       - name: Build APK
         run: |
           cd raonson
-          flutter build apk --release --no-shrink --verbose
+          flutter build apk --release --no-shrink
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
