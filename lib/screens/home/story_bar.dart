@@ -1,90 +1,94 @@
 import 'package:flutter/material.dart';
-import '../../services/story_service.dart';
-import '../story/story_view_screen.dart';
 
-class StoryBar extends StatefulWidget {
-  const StoryBar({super.key});
+import '../../models/story.dart';
+import '../../theme/colors.dart';
+import '../../widgets/avatar.dart';
 
-  @override
-  State<StoryBar> createState() => _StoryBarState();
-}
+class StoryBar extends StatelessWidget {
+  final List<Story> stories;
 
-class _StoryBarState extends State<StoryBar> {
-  List<dynamic> _stories = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final data = await StoryService.getStories();
-    setState(() {
-      _stories = data;
-      _loading = false;
-    });
-  }
+  const StoryBar({
+    super.key,
+    required this.stories,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const SizedBox(
-        height: 90,
-        child: Center(child: CircularProgressIndicator()),
-      );
+    if (stories.isEmpty) {
+      return const SizedBox(height: 90);
     }
 
-    return SizedBox(
+    return Container(
       height: 100,
-      child: ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.divider,
+            width: 0.3,
+          ),
+        ),
+      ),
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _stories.length,
-        itemBuilder: (_, i) {
-          final s = _stories[i];
-          return GestureDetector(
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => StoryViewScreen(story: s),
-                ),
-              );
-              await StoryService.markViewed(s['id']);
-              _load();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: s['is_viewed'] == true
-                            ? Colors.grey
-                            : Colors.pink,
-                        width: 2,
-                      ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: stories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final story = stories[index];
+          return _storyItem(context, story);
+        },
+      ),
+    );
+  }
+
+  Widget _storyItem(BuildContext context, Story story) {
+    final bool viewed = story.isViewed;
+
+    return GestureDetector(
+      onTap: () {
+        // open story viewer (step later)
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(2.5),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: viewed
+                  ? null
+                  : const LinearGradient(
+                      colors: [
+                        Color(0xFF9B2282),
+                        Color(0xFFEEA863),
+                      ],
                     ),
-                    child: const CircleAvatar(
-                      radius: 30,
-                      backgroundImage:
-                          NetworkImage('https://placehold.co/100x100'),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    s['username'] ?? '',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
+              border: viewed
+                  ? Border.all(
+                      color: AppColors.divider,
+                      width: 1,
+                    )
+                  : null,
+            ),
+            child: Avatar(
+              imageUrl: story.userAvatar,
+              size: 64,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 70,
+            child: Text(
+              story.username,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
