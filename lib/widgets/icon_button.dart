@@ -1,39 +1,36 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 
 class AppIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  final bool active;
   final double size;
-  final Color? activeColor;
-  final Color? inactiveColor;
+  final Color color;
+  final Color activeColor;
+  final bool isActive;
+  final EdgeInsets padding;
 
   const AppIconButton({
     super.key,
     required this.icon,
     required this.onTap,
-    this.active = false,
     this.size = 26,
-    this.activeColor,
-    this.inactiveColor,
+    this.color = Colors.white,
+    this.activeColor = Colors.red,
+    this.isActive = false,
+    this.padding = const EdgeInsets.all(6),
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = active
-        ? (activeColor ?? AppColors.likeRed)
-        : (inactiveColor ?? AppColors.icon);
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.all(6),
+        padding: padding,
         child: Icon(
           icon,
           size: size,
-          color: color,
+          color: isActive ? activeColor : color,
         ),
       ),
     );
