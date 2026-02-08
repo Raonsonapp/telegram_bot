@@ -2,53 +2,67 @@ import '../core/api.dart';
 import '../core/http_service.dart';
 import '../models/user.dart';
 import '../models/post.dart';
+import '../models/reel.dart';
 
 class SearchService {
   // ================= SEARCH USERS =================
-  static Future<List<UserModel>> searchUsers(String query) async {
+  static Future<List<User>> searchUsers(String query) async {
     if (query.isEmpty) return [];
 
-    final response = await HttpService.get(
+    final res = await HttpService.get(
       '${Api.searchEndpoint}/users?q=$query',
     );
 
-    return (response as List)
-        .map((json) => UserModel.fromJson(json))
-        .toList();
+    if (res == null || res is! List) return [];
+
+    return res.map<User>((e) => User.fromJson(e)).toList();
   }
 
   // ================= SEARCH POSTS =================
-  static Future<List<PostModel>> searchPosts(String query) async {
+  static Future<List<Post>> searchPosts(String query) async {
     if (query.isEmpty) return [];
 
-    final response = await HttpService.get(
+    final res = await HttpService.get(
       '${Api.searchEndpoint}/posts?q=$query',
     );
 
-    return (response as List)
-        .map((json) => PostModel.fromJson(json))
-        .toList();
+    if (res == null || res is! List) return [];
+
+    return res.map<Post>((e) => Post.fromJson(e)).toList();
+  }
+
+  // ================= SEARCH REELS =================
+  static Future<List<Reel>> searchReels(String query) async {
+    if (query.isEmpty) return [];
+
+    final res = await HttpService.get(
+      '${Api.searchEndpoint}/reels?q=$query',
+    );
+
+    if (res == null || res is! List) return [];
+
+    return res.map<Reel>((e) => Reel.fromJson(e)).toList();
   }
 
   // ================= TRENDING POSTS =================
-  static Future<List<PostModel>> getTrendingPosts() async {
-    final response = await HttpService.get(
-      '${Api.searchEndpoint}/trending',
+  static Future<List<Post>> getTrendingPosts() async {
+    final res = await HttpService.get(
+      '${Api.searchEndpoint}/trending/posts',
     );
 
-    return (response as List)
-        .map((json) => PostModel.fromJson(json))
-        .toList();
+    if (res == null || res is! List) return [];
+
+    return res.map<Post>((e) => Post.fromJson(e)).toList();
   }
 
-  // ================= SEARCH HASHTAGS =================
-  static Future<List<String>> searchHashtags(String query) async {
-    if (query.isEmpty) return [];
-
-    final response = await HttpService.get(
-      '${Api.searchEndpoint}/hashtags?q=$query',
+  // ================= TRENDING USERS =================
+  static Future<List<User>> getTrendingUsers() async {
+    final res = await HttpService.get(
+      '${Api.searchEndpoint}/trending/users',
     );
 
-    return (response as List).map((e) => e.toString()).toList();
+    if (res == null || res is! List) return [];
+
+    return res.map<User>((e) => User.fromJson(e)).toList();
   }
 }
