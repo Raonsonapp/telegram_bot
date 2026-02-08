@@ -1,114 +1,97 @@
 import 'package:flutter/material.dart';
-import '../../services/chat_service.dart';
 
 class ChatRoomScreen extends StatefulWidget {
-  final int chatId;
   final String username;
-
-  const ChatRoomScreen({
-    super.key,
-    required this.chatId,
-    required this.username,
-  });
+  const ChatRoomScreen({super.key, required this.username});
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
 }
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
-  final TextEditingController _text = TextEditingController();
-  List<dynamic> _messages = [];
-  bool _loading = true;
+  final TextEditingController _controller = TextEditingController();
+  final List<Map<String, dynamic>> _messages = [
+    {'me': false, 'text': 'Hello 👋'},
+    {'me': true, 'text': 'Hi! Ready to build Raonson 🔥'},
+    {'me': false, 'text': 'Yes, let’s go'},
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    await ChatService.markAsRead(widget.chatId);
-    final data = await ChatService.getMessages(widget.chatId);
+  void _send() {
+    if (_controller.text.trim().isEmpty) return;
     setState(() {
-      _messages = data;
-      _loading = false;
+      _messages.add({'me': true, 'text': _controller.text});
+      _controller.clear();
     });
-  }
-
-  Future<void> _send() async {
-    if (_text.text.trim().isEmpty) return;
-    await ChatService.sendMessage(widget.chatId, _text.text.trim());
-    _text.clear();
-    _load();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.username),
+        title: Row(
+          children: [
+            const CircleAvatar(child: Icon(Icons.person)),
+            const SizedBox(width: 8),
+            Text(widget.username),
+          ],
+        ),
       ),
       body: Column(
         children: [
           Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    reverse: true,
-                    itemCount: _messages.length,
-                    itemBuilder: (_, i) {
-                      final m = _messages[i];
-                      final isMe = m['me'] == true;
-
-                      return Align(
-                        alignment:
-                            isMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          padding: const EdgeInsets.all(10),
-                          constraints:
-                              const BoxConstraints(maxWidth: 280),
-                          decoration: BoxDecoration(
-                            color: isMe
-                                ? Colors.blue
-                                : const Color(0xFF1E1E1E),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            m['text'],
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final msg = _messages[index];
+                return Align(
+                  alignment:
+                      msg['me'] ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.all(12),
+                    constraints: const BoxConstraints(maxWidth: 260),
+                    decoration: BoxDecoration(
+                      color: msg['me']
+                          ? Colors.blueAccent
+                          : Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(msg['text']),
                   ),
-          ),
-          _input(),
-        ],
-      ),
-    );
-  }
-
-  Widget _input() {
-    return SafeArea(
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: TextField(
-                controller: _text,
-                decoration: const InputDecoration(
-                  hintText: 'Message...',
-                  border: InputBorder.none,
-                ),
-              ),
+                );
+              },
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: _send,
+
+          // INPUT
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      decoration: const InputDecoration(
+                        hintText: 'Message...',
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(24)),
+                        ),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _send,
+                  )
+                ],
+              ),
+            ),
           ),
         ],
       ),
