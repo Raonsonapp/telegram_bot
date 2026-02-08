@@ -1,45 +1,60 @@
-class Story {
+import 'user.dart';
+
+class StoryModel {
   final int id;
-  final int userId;
-  final String username;
-  final String? userAvatar;
+  final UserModel user;
   final String mediaUrl;
   final DateTime expiresAt;
   final bool isViewed;
 
-  Story({
+  StoryModel({
     required this.id,
-    required this.userId,
-    required this.username,
-    this.userAvatar,
+    required this.user,
     required this.mediaUrl,
     required this.expiresAt,
     required this.isViewed,
   });
 
-  // ===== FROM JSON =====
-  factory Story.fromJson(Map<String, dynamic> json) {
-    return Story(
+  // ================= FROM JSON =================
+  factory StoryModel.fromJson(Map<String, dynamic> json) {
+    return StoryModel(
       id: json['id'],
-      userId: json['user_id'],
-      username: json['username'],
-      userAvatar: json['user_avatar'],
-      mediaUrl: json['media_url'],
+      user: UserModel.fromJson(json['user']),
+      mediaUrl: json['media_url'] ?? '',
       expiresAt: DateTime.parse(json['expires_at']),
       isViewed: json['is_viewed'] ?? false,
     );
   }
 
-  // ===== TO JSON =====
+  // ================= TO JSON =================
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'user_id': userId,
-      'username': username,
-      'user_avatar': userAvatar,
+      'user': user.toJson(),
       'media_url': mediaUrl,
       'expires_at': expiresAt.toIso8601String(),
       'is_viewed': isViewed,
     };
+  }
+
+  // ================= HELPERS =================
+  bool get isExpired {
+    return DateTime.now().isAfter(expiresAt);
+  }
+
+  StoryModel copyWith({
+    int? id,
+    UserModel? user,
+    String? mediaUrl,
+    DateTime? expiresAt,
+    bool? isViewed,
+  }) {
+    return StoryModel(
+      id: id ?? this.id,
+      user: user ?? this.user,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      expiresAt: expiresAt ?? this.expiresAt,
+      isViewed: isViewed ?? this.isViewed,
+    );
   }
 }
