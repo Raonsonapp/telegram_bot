@@ -16,11 +16,9 @@ class ChatRoomScreen extends StatefulWidget {
 }
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
-  final _controller = TextEditingController();
-  final _scroll = ScrollController();
-
-  bool _loading = true;
+  final TextEditingController _text = TextEditingController();
   List<dynamic> _messages = [];
+  bool _loading = true;
 
   @override
   void initState() {
@@ -29,91 +27,87 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Future<void> _load() async {
-    final data = await ChatService.getMessages(widget.chatId);
     await ChatService.markAsRead(widget.chatId);
+    final data = await ChatService.getMessages(widget.chatId);
     setState(() {
       _messages = data;
       _loading = false;
     });
-    _scrollDown();
   }
 
   Future<void> _send() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    _controller.clear();
-    await ChatService.sendMessage(widget.chatId, text);
+    if (_text.text.trim().isEmpty) return;
+    await ChatService.sendMessage(widget.chatId, _text.text.trim());
+    _text.clear();
     _load();
-  }
-
-  void _scrollDown() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scroll.hasClients) {
-        _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.username)),
+      appBar: AppBar(
+        title: Text(widget.username),
+      ),
       body: Column(
         children: [
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
-                    controller: _scroll,
+                    reverse: true,
                     itemCount: _messages.length,
                     itemBuilder: (_, i) {
                       final m = _messages[i];
-                      final me = m['is_me'] == true;
+                      final isMe = m['me'] == true;
+
                       return Align(
-                        alignment: me
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
+                        alignment:
+                            isMe ? Alignment.centerRight : Alignment.centerLeft,
                         child: Container(
                           margin: const EdgeInsets.symmetric(
-                              vertical: 4, horizontal: 8),
-                          padding: const EdgeInsets.all(12),
+                              horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.all(10),
+                          constraints:
+                              const BoxConstraints(maxWidth: 280),
                           decoration: BoxDecoration(
-                            color: me
-                                ? Colors.green
-                                : Colors.grey.shade800,
-                            borderRadius: BorderRadius.circular(16),
+                            color: isMe
+                                ? Colors.blue
+                                : const Color(0xFF1E1E1E),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(m['text']),
+                          child: Text(
+                            m['text'],
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ),
                       );
                     },
                   ),
           ),
-          _inputBar(),
+          _input(),
         ],
       ),
     );
   }
 
-  Widget _inputBar() {
+  Widget _input() {
     return SafeArea(
       child: Row(
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: TextField(
-                controller: _controller,
+                controller: _text,
                 decoration: const InputDecoration(
                   hintText: 'Message...',
-                  border: OutlineInputBorder(),
+                  border: InputBorder.none,
                 ),
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.send, color: Colors.green),
+            icon: const Icon(Icons.send),
             onPressed: _send,
           ),
         ],
