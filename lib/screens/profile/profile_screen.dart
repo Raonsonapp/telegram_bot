@@ -1,130 +1,121 @@
 import 'package:flutter/material.dart';
-
 import '../../core/session.dart';
-import '../../services/post_service.dart';
 import '../../services/follow_service.dart';
+import '../../services/post_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String? username; // агар null → профили худи ман
-
+  final String? username; // null => my profile
   const ProfileScreen({super.key, this.username});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
+class _ProfileScreenState extends State<ProfileScreen> {
   bool _loading = true;
-  bool _isMe = true;
-  bool _isFollowing = false;
+  bool _following = false;
 
   String _me = '';
-  String _username = '';
+  String _user = '';
+  String _bio = '';
   bool _verified = false;
 
+  int _postsCount = 0;
   int _followers = 0;
-  int _following = 0;
+  int _followingCount = 0;
 
   List<dynamic> _posts = [];
-  List<dynamic> _reels = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _init();
   }
 
   Future<void> _init() async {
     _me = await Session.username() ?? '';
-    _username = widget.username ?? _me;
-    _isMe = _username == _me;
-
+    _user = widget.username ?? _me;
     await _loadProfile();
   }
 
   Future<void> _loadProfile() async {
     try {
-      final data = await FollowService.getProfile(_username);
+      final counts = await FollowService.getCounts(_user);
+      final posts = await PostService.getByUser(_user);
 
-      _followers = data['followers'];
-      _following = data['following'];
-      _verified = data['verified'];
-      _isFollowing = data['is_following'] ?? false;
-
-      _posts = await PostService.getByUser(_username);
-      _reels = await PostService.getReelsByUser(_username);
-
-      setState(() => _loading = false);
+      setState(() {
+        _bio = counts['bio'] ?? '';
+        _verified = counts['verified'] == true;
+        _followers = counts['followers'];
+        _followingCount = counts['following'];
+        _following = counts['is_following'] == true;
+        _posts = posts;
+        _postsCount = posts.length;
+        _loading = false;
+      });
     } catch (_) {
       setState(() => _loading = false);
     }
   }
 
+  Future<void> _toggleFollow() async {
+    if (_following) {
+      await FollowService.unfollow(_user);
+    } else {
+      await FollowService.follow(_user);
+    }
+    _loadProfile();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _appBar(),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _header(),
-                _actions(),
-                _tabs(),
-                Expanded(child: _tabView()),
-              ],
-            ),
-    );
-  }
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-  // ================= APP BAR =================
-  AppBar _appBar() {
-    return AppBar(
-      title: Row(
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text(_user),
+            if (_verified)
+              const Padding(
+                padding: EdgeInsets.only(left: 6),
+                child: Icon(Icons.verified, color: Colors.green, size: 18),
+              ),
+          ],
+        ),
+      ),
+      body: ListView(
         children: [
-          Text(_username),
-          if (_verified)
-            const Padding(
-              padding: EdgeInsets.only(left: 6),
-              child: Icon(Icons.verified, color: Colors.green, size: 18),
-            ),
+          _header(),
+          _bioSection(),
+          const Divider(),
+          _grid(),
         ],
       ),
-      actions: _isMe
-          ? [
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () async {
-                  await Session.clearSession();
-                  if (mounted) {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  }
-                },
-              )
-            ]
-          : [],
     );
   }
 
-  // ================= HEADER =================
+  // ===== HEADER =====
   Widget _header() {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          const CircleAvatar(radius: 38, child: Icon(Icons.person, size: 40)),
-          const SizedBox(width: 16),
+          const CircleAvatar(
+            radius: 36,
+            child: Icon(Icons.person, size: 36),
+          ),
           Expanded(
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _countItem(_posts.length, 'Posts'),
-                _countItem(_followers, 'Followers'),
-                _countItem(_following, 'Following'),
+                _stat('Posts', _postsCount),
+                _stat('Followers', _followers),
+                _stat('Following', _followingCount),
               ],
             ),
           ),
@@ -133,84 +124,71 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _countItem(int count, String label) {
+  Widget _stat(String label, int value) {
     return Column(
       children: [
-        Text(
-          count.toString(),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        Text('$value',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(label),
       ],
     );
   }
 
-  // ================= ACTIONS =================
-  Widget _actions() {
-    if (_isMe) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: OutlinedButton(
-          onPressed: () {},
-          child: const Text('Edit profile'),
-        ),
-      );
-    }
-
+  // ===== BIO + FOLLOW =====
+  Widget _bioSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ElevatedButton(
-        onPressed: () async {
-          _isFollowing
-              ? await FollowService.unfollow(_username)
-              : await FollowService.follow(_username);
-          _loadProfile();
-        },
-        child: Text(_isFollowing ? 'Unfollow' : 'Follow'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_bio.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(_bio),
+            ),
+          if (_user != _me)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      _following ? Colors.grey : Colors.green,
+                ),
+                onPressed: _toggleFollow,
+                child: Text(_following ? 'Following' : 'Follow'),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  // ================= TABS =================
-  Widget _tabs() {
-    return TabBar(
-      controller: _tabController,
-      tabs: const [
-        Tab(icon: Icon(Icons.grid_on)),
-        Tab(icon: Icon(Icons.video_library)),
-      ],
-    );
-  }
-
-  Widget _tabView() {
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        _grid(_posts),
-        _grid(_reels),
-      ],
-    );
-  }
-
-  Widget _grid(List<dynamic> items) {
-    if (items.isEmpty) {
-      return const Center(child: Text('No content'));
+  // ===== GRID =====
+  Widget _grid() {
+    if (_posts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(child: Text('No posts yet')),
+      );
     }
 
     return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate:
+          const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 2,
         mainAxisSpacing: 2,
       ),
-      itemCount: items.length,
+      itemCount: _posts.length,
       itemBuilder: (_, i) {
-        final url = items[i]['media_url'] ?? '';
-        return Container(
-          color: Colors.black12,
-          child: url.isEmpty
-              ? const Icon(Icons.image)
-              : Image.network(url, fit: BoxFit.cover),
+        final p = _posts[i];
+        return Image.network(
+          p['image_url'],
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.broken_image),
         );
       },
     );
