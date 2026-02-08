@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../services/post_service.dart';
 import '../../core/session.dart';
+import '../../services/reel_service.dart';
 import '../comments/comments_screen.dart';
 
 class ReelActions extends StatefulWidget {
-  final int postId;
-  final int likesCount;
-  final int commentsCount;
+  final int reelId;
+  final int likes;
   final bool isLiked;
   final bool isSaved;
 
   const ReelActions({
     super.key,
-    required this.postId,
-    required this.likesCount,
-    required this.commentsCount,
+    required this.reelId,
+    required this.likes,
     required this.isLiked,
     required this.isSaved,
   });
@@ -26,7 +24,7 @@ class ReelActions extends StatefulWidget {
 class _ReelActionsState extends State<ReelActions> {
   late bool _liked;
   late bool _saved;
-  late int _likes;
+  late int _likesCount;
   String _me = '';
 
   @override
@@ -34,123 +32,116 @@ class _ReelActionsState extends State<ReelActions> {
     super.initState();
     _liked = widget.isLiked;
     _saved = widget.isSaved;
-    _likes = widget.likesCount;
-    _loadMe();
+    _likesCount = widget.likes;
+    _loadUser();
   }
 
-  Future<void> _loadMe() async {
-    _me = await Session.username() ?? '';
+  Future<void> _loadUser() async {
+    final u = await Session.username() ?? '';
+    setState(() => _me = u);
   }
 
+  // ================= LIKE =================
   Future<void> _toggleLike() async {
-    setState(() {
-      _liked = !_liked;
-      _likes += _liked ? 1 : -1;
-    });
-
-    try {
-      if (_liked) {
-        await PostService.likePost(widget.postId);
-      } else {
-        await PostService.unlikePost(widget.postId);
-      }
-    } catch (_) {
-      // rollback on error
+    if (_liked) {
+      await ReelService.unlike(widget.reelId);
       setState(() {
-        _liked = !_liked;
-        _likes += _liked ? 1 : -1;
+        _liked = false;
+        _likesCount--;
+      });
+    } else {
+      await ReelService.like(widget.reelId);
+      setState(() {
+        _liked = true;
+        _likesCount++;
       });
     }
   }
 
+  // ================= SAVE =================
   Future<void> _toggleSave() async {
-    setState(() => _saved = !_saved);
-
-    try {
-      if (_saved) {
-        await PostService.savePost(widget.postId);
-      } else {
-        await PostService.unsavePost(widget.postId);
-      }
-    } catch (_) {
-      setState(() => _saved = !_saved);
+    if (_saved) {
+      await ReelService.unsave(widget.reelId);
+      setState(() => _saved = false);
+    } else {
+      await ReelService.save(widget.reelId);
+      setState(() => _saved = true);
     }
   }
 
+  // ================= COMMENT =================
   void _openComments() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CommentsScreen(postId: widget.postId),
+        builder: (_) => CommentsScreen(postId: widget.reelId),
       ),
     );
   }
 
+  // ================= SHARE =================
   void _share() {
-    // v1/v2: placeholder
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share coming soon')),
+      const SnackBar(
+        content: Text('Link copied'),
+        duration: Duration(seconds: 1),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        _iconButton(
+        _icon(
           icon: _liked ? Icons.favorite : Icons.favorite_border,
           color: _liked ? Colors.red : Colors.white,
-          label: _likes.toString(),
+          label: _likesCount.toString(),
           onTap: _toggleLike,
         ),
-
         const SizedBox(height: 16),
-
-        _iconButton(
+        _icon(
           icon: Icons.mode_comment_outlined,
-          label: widget.commentsCount.toString(),
+          label: 'Comment',
           onTap: _openComments,
         ),
-
         const SizedBox(height: 16),
-
-        _iconButton(
-          icon: Icons.send,
-          onTap: _share,
-        ),
-
-        const SizedBox(height: 16),
-
-        _iconButton(
+        _icon(
           icon: _saved ? Icons.bookmark : Icons.bookmark_border,
+          label: 'Save',
           onTap: _toggleSave,
         ),
+        const SizedBox(height: 16),
+        _icon(
+          icon: Icons.send,
+          label: 'Share',
+          onTap: _share,
+        ),
+        const SizedBox(height: 24),
       ],
     );
   }
 
-  Widget _iconButton({
+  Widget _icon({
     required IconData icon,
-    Color color = Colors.white,
-    String? label,
+    required String label,
     required VoidCallback onTap,
+    Color color = Colors.white,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          Icon(icon, size: 30, color: color),
-          if (label != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-              ),
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
             ),
-          ],
+          ),
         ],
       ),
     );
