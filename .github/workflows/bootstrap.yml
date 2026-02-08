@@ -17,19 +17,23 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.3'
+          channel: stable
+
+      - name: Disable analytics
+        run: flutter config --no-analytics
 
       - name: Clean repo root
         run: |
           rm -rf android ios web linux macos windows pubspec.yaml pubspec.lock lib test
 
-      - name: Create Flutter project in ROOT
+      - name: Create Flutter project in ROOT (fixed name)
         run: |
-          flutter create .
+          flutter create . --project-name raonson
 
-      - name: Commit Flutter structure (FORCE)
+      - name: Commit Flutter structure
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add .
-          git commit -m "chore: bootstrap flutter project (root)" || echo "Nothing to commit"
+          git commit -m "chore: bootstrap flutter project (root, raonson)" || echo "Nothing to commit"
           git push --force origin main
