@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-
 import '../../core/session.dart';
-import '../../services/post_service.dart';
-import '../../services/post_actions_service.dart';
-import '../comments/comments_screen.dart';
-import '../create/create_post_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,8 +10,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
-  List<Map<String, dynamic>> _posts = [];
   String _me = '';
+  List<Map<String, dynamic>> _posts = [];
 
   @override
   void initState() {
@@ -30,181 +25,159 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadFeed() async {
-    setState(() => _loading = true);
-    try {
-      final data = await PostService.getFeedPosts();
-      _posts = List<Map<String, dynamic>>.from(data);
-    } catch (_) {}
+    // Ҳоло MOCK — сервер баъд
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    _posts = List.generate(8, (i) {
+      return {
+        "id": i,
+        "username": "user_$i",
+        "caption": "This is post caption #$i",
+        "likes": 12 + i,
+        "liked": false,
+      };
+    });
+
     setState(() => _loading = false);
   }
-
-  // ========================= UI =========================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1424),
+      backgroundColor: Colors.black,
       appBar: _appBar(),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadFeed,
               child: ListView.builder(
-                padding: EdgeInsets.zero,
                 itemCount: _posts.length,
-                itemBuilder: (_, i) => _postCard(_posts[i]),
+                itemBuilder: (_, i) => _postItem(_posts[i]),
               ),
             ),
     );
   }
 
-  // ========================= APP BAR =========================
-
+  // ================= APP BAR =================
   PreferredSizeWidget _appBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF0F1424),
+      backgroundColor: Colors.black,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.add_box_outlined),
-        onPressed: () async {
-          final ok = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CreatePostScreen()),
-          );
-          if (ok == true) _loadFeed();
-        },
-      ),
       title: const Text(
-        'Raonson',
+        "Raonson",
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.smart_toy_outlined), // Jarvis
+          icon: const Icon(Icons.favorite_border),
+          onPressed: () {},
+        ),
+        IconButton(
+          icon: const Icon(Icons.send),
           onPressed: () {},
         ),
       ],
     );
   }
 
-  // ========================= POST CARD =========================
+  // ================= POST ITEM =================
+  Widget _postItem(Map<String, dynamic> post) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // HEADER
+        ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.person)),
+          title: Text(
+            post['username'],
+            style: const TextStyle(color: Colors.white),
+          ),
+          trailing:
+              const Icon(Icons.more_vert, color: Colors.white),
+        ),
 
-  Widget _postCard(Map<String, dynamic> post) {
-    int postId = post['id'];
-    String username = post['username'] ?? '';
-    String caption = post['caption'] ?? '';
-    String mediaUrl = post['mediaUrl'] ?? '';
-    int likes = post['likes'] ?? 0;
+        // IMAGE (placeholder)
+        Container(
+          height: 280,
+          color: Colors.grey.shade800,
+          child: const Center(
+            child: Icon(Icons.image, size: 80, color: Colors.white24),
+          ),
+        ),
 
-    bool isLiked = false;
-
-    return StatefulBuilder(
-      builder: (context, setLocal) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // ACTIONS
+        Row(
           children: [
-            // HEADER
-            ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text(
-                username,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+            IconButton(
+              icon: Icon(
+                post['liked']
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color:
+                    post['liked'] ? Colors.red : Colors.white,
               ),
-              trailing: const Icon(Icons.more_vert),
+              onPressed: () {
+                setState(() {
+                  post['liked'] = !post['liked'];
+                  post['likes'] += post['liked'] ? 1 : -1;
+                });
+              },
             ),
-
-            // IMAGE
-            if (mediaUrl.isNotEmpty)
-              Image.network(
-                mediaUrl,
-                width: double.infinity,
-                height: 360,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 360,
-                  color: Colors.black26,
-                  child: const Center(child: Icon(Icons.broken_image)),
-                ),
-              ),
-
-            // ACTIONS
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? Colors.red : Colors.white,
-                    ),
-                    onPressed: () async {
-                      if (isLiked) {
-                        likes = await PostActionsService.unlike(postId, likes);
-                      } else {
-                        likes = await PostActionsService.like(postId, likes);
-                      }
-                      setLocal(() => isLiked = !isLiked);
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.mode_comment_outlined),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              CommentsScreen(postId: postId),
-                        ),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: () {},
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.bookmark_border),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
+            IconButton(
+              icon: const Icon(Icons.mode_comment_outlined,
+                  color: Colors.white),
+              onPressed: () {},
             ),
-
-            // LIKES
-            if (likes > 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  '$likes likes',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-
-            // CAPTION
-            if (caption.isNotEmpty)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(color: Colors.white),
-                    children: [
-                      TextSpan(
-                        text: '$username ',
-                        style:
-                            const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(text: caption),
-                    ],
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 16),
+            IconButton(
+              icon:
+                  const Icon(Icons.send, color: Colors.white),
+              onPressed: () {},
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.bookmark_border,
+                  color: Colors.white),
+              onPressed: () {},
+            ),
           ],
-        );
-      },
+        ),
+
+        // LIKES
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            "${post['likes']} likes",
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold),
+          ),
+        ),
+
+        // CAPTION
+        Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: "${post['username']} ",
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+                TextSpan(
+                  text: post['caption'],
+                  style:
+                      const TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
