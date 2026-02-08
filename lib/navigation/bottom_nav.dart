@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
+// Screens
 import '../screens/home/home_screen.dart';
-import '../screens/search/search_screen.dart';
-import '../screens/reels/reels_screen.dart';
-import '../screens/chat/chat_list_screen.dart';
-import '../screens/profile/profile_screen.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -17,25 +14,22 @@ class _BottomNavState extends State<BottomNav> {
   int _index = 0;
 
   final List<Widget> _screens = const [
-    HomeScreen(),
-    SearchScreen(),
-    ReelsScreen(),
-    ChatListScreen(),
-    ProfileScreen(),
+    HomeScreen(),        // Home
+    _SearchStub(),       // Search
+    _ReelsStub(),        // Reels
+    _ChatStub(),         // Chat
+    _ProfileStub(),     // Profile
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: _screens,
-      ),
+      body: _screens[_index],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
+        backgroundColor: Colors.black,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF0F1424),
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white54,
         showSelectedLabels: false,
@@ -51,8 +45,8 @@ class _BottomNavState extends State<BottomNav> {
             label: 'Search',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.movie_outlined),
-            activeIcon: Icon(Icons.movie),
+            icon: Icon(Icons.play_circle_outline),
+            activeIcon: Icon(Icons.play_circle_fill),
             label: 'Reels',
           ),
           BottomNavigationBarItem(
@@ -66,6 +60,76 @@ class _BottomNavState extends State<BottomNav> {
             label: 'Profile',
           ),
         ],
+      ),
+    );
+  }
+}
+
+/* ================= PLACEHOLDER SCREENS ================= */
+
+class _SearchStub extends StatelessWidget {
+  const _SearchStub();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Text(
+          'Search',
+          style: TextStyle(color: Colors.white, fontSize: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReelsStub extends StatelessWidget {
+  const _ReelsStub();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Text(
+          'Reels',
+          style: TextStyle(color: Colors.white, fontSize: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatStub extends StatelessWidget {
+  const _ChatStub();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Text(
+          'Chat',
+          style: TextStyle(color: Colors.white, fontSize: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileStub extends StatelessWidget {
+  const _ProfileStub();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Text(
+          'Profile',
+          style: TextStyle(color: Colors.white, fontSize: 22),
+        ),
       ),
     );
   }
