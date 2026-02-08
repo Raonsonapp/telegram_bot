@@ -4,6 +4,7 @@ import '../screens/search/search_screen.dart';
 import '../screens/reels/reels_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../core/session.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -14,30 +15,60 @@ class BottomNav extends StatefulWidget {
 
 class _BottomNavState extends State<BottomNav> {
   int _index = 0;
+  String _me = '';
 
-  final _screens = const [
-    FeedScreen(),
-    SearchScreen(),
-    ReelsScreen(),
-    ChatListScreen(),
-    ProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadMe();
+  }
+
+  Future<void> _loadMe() async {
+    _me = await Session.getUsername() ?? '';
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      const FeedScreen(),
+      const SearchScreen(),
+      const ReelsScreen(),
+      const ChatListScreen(),
+      ProfileScreen(username: _me),
+    ];
+
     return Scaffold(
-      body: _screens[_index],
+      body: screens[_index],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
         type: BottomNavigationBarType.fixed,
+        onTap: (i) => setState(() => _index = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
           BottomNavigationBarItem(
-              icon: Icon(Icons.video_library), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.movie_outlined),
+            activeIcon: Icon(Icons.movie),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: '',
+          ),
         ],
       ),
     );
