@@ -4,28 +4,34 @@ import '../models/reel.dart';
 
 class ReelService {
   // ================= GET REELS FEED =================
-  static Future<List<ReelModel>> getReels() async {
-    final response = await HttpService.get(Api.reelsEndpoint);
+  static Future<List<Reel>> getReels() async {
+    final res = await HttpService.get(Api.reelsEndpoint);
 
-    return (response as List)
-        .map((json) => ReelModel.fromJson(json))
-        .toList();
+    if (res == null || res is! List) {
+      return [];
+    }
+
+    return res.map<Reel>((e) => Reel.fromJson(e)).toList();
   }
 
   // ================= CREATE REEL =================
-  static Future<ReelModel> createReel({
-    required String videoUrl,
+  static Future<Reel> createReel({
+    required String mediaUrl,
     String? caption,
   }) async {
-    final response = await HttpService.post(
+    final res = await HttpService.post(
       Api.reelsEndpoint,
       {
-        'video_url': videoUrl,
-        'caption': caption,
+        'media_url': mediaUrl,
+        'caption': caption ?? '',
       },
     );
 
-    return ReelModel.fromJson(response);
+    if (res == null) {
+      throw Exception('Create reel failed');
+    }
+
+    return Reel.fromJson(res);
   }
 
   // ================= LIKE REEL =================
@@ -58,5 +64,21 @@ class ReelService {
       '${Api.reelsEndpoint}/$reelId/unsave',
       {},
     );
+  }
+
+  // ================= GET SAVED REELS =================
+  static Future<List<Reel>> getSavedReels() async {
+    final res = await HttpService.get('${Api.reelsEndpoint}/saved');
+
+    if (res == null || res is! List) {
+      return [];
+    }
+
+    return res.map<Reel>((e) => Reel.fromJson(e)).toList();
+  }
+
+  // ================= DELETE REEL =================
+  static Future<void> deleteReel(int reelId) async {
+    await HttpService.delete('${Api.reelsEndpoint}/$reelId');
   }
 }
