@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../services/search_service.dart';
-import '../profile/profile_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -11,109 +9,146 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
-  bool _loading = false;
+  bool _isSearching = false;
 
-  List<dynamic> _users = [];
-  List<dynamic> _posts = [];
+  final List<String> _recentSearches = [
+    'raonson',
+    'flutter',
+    'tajik',
+    'design',
+    'reels',
+  ];
 
-  Future<void> _search(String q) async {
-    if (q.trim().isEmpty) return;
-
-    setState(() => _loading = true);
-
-    final data = await SearchService.search(q);
-
-    setState(() {
-      _users = data['users'] ?? [];
-      _posts = data['posts'] ?? [];
-      _loading = false;
-    });
-  }
+  final List<Map<String, dynamic>> _results = List.generate(20, (i) {
+    return {
+      'username': 'user_$i',
+      'verified': i % 4 == 0,
+    };
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: TextField(
-          controller: _controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Search',
-            border: InputBorder.none,
-          ),
-          onSubmitted: _search,
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _searchBar(),
+            Expanded(
+              child: _isSearching ? _searchResults() : _exploreGrid(),
+            ),
+          ],
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                if (_users.isNotEmpty) _usersSection(),
-                if (_posts.isNotEmpty) _postsGrid(),
-              ],
-            ),
     );
   }
 
-  // ================= USERS =================
-  Widget _usersSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(12),
-          child: Text(
-            'Users',
-            style: TextStyle(fontWeight: FontWeight.bold),
+  // ================= SEARCH BAR =================
+  Widget _searchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: TextField(
+        controller: _controller,
+        onChanged: (v) {
+          setState(() => _isSearching = v.isNotEmpty);
+        },
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          hintText: 'Search',
+          hintStyle: const TextStyle(color: Colors.grey),
+          filled: true,
+          fillColor: const Color(0xFF1A1A1A),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
         ),
-        ..._users.map((u) {
-          return ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.person)),
-            title: Row(
-              children: [
-                Text(u['username']),
-                if (u['verified'] == true)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: Icon(Icons.verified,
-                        size: 16, color: Colors.green),
-                  ),
-              ],
-            ),
-            subtitle: Text(u['bio'] ?? ''),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ProfileScreen(username: u['username']),
-                ),
-              );
-            },
-          );
-        }),
+      ),
+    );
+  }
+
+  // ================= SEARCH RESULTS =================
+  Widget _searchResults() {
+    return ListView(
+      children: [
+        if (_recentSearches.isNotEmpty) _recentSection(),
+        const Divider(color: Colors.grey),
+        ..._results.map(_userTile).toList(),
       ],
     );
   }
 
-  // ================= POSTS =================
-  Widget _postsGrid() {
+  Widget _recentSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recent',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ..._recentSearches.map((s) {
+            return ListTile(
+              leading: const Icon(Icons.history, color: Colors.grey),
+              title: Text(s),
+              trailing: const Icon(Icons.close, size: 16),
+              onTap: () {
+                _controller.text = s;
+                setState(() => _isSearching = true);
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _userTile(Map<String, dynamic> u) {
+    return ListTile(
+      leading: const CircleAvatar(
+        backgroundColor: Colors.grey,
+        child: Icon(Icons.person, color: Colors.white),
+      ),
+      title: Row(
+        children: [
+          Text(u['username']),
+          if (u['verified'])
+            const Padding(
+              padding: EdgeInsets.only(left: 4),
+              child: Icon(
+                Icons.verified,
+                size: 16,
+                color: Colors.green,
+              ),
+            ),
+        ],
+      ),
+      subtitle: const Text('Raonson user'),
+      onTap: () {
+        // ҚАДАМИ 32 → Profile by username
+      },
+    );
+  }
+
+  // ================= EXPLORE GRID =================
+  Widget _exploreGrid() {
     return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _posts.length,
       padding: const EdgeInsets.all(2),
-      gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 2,
         mainAxisSpacing: 2,
       ),
-      itemBuilder: (_, i) {
-        return Image.network(
-          _posts[i]['image_url'],
-          fit: BoxFit.cover,
+      itemCount: 30,
+      itemBuilder: (context, i) {
+        return Container(
+          color: Colors.grey.shade800,
+          child: const Center(
+            child: Icon(Icons.image, color: Colors.white24),
+          ),
         );
       },
     );
