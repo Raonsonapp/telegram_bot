@@ -10,15 +10,22 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _ctrl = TextEditingController();
-  List<dynamic> _results = [];
+  final TextEditingController _controller = TextEditingController();
   bool _loading = false;
 
+  List<dynamic> _users = [];
+  List<dynamic> _posts = [];
+
   Future<void> _search(String q) async {
+    if (q.trim().isEmpty) return;
+
     setState(() => _loading = true);
+
     final data = await SearchService.search(q);
+
     setState(() {
-      _results = data;
+      _users = data['users'] ?? [];
+      _posts = data['posts'] ?? [];
       _loading = false;
     });
   }
@@ -28,72 +35,87 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: TextField(
-          controller: _ctrl,
-          onChanged: _search,
-          decoration: InputDecoration(
+          controller: _controller,
+          autofocus: true,
+          decoration: const InputDecoration(
             hintText: 'Search',
-            filled: true,
-            fillColor: Colors.grey[900],
-            prefixIcon: const Icon(Icons.search),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
+            border: InputBorder.none,
           ),
+          onSubmitted: _search,
         ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _results.isEmpty
-              ? _empty()
-              : ListView.builder(
-                  itemCount: _results.length,
-                  itemBuilder: (_, i) => _item(_results[i]),
-                ),
-    );
-  }
-
-  Widget _empty() {
-    return const Center(
-      child: Text(
-        'Search users or posts',
-        style: TextStyle(color: Colors.white54),
-      ),
-    );
-  }
-
-  Widget _item(dynamic r) {
-    if (r['type'] == 'user') {
-      return ListTile(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(r['avatar']),
-        ),
-        title: Text(r['username']),
-        subtitle: Text('${r['followers']} followers'),
-        trailing: r['verified'] == true
-            ? const Icon(Icons.verified, color: Colors.green)
-            : null,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProfileScreen(username: r['username']),
+          : ListView(
+              children: [
+                if (_users.isNotEmpty) _usersSection(),
+                if (_posts.isNotEmpty) _postsGrid(),
+              ],
             ),
-          );
-        },
-      );
-    }
+    );
+  }
 
-    // POST
-    return ListTile(
-      leading: Image.network(
-        r['media'],
-        width: 50,
-        height: 50,
-        fit: BoxFit.cover,
+  // ================= USERS =================
+  Widget _usersSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(12),
+          child: Text(
+            'Users',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        ..._users.map((u) {
+          return ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.person)),
+            title: Row(
+              children: [
+                Text(u['username']),
+                if (u['verified'] == true)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 6),
+                    child: Icon(Icons.verified,
+                        size: 16, color: Colors.green),
+                  ),
+              ],
+            ),
+            subtitle: Text(u['bio'] ?? ''),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ProfileScreen(username: u['username']),
+                ),
+              );
+            },
+          );
+        }),
+      ],
+    );
+  }
+
+  // ================= POSTS =================
+  Widget _postsGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _posts.length,
+      padding: const EdgeInsets.all(2),
+      gridDelegate:
+          const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 2,
+        mainAxisSpacing: 2,
       ),
-      title: Text(r['caption'] ?? ''),
-      subtitle: Text(r['username']),
+      itemBuilder: (_, i) {
+        return Image.network(
+          _posts[i]['image_url'],
+          fit: BoxFit.cover,
+        );
+      },
     );
   }
 }
