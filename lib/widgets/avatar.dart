@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
 import 'verified_badge.dart';
 
 class Avatar extends StatelessWidget {
-  final String imageUrl;
+  final String? imageUrl;
   final double size;
   final bool isVerified;
   final VoidCallback? onTap;
+  final bool showBorder;
 
   const Avatar({
     super.key,
@@ -13,6 +15,7 @@ class Avatar extends StatelessWidget {
     this.size = 40,
     this.isVerified = false,
     this.onTap,
+    this.showBorder = false,
   });
 
   @override
@@ -22,53 +25,61 @@ class Avatar extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.grey.shade800,
-                width: 1,
-              ),
-            ),
-            child: ClipOval(
-              child: imageUrl.isEmpty
-                  ? Container(
-                      color: Colors.grey.shade900,
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.grey,
-                        size: size * 0.6,
-                      ),
-                    )
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        return Container(
-                          color: Colors.grey.shade900,
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.grey,
-                            size: size * 0.6,
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ),
-
-          // VERIFIED BADGE
+          _avatarCircle(),
           if (isVerified)
             Positioned(
               bottom: -2,
               right: -2,
-              child: VerifiedBadge(
-                size: size * 0.35,
-              ),
+              child: VerifiedBadge(size: size * 0.28),
             ),
         ],
+      ),
+    );
+  }
+
+  // ================= AVATAR CIRCLE =================
+  Widget _avatarCircle() {
+    return Container(
+      width: size,
+      height: size,
+      padding: showBorder ? const EdgeInsets.all(2) : EdgeInsets.zero,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: showBorder
+            ? const LinearGradient(
+                colors: [
+                  AppColors.storyPink,
+                  AppColors.storyOrange,
+                ],
+              )
+            : null,
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.darkGrey,
+        ),
+        child: ClipOval(
+          child: imageUrl != null && imageUrl!.isNotEmpty
+              ? Image.network(
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _placeholder(),
+                )
+              : _placeholder(),
+        ),
+      ),
+    );
+  }
+
+  // ================= PLACEHOLDER =================
+  Widget _placeholder() {
+    return Container(
+      color: AppColors.darkGrey,
+      child: Icon(
+        Icons.person,
+        color: AppColors.grey,
+        size: size * 0.55,
       ),
     );
   }
