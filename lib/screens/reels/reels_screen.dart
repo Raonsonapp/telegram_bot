@@ -9,12 +9,29 @@ class ReelsScreen extends StatefulWidget {
 }
 
 class _ReelsScreenState extends State<ReelsScreen> {
-  final PageController _pageController = PageController();
-  final List<String> _videos = [
-    // mock urls (баъд аз server меояд)
-    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+  final PageController _pageController =
+      PageController(initialPage: 0, viewportFraction: 1);
+
+  // Ҳоло mock data — дар қадами сервер иваз мешавад
+  final List<Map<String, dynamic>> _reels = [
+    {
+      "id": 1,
+      "username": "raonson",
+      "video":
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+      "caption": "Raonson reels test",
+      "likes": 124,
+      "liked": false,
+    },
+    {
+      "id": 2,
+      "username": "jarvis",
+      "video":
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "caption": "Second reel",
+      "likes": 89,
+      "liked": false,
+    },
   ];
 
   @override
@@ -24,9 +41,18 @@ class _ReelsScreenState extends State<ReelsScreen> {
       body: PageView.builder(
         controller: _pageController,
         scrollDirection: Axis.vertical,
-        itemCount: _videos.length,
+        itemCount: _reels.length,
         itemBuilder: (context, index) {
-          return ReelItem(videoUrl: _videos[index]);
+          return _ReelItem(
+            data: _reels[index],
+            onLike: () {
+              setState(() {
+                _reels[index]["liked"] = !_reels[index]["liked"];
+                _reels[index]["likes"] +=
+                    _reels[index]["liked"] ? 1 : -1;
+              });
+            },
+          );
         },
       ),
     );
@@ -35,27 +61,30 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
 // ================= SINGLE REEL =================
 
-class ReelItem extends StatefulWidget {
-  final String videoUrl;
-  const ReelItem({super.key, required this.videoUrl});
+class _ReelItem extends StatefulWidget {
+  final Map<String, dynamic> data;
+  final VoidCallback onLike;
+
+  const _ReelItem({
+    required this.data,
+    required this.onLike,
+  });
 
   @override
-  State<ReelItem> createState() => _ReelItemState();
+  State<_ReelItem> createState() => _ReelItemState();
 }
 
-class _ReelItemState extends State<ReelItem> {
+class _ReelItemState extends State<_ReelItem> {
   late VideoPlayerController _controller;
-  bool _liked = false;
-  bool _saved = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+    _controller = VideoPlayerController.network(widget.data["video"])
       ..initialize().then((_) {
-        setState(() {});
         _controller.setLooping(true);
         _controller.play();
+        setState(() {});
       });
   }
 
@@ -69,76 +98,79 @@ class _ReelItemState extends State<ReelItem> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // VIDEO
+        // ===== VIDEO =====
         Positioned.fill(
           child: _controller.value.isInitialized
-              ? VideoPlayer(_controller)
+              ? GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _controller.value.isPlaying
+                          ? _controller.pause()
+                          : _controller.play();
+                    });
+                  },
+                  child: VideoPlayer(_controller),
+                )
               : const Center(child: CircularProgressIndicator()),
         ),
 
-        // OVERLAY
-        Positioned.fill(
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [Colors.black54, Colors.transparent],
-              ),
-            ),
-          ),
-        ),
-
-        // RIGHT ACTIONS
+        // ===== RIGHT ACTIONS =====
         Positioned(
           right: 12,
           bottom: 120,
           child: Column(
             children: [
-              _action(
-                icon: _liked ? Icons.favorite : Icons.favorite_border,
-                color: _liked ? Colors.red : Colors.white,
-                onTap: () => setState(() => _liked = !_liked),
+              IconButton(
+                icon: Icon(
+                  widget.data["liked"]
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color:
+                      widget.data["liked"] ? Colors.red : Colors.white,
+                  size: 32,
+                ),
+                onPressed: widget.onLike,
               ),
-              const SizedBox(height: 16),
-              _action(
-                icon: Icons.mode_comment_outlined,
-                onTap: () {
-                  // ҚАДАМИ 31 → Comments modal
+              Text(
+                "${widget.data["likes"]}",
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 18),
+              IconButton(
+                icon: const Icon(Icons.mode_comment_outlined,
+                    color: Colors.white, size: 30),
+                onPressed: () {
+                  // Қадамҳои оянда: CommentsScreen
                 },
               ),
-              const SizedBox(height: 16),
-              _action(icon: Icons.send),
-              const SizedBox(height: 16),
-              _action(
-                icon: _saved ? Icons.bookmark : Icons.bookmark_border,
-                onTap: () => setState(() => _saved = !_saved),
+              const SizedBox(height: 18),
+              IconButton(
+                icon: const Icon(Icons.send,
+                    color: Colors.white, size: 28),
+                onPressed: () {},
               ),
             ],
           ),
         ),
 
-        // BOTTOM INFO
+        // ===== BOTTOM INFO =====
         Positioned(
           left: 12,
-          bottom: 24,
+          bottom: 40,
           right: 80,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Row(
-                children: [
-                  Text(
-                    '@raonson',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 6),
-                  Icon(Icons.verified, size: 16, color: Colors.green),
-                ],
-              ),
-              SizedBox(height: 8),
+            children: [
               Text(
-                'Reels demo caption for Raonson 🔥',
+                "@${widget.data["username"]}",
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                widget.data["caption"],
+                style: const TextStyle(color: Colors.white),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -146,17 +178,6 @@ class _ReelItemState extends State<ReelItem> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _action({
-    required IconData icon,
-    Color color = Colors.white,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Icon(icon, size: 32, color: color),
     );
   }
 }
