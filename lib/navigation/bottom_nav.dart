@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../screens/home/feed_screen.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/reels/reels_screen.dart';
@@ -14,9 +13,9 @@ class BottomNav extends StatefulWidget {
 }
 
 class _BottomNavState extends State<BottomNav> {
-  int _currentIndex = 0;
+  int _index = 0;
 
-  final List<Widget> _screens = const [
+  final _screens = const [
     FeedScreen(),
     SearchScreen(),
     ReelsScreen(),
@@ -27,44 +26,18 @@ class _BottomNavState extends State<BottomNav> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: _screens[_index],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        currentIndex: _index,
+        onTap: (i) => setState(() => _index = i),
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.black,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.play_circle_outline),
-            activeIcon: Icon(Icons.play_circle),
-            label: 'Reels',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+              icon: Icon(Icons.video_library), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
       ),
     );
