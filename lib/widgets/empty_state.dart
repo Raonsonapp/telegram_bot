@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
 
 class EmptyState extends StatelessWidget {
   final IconData icon;
@@ -18,23 +19,23 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 64,
-              color: Colors.white24,
+              size: 54,
+              color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
             if (subtitle != null) ...[
@@ -43,8 +44,8 @@ class EmptyState extends StatelessWidget {
                 subtitle!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white60,
-                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
                 ),
               ),
             ],
