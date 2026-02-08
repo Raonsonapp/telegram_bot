@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/post_service.dart';
+import '../../services/story_service.dart';
+import '../stories/story_view_screen.dart';
 
 class StoryBar extends StatefulWidget {
   const StoryBar({super.key});
@@ -10,58 +11,58 @@ class StoryBar extends StatefulWidget {
 
 class _StoryBarState extends State<StoryBar> {
   List<dynamic> _stories = [];
-  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStories();
+    _load();
   }
 
-  Future<void> _loadStories() async {
-    try {
-      final data = await PostService.getStories();
-      setState(() {
-        _stories = data;
-        _loading = false;
-      });
-    } catch (_) {
-      setState(() => _loading = false);
-    }
+  Future<void> _load() async {
+    final data = await StoryService.getStories();
+    setState(() => _stories = data);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const SizedBox(
-        height: 90,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+    if (_stories.isEmpty) return const SizedBox();
 
     return SizedBox(
-      height: 100,
+      height: 95,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
         itemCount: _stories.length,
-        itemBuilder: (context, i) {
+        itemBuilder: (_, i) {
           final s = _stories[i];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: NetworkImage(s['mediaUrl'] ?? ''),
-                  onBackgroundImageError: (_, __) {},
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => StoryViewScreen(
+                    stories: _stories,
+                    index: i,
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  s['username'] ?? '',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
+              );
+            },
+            child: Container(
+              width: 70,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundImage: NetworkImage(s['avatar']),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    s['username'],
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           );
         },
