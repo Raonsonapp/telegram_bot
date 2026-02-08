@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-
 import '../../services/post_service.dart';
 import '../comments/comments_screen.dart';
 
@@ -12,132 +11,143 @@ class ReelsScreen extends StatefulWidget {
 }
 
 class _ReelsScreenState extends State<ReelsScreen> {
-  final PageController _pageController = PageController();
+  final PageController _page = PageController();
   List<dynamic> _reels = [];
-  int _currentIndex = 0;
   bool _loading = true;
+  int _index = 0;
 
-  final Map<int, VideoPlayerController> _controllers = {};
+  VideoPlayerController? _player;
 
   @override
   void initState() {
     super.initState();
-    _loadReels();
+    _load();
   }
 
-  @override
-  void dispose() {
-    for (final c in _controllers.values) {
-      c.dispose();
-    }
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadReels() async {
-    try {
-      final data = await PostService.getReels();
+  Future<void> _load() async {
+    final data = await PostService.getReels();
+    setState(() {
       _reels = data;
       _loading = false;
-
-      if (_reels.isNotEmpty) {
-        await _initController(0);
-      }
-      setState(() {});
-    } catch (_) {
-      setState(() => _loading = false);
-    }
+    });
+    _play(0);
   }
 
-  Future<void> _initController(int index) async {
-    if (_controllers.containsKey(index)) return;
+  Future<void> _play(int i) async {
+    _player?.dispose();
 
-    final url = _reels[index]['media_url'];
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-    await controller.initialize();
-    controller.setLooping(true);
+    final url = _reels[i]['video'];
+    _player = VideoPlayerController.networkUrl(Uri.parse(url));
+    await _player!.initialize();
+    _player!
+      ..setLooping(true)
+      ..play();
 
-    _controllers[index] = controller;
-
-    if (index == _currentIndex) {
-      controller.play();
-    }
-  }
-
-  void _onPageChanged(int index) async {
-    // stop old
-    _controllers[_currentIndex]?.pause();
-
-    _currentIndex = index;
-    await _initController(index);
-
-    _controllers[index]?.play();
     setState(() {});
   }
 
   @override
+  void dispose() {
+    _player?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              onPageChanged: _onPageChanged,
-              itemCount: _reels.length,
-              itemBuilder: (_, index) {
-                return _reelItem(index);
-              },
-            ),
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return PageView.builder(
+      controller: _page,
+      scrollDirection: Axis.vertical,
+      itemCount: _reels.length,
+      onPageChanged: (i) {
+        _index = i;
+        _play(i);
+      },
+      itemBuilder: (_, i) => _reel(_reels[i]),
     );
   }
 
-  // ===================== SINGLE REEL =====================
-  Widget _reelItem(int index) {
-    final reel = _reels[index];
-    final controller = _controllers[index];
-
-    final int postId = reel['id'];
-    final String username = reel['username'] ?? '';
-    final String caption = reel['caption'] ?? '';
-    final int likes = reel['likes'] ?? 0;
-    final bool liked = reel['liked'] ?? false;
-    final bool saved = reel['saved'] ?? false;
+  Widget _reel(dynamic r) {
+    final int id = r['id'];
+    final String user = r['username'];
+    final String caption = r['caption'] ?? '';
+    final int likes = r['likes'] ?? 0;
+    final bool liked = r['liked'] ?? false;
+    final bool saved = r['saved'] ?? false;
 
     return Stack(
-      fit: StackFit.expand,
       children: [
         // ===== VIDEO =====
-        controller == null || !controller.value.isInitialized
-            ? const Center(child: CircularProgressIndicator())
-            : GestureDetector(
-                onTap: () {
-                  controller.value.isPlaying
-                      ? controller.pause()
-                      : controller.play();
-                  setState(() {});
-                },
-                child: FittedBox(
+        Positioned.fill(
+          child: _player != null && _player!.value.isInitialized
+              ? FittedBox(
                   fit: BoxFit.cover,
                   child: SizedBox(
-                    width: controller.value.size.width,
-                    height: controller.value.size.height,
-                    child: VideoPlayer(controller),
+                    width: _player!.value.size.width,
+                    height: _player!.value.size.height,
+                    child: VideoPlayer(_player!),
                   ),
-                ),
-              ),
+                )
+              : const Center(child: CircularProgressIndicator()),
+        ),
 
-        // ===== LEFT INFO =====
+        // ===== RIGHT ACTIONS =====
+        Positioned(
+          right: 12,
+          bottom: 120,
+          child: Column(
+            children: [
+              _icon(
+                icon: liked ? Icons.favorite : Icons.favorite_border,
+                label: '$likes',
+                onTap: () async {
+                  liked
+                      ? await PostService.unlike(id)
+                      : await PostService.like(id);
+                  _load();
+                },
+              ),
+              const SizedBox(height: 18),
+              _icon(
+                icon: Icons.mode_comment_outlined,
+                label: 'Comment',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CommentsScreen(postId: id),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 18),
+              _icon(
+                icon: saved ? Icons.bookmark : Icons.bookmark_border,
+                label: 'Save',
+                onTap: () async {
+                  saved
+                      ? await PostService.unsave(id)
+                      : await PostService.save(id);
+                  _load();
+                },
+              ),
+            ],
+          ),
+        ),
+
+        // ===== BOTTOM INFO =====
         Positioned(
           left: 12,
-          bottom: 80,
+          bottom: 40,
           right: 80,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '@$username',
+                '@$user',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -147,57 +157,8 @@ class _ReelsScreenState extends State<ReelsScreen> {
               Text(
                 caption,
                 style: const TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-
-        // ===== RIGHT ACTIONS =====
-        Positioned(
-          right: 12,
-          bottom: 100,
-          child: Column(
-            children: [
-              _actionButton(
-                icon: liked ? Icons.favorite : Icons.favorite_border,
-                label: likes.toString(),
-                color: liked ? Colors.red : Colors.white,
-                onTap: () async {
-                  liked
-                      ? await PostService.unlikePost(postId)
-                      : await PostService.likePost(postId);
-                  _loadReels();
-                },
-              ),
-              const SizedBox(height: 18),
-              _actionButton(
-                icon: Icons.mode_comment_outlined,
-                label: '',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CommentsScreen(postId: postId),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 18),
-              _actionButton(
-                icon: saved ? Icons.bookmark : Icons.bookmark_border,
-                label: '',
-                onTap: () async {
-                  saved
-                      ? await PostService.unsavePost(postId)
-                      : await PostService.savePost(postId);
-                  _loadReels();
-                },
-              ),
-              const SizedBox(height: 18),
-              _actionButton(
-                icon: Icons.send,
-                label: '',
-                onTap: () {},
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -206,23 +167,21 @@ class _ReelsScreenState extends State<ReelsScreen> {
     );
   }
 
-  Widget _actionButton({
+  Widget _icon({
     required IconData icon,
     required String label,
-    Color color = Colors.white,
     required VoidCallback onTap,
   }) {
     return Column(
       children: [
         IconButton(
-          icon: Icon(icon, color: color, size: 30),
+          icon: Icon(icon, color: Colors.white, size: 30),
           onPressed: onTap,
         ),
-        if (label.isNotEmpty)
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white),
-          ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
       ],
     );
   }
