@@ -4,125 +4,157 @@ import 'colors.dart';
 class AppTextStyles {
   AppTextStyles._();
 
-  // ====== APP BAR / LOGO ======
+  // ================= APP / BRAND =================
   static const TextStyle appTitle = TextStyle(
     fontSize: 22,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: 0.3,
   );
 
-  // ====== USERNAME ======
-  static const TextStyle username = TextStyle(
-    fontSize: 14,
+  // ================= HEADINGS =================
+  static const TextStyle h1 = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle h2 = TextStyle(
+    fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle usernameSmall = TextStyle(
-    fontSize: 12,
+  static const TextStyle h3 = TextStyle(
+    fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
-  // ====== CAPTION / BODY ======
-  static const TextStyle caption = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textPrimary,
-    height: 1.4,
-  );
-
+  // ================= BODY =================
   static const TextStyle body = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.normal,
     color: AppColors.textPrimary,
+    height: 1.4,
   );
 
   static const TextStyle bodySecondary = TextStyle(
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: FontWeight.normal,
     color: AppColors.textSecondary,
+    height: 1.4,
   );
 
-  // ====== COUNTS (likes, followers) ======
-  static const TextStyle count = TextStyle(
+  // ================= CAPTION / POST =================
+  static const TextStyle captionUsername = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle countLabel = TextStyle(
-    fontSize: 12,
+  static const TextStyle captionText = TextStyle(
+    fontSize: 14,
     fontWeight: FontWeight.normal,
-    color: AppColors.textSecondary,
-  );
-
-  // ====== BUTTONS ======
-  static const TextStyle buttonPrimary = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.bold,
-    color: Colors.black,
-  );
-
-  static const TextStyle buttonSecondary = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
   );
 
-  // ====== INPUTS ======
-  static const TextStyle inputText = TextStyle(
+  static const TextStyle captionMuted = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textMuted,
+  );
+
+  // ================= META =================
+  static const TextStyle meta = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textMuted,
+  );
+
+  static const TextStyle time = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textMuted,
+  );
+
+  // ================= BUTTONS =================
+  static const TextStyle buttonPrimary = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+  );
+
+  static const TextStyle buttonSecondary = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: AppColors.primary,
+  );
+
+  static const TextStyle buttonDisabled = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w500,
+    color: AppColors.iconDisabled,
+  );
+
+  // ================= INPUT =================
+  static const TextStyle input = TextStyle(
     fontSize: 14,
+    fontWeight: FontWeight.normal,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle inputHint = TextStyle(
     fontSize: 14,
-    color: AppColors.inputHint,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textMuted,
   );
 
-  // ====== TIME / META ======
-  static const TextStyle time = TextStyle(
-    fontSize: 11,
-    color: AppColors.textSecondary,
+  // ================= CHAT =================
+  static const TextStyle chatMessageMe = TextStyle(
+    fontSize: 14,
+    color: Colors.white,
   );
 
-  static const TextStyle meta = TextStyle(
-    fontSize: 12,
-    color: AppColors.textSecondary,
+  static const TextStyle chatMessageOther = TextStyle(
+    fontSize: 14,
+    color: AppColors.textPrimary,
   );
 
-  // ====== ERROR / STATUS ======
-  static const TextStyle error = TextStyle(
+  static const TextStyle chatUsername = TextStyle(
     fontSize: 13,
-    color: AppColors.error,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
   );
 
-  static const TextStyle success = TextStyle(
-    fontSize: 13,
-    color: AppColors.success,
-    fontWeight: FontWeight.w500,
-  );
-
-  // ====== PROFILE ======
-  static const TextStyle profileName = TextStyle(
-    fontSize: 18,
+  // ================= PROFILE =================
+  static const TextStyle profileUsername = TextStyle(
+    fontSize: 16,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle profileBio = TextStyle(
-    fontSize: 13,
-    height: 1.4,
+    fontSize: 14,
+    color: AppColors.textPrimary,
+    height: 1.3,
+  );
+
+  static const TextStyle profileStatNumber = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
   );
 
-  // ====== TAB LABEL ======
-  static const TextStyle tabLabel = TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
+  static const TextStyle profileStatLabel = TextStyle(
+    fontSize: 12,
     color: AppColors.textSecondary,
+  );
+
+  // ================= VERIFIED =================
+  static const TextStyle verifiedLabel = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.verified,
   );
 }
