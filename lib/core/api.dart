@@ -1,58 +1,81 @@
+// lib/core/api.dart
+
 class Api {
-   static const baseUrl = 'https://YOUR_SERVER_URL';
-   static const chatEndpoint = '$baseUrl/chats';
-   static const String notificationsEndpoint = '$baseUrl/notifications';
-   static const String postsEndpoint = '$baseUrl/posts';
-   static const String storiesEndpoint = '$baseUrl/stories';
+  /// ===============================
+  /// BASE CONFIG
+  /// ===============================
 
-  static const searchUsersEndpoint = '$baseUrl/search/users';
-  static const searchPostsEndpoint = '$baseUrl/search/posts';
+  // TODO: ҳангоми deployment иваз мешавад
+  static const String baseUrl = 'https://api.raonson.com';
 
-  // already existing:
-  static const postsEndpoint = '$baseUrl/posts';
-  static const searchUsersEndpoint = '$baseUrl/search/users';
-  static const searchPostsEndpoint = '$baseUrl/search/posts';
-  static const followEndpoint = '$baseUrl/follow';
-  static const unfollowEndpoint = '$baseUrl/unfollow';
-  static const profileEndpoint = '$baseUrl/profile';
-  // ===== BASE =====
-  static const String baseUrl = 'https://raonson-me.onrender.com';
+  /// ===============================
+  /// AUTH
+  /// ===============================
 
-  // ===== AUTH =====
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/register';
+  static const String logout = '$baseUrl/auth/logout';
   static const String refreshToken = '$baseUrl/auth/refresh';
 
-  // ===== POSTS =====
-  static const String posts = '$baseUrl/posts';
-  static String postById(int id) => '$baseUrl/posts/$id';
-  static String likePost(int id) => '$baseUrl/posts/$id/like';
-  static String unlikePost(int id) => '$baseUrl/posts/$id/unlike';
-  static String comments(int id) => '$baseUrl/posts/$id/comments';
+  /// ===============================
+  /// USER / PROFILE
+  /// ===============================
 
-  // ===== STORIES =====
+  static const String me = '$baseUrl/users/me';
+  static String userById(int userId) => '$baseUrl/users/$userId';
+
+  static String followUser(int userId) => '$baseUrl/users/$userId/follow';
+  static String unfollowUser(int userId) => '$baseUrl/users/$userId/unfollow';
+
+  static String followers(int userId) => '$baseUrl/users/$userId/followers';
+  static String following(int userId) => '$baseUrl/users/$userId/following';
+
+  /// ===============================
+  /// POSTS (FEED)
+  /// ===============================
+
+  static const String feed = '$baseUrl/posts/feed';
+  static const String createPost = '$baseUrl/posts';
+
+  static String postById(int postId) => '$baseUrl/posts/$postId';
+  static String deletePost(int postId) => '$baseUrl/posts/$postId';
+
+  static String likePost(int postId) => '$baseUrl/posts/$postId/like';
+  static String unlikePost(int postId) => '$baseUrl/posts/$postId/unlike';
+
+  static String postComments(int postId) =>
+      '$baseUrl/posts/$postId/comments';
+
+  /// ===============================
+  /// STORIES
+  /// ===============================
+
   static const String stories = '$baseUrl/stories';
-  static String viewStory(int id) => '$baseUrl/stories/$id/view';
+  static String markStoryViewed(int storyId) =>
+      '$baseUrl/stories/$storyId/view';
 
-  // ===== REELS =====
+  /// ===============================
+  /// REELS
+  /// ===============================
+
   static const String reels = '$baseUrl/reels';
-  static const String reelsEndpoint = '$baseUrl/reels';
+  static String reelById(int reelId) => '$baseUrl/reels/$reelId';
 
-  // ===== FOLLOW =====
-  static String followUser(String username) =>
-      '$baseUrl/users/$username/follow';
-  static String unfollowUser(String username) =>
-      '$baseUrl/users/$username/unfollow';
-  static String followers(String username) =>
-      '$baseUrl/users/$username/followers';
-  static String following(String username) =>
-      '$baseUrl/users/$username/following';
+  static String likeReel(int reelId) => '$baseUrl/reels/$reelId/like';
+  static String unlikeReel(int reelId) => '$baseUrl/reels/$reelId/unlike';
 
-  // ===== PROFILE =====
-  static String profile(String username) =>
-      '$baseUrl/users/$username';
+  /// ===============================
+  /// SEARCH
+  /// ===============================
 
-  // ===== CHAT =====
+  static String search(String query) =>
+      '$baseUrl/search?q=$query';
+
+  /// ===============================
+  /// CHAT
+  /// ===============================
+
   static const String chats = '$baseUrl/chats';
-  static String messages(int chatId) => '$baseUrl/chats/$chatId/messages';
+  static String messages(int chatId) =>
+      '$baseUrl/chats/$chatId/messages';
 }
