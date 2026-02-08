@@ -5,21 +5,19 @@ import '../models/story.dart';
 import '../models/reel.dart';
 
 class PostService {
-  // ================= FEED POSTS =================
-  static Future<List<PostModel>> getFeedPosts() async {
-    final response = await HttpService.get(Api.postsEndpoint);
-
-    return (response as List)
-        .map((json) => PostModel.fromJson(json))
-        .toList();
+  // ================= FEED =================
+  static Future<List<Post>> getFeedPosts() async {
+    final res = await HttpService.get(Api.postsEndpoint);
+    if (res == null || res is! List) return [];
+    return res.map<Post>((e) => Post.fromJson(e)).toList();
   }
 
   // ================= CREATE POST =================
-  static Future<PostModel> createPost({
+  static Future<Post> createPost({
     required String mediaUrl,
     required String caption,
   }) async {
-    final response = await HttpService.post(
+    final res = await HttpService.post(
       Api.postsEndpoint,
       {
         'media_url': mediaUrl,
@@ -27,7 +25,10 @@ class PostService {
       },
     );
 
-    return PostModel.fromJson(response);
+    if (res == null) {
+      throw Exception('Create post failed');
+    }
+    return Post.fromJson(res);
   }
 
   // ================= DELETE POST =================
@@ -35,7 +36,7 @@ class PostService {
     await HttpService.delete('${Api.postsEndpoint}/$postId');
   }
 
-  // ================= LIKE / UNLIKE =================
+  // ================= LIKE =================
   static Future<void> likePost(int postId) async {
     await HttpService.post(
       '${Api.postsEndpoint}/$postId/like',
@@ -43,6 +44,7 @@ class PostService {
     );
   }
 
+  // ================= UNLIKE =================
   static Future<void> unlikePost(int postId) async {
     await HttpService.post(
       '${Api.postsEndpoint}/$postId/unlike',
@@ -52,10 +54,10 @@ class PostService {
 
   // ================= COMMENTS =================
   static Future<List<Map<String, dynamic>>> getComments(int postId) async {
-    final response =
+    final res =
         await HttpService.get('${Api.postsEndpoint}/$postId/comments');
-
-    return List<Map<String, dynamic>>.from(response);
+    if (res == null || res is! List) return [];
+    return List<Map<String, dynamic>>.from(res);
   }
 
   static Future<void> addComment({
@@ -64,48 +66,43 @@ class PostService {
   }) async {
     await HttpService.post(
       '${Api.postsEndpoint}/$postId/comments',
-      {
-        'text': text,
-      },
+      {'text': text},
     );
   }
 
   // ================= STORIES =================
-  static Future<List<StoryModel>> getStories() async {
-    final response = await HttpService.get(Api.storiesEndpoint);
-
-    return (response as List)
-        .map((json) => StoryModel.fromJson(json))
-        .toList();
+  static Future<List<Story>> getStories() async {
+    final res = await HttpService.get(Api.storiesEndpoint);
+    if (res == null || res is! List) return [];
+    return res.map<Story>((e) => Story.fromJson(e)).toList();
   }
 
-  static Future<StoryModel> createStory({
+  static Future<Story> createStory({
     required String mediaUrl,
   }) async {
-    final response = await HttpService.post(
+    final res = await HttpService.post(
       Api.storiesEndpoint,
-      {
-        'media_url': mediaUrl,
-      },
+      {'media_url': mediaUrl},
     );
 
-    return StoryModel.fromJson(response);
+    if (res == null) {
+      throw Exception('Create story failed');
+    }
+    return Story.fromJson(res);
   }
 
   // ================= REELS =================
-  static Future<List<ReelModel>> getReels() async {
-    final response = await HttpService.get(Api.reelsEndpoint);
-
-    return (response as List)
-        .map((json) => ReelModel.fromJson(json))
-        .toList();
+  static Future<List<Reel>> getReels() async {
+    final res = await HttpService.get(Api.reelsEndpoint);
+    if (res == null || res is! List) return [];
+    return res.map<Reel>((e) => Reel.fromJson(e)).toList();
   }
 
-  static Future<ReelModel> createReel({
+  static Future<Reel> createReel({
     required String mediaUrl,
     required String caption,
   }) async {
-    final response = await HttpService.post(
+    final res = await HttpService.post(
       Api.reelsEndpoint,
       {
         'media_url': mediaUrl,
@@ -113,6 +110,9 @@ class PostService {
       },
     );
 
-    return ReelModel.fromJson(response);
+    if (res == null) {
+      throw Exception('Create reel failed');
+    }
+    return Reel.fromJson(res);
   }
 }
