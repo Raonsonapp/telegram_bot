@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import '../../services/post_service.dart';
+import '../../services/reel_service.dart';
 import '../comments/comments_screen.dart';
 
 class ReelsScreen extends StatefulWidget {
@@ -14,9 +14,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
   final PageController _page = PageController();
   List<dynamic> _reels = [];
   bool _loading = true;
-  int _index = 0;
-
-  VideoPlayerController? _player;
+  final Map<int, VideoPlayerController> _controllers = {};
 
   @override
   void initState() {
@@ -25,30 +23,31 @@ class _ReelsScreenState extends State<ReelsScreen> {
   }
 
   Future<void> _load() async {
-    final data = await PostService.getReels();
+    final data = await ReelService.getReels();
     setState(() {
       _reels = data;
       _loading = false;
     });
-    _play(0);
+    _initController(0);
   }
 
-  Future<void> _play(int i) async {
-    _player?.dispose();
+  void _initController(int index) {
+    if (_controllers.containsKey(index)) return;
 
-    final url = _reels[i]['video'];
-    _player = VideoPlayerController.networkUrl(Uri.parse(url));
-    await _player!.initialize();
-    _player!
-      ..setLooping(true)
-      ..play();
-
-    setState(() {});
+    final c = VideoPlayerController.network(_reels[index]['video']);
+    _controllers[index] = c;
+    c.initialize().then((_) {
+      c.setLooping(true);
+      c.play();
+      setState(() {});
+    });
   }
 
   @override
   void dispose() {
-    _player?.dispose();
+    for (var c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -63,82 +62,78 @@ class _ReelsScreenState extends State<ReelsScreen> {
       scrollDirection: Axis.vertical,
       itemCount: _reels.length,
       onPageChanged: (i) {
-        _index = i;
-        _play(i);
+        _controllers.forEach((k, v) => v.pause());
+        _initController(i);
+        _controllers[i]?.play();
       },
-      itemBuilder: (_, i) => _reel(_reels[i]),
+      itemBuilder: (_, i) => _item(_reels[i], i),
     );
   }
 
-  Widget _reel(dynamic r) {
-    final int id = r['id'];
-    final String user = r['username'];
-    final String caption = r['caption'] ?? '';
-    final int likes = r['likes'] ?? 0;
-    final bool liked = r['liked'] ?? false;
-    final bool saved = r['saved'] ?? false;
+  Widget _item(dynamic reel, int index) {
+    final c = _controllers[index];
 
     return Stack(
       children: [
-        // ===== VIDEO =====
-        Positioned.fill(
-          child: _player != null && _player!.value.isInitialized
-              ? FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _player!.value.size.width,
-                    height: _player!.value.size.height,
-                    child: VideoPlayer(_player!),
-                  ),
-                )
-              : const Center(child: CircularProgressIndicator()),
-        ),
+        if (c != null && c.value.isInitialized)
+          SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: c.value.size.width,
+                height: c.value.size.height,
+                child: VideoPlayer(c),
+              ),
+            ),
+          ),
 
-        // ===== RIGHT ACTIONS =====
+        // RIGHT ACTIONS
         Positioned(
           right: 12,
           bottom: 120,
           child: Column(
             children: [
               _icon(
-                icon: liked ? Icons.favorite : Icons.favorite_border,
-                label: '$likes',
-                onTap: () async {
-                  liked
-                      ? await PostService.unlike(id)
-                      : await PostService.like(id);
-                  _load();
+                Icons.favorite,
+                reel['liked'] ? Colors.red : Colors.white,
+                () async {
+                  reel['liked']
+                      ? await ReelService.unlike(reel['id'])
+                      : await ReelService.like(reel['id']);
+                  setState(() => reel['liked'] = !reel['liked']);
                 },
+                label: reel['likes'].toString(),
               ),
-              const SizedBox(height: 18),
               _icon(
-                icon: Icons.mode_comment_outlined,
-                label: 'Comment',
-                onTap: () {
+                Icons.mode_comment,
+                Colors.white,
+                () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => CommentsScreen(postId: id),
+                      builder: (_) => CommentsScreen(postId: reel['id']),
                     ),
                   );
                 },
+                label: reel['comments'].toString(),
               ),
-              const SizedBox(height: 18),
               _icon(
-                icon: saved ? Icons.bookmark : Icons.bookmark_border,
-                label: 'Save',
-                onTap: () async {
-                  saved
-                      ? await PostService.unsave(id)
-                      : await PostService.save(id);
-                  _load();
+                Icons.send,
+                Colors.white,
+                () {},
+              ),
+              _icon(
+                Icons.bookmark,
+                Colors.white,
+                () async {
+                  await ReelService.save(reel['id']);
                 },
               ),
             ],
           ),
         ),
 
-        // ===== BOTTOM INFO =====
+        // BOTTOM USER
         Positioned(
           left: 12,
           bottom: 40,
@@ -147,16 +142,15 @@ class _ReelsScreenState extends State<ReelsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '@$user',
+                '@${reel['username']}',
                 style: const TextStyle(
-                  color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                caption,
-                style: const TextStyle(color: Colors.white),
+                reel['caption'] ?? '',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -167,22 +161,24 @@ class _ReelsScreenState extends State<ReelsScreen> {
     );
   }
 
-  Widget _icon({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
+  Widget _icon(
+    IconData icon,
+    Color color,
+    VoidCallback onTap, {
+    String? label,
   }) {
-    return Column(
-      children: [
-        IconButton(
-          icon: Icon(icon, color: Colors.white, size: 30),
-          onPressed: onTap,
-        ),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        children: [
+          IconButton(
+            icon: Icon(icon, color: color, size: 30),
+            onPressed: onTap,
+          ),
+          if (label != null)
+            Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
     );
   }
 }
