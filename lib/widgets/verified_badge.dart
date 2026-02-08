@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 
 class VerifiedBadge extends StatelessWidget {
   final double size;
+  final Color backgroundColor;
+  final Color iconColor;
 
   const VerifiedBadge({
     super.key,
-    this.size = 14,
+    this.size = 16,
+    this.backgroundColor = const Color(0xFF1ED760), // сабзи равшан
+    this.iconColor = Colors.white,
   });
 
   @override
@@ -14,14 +17,27 @@ class VerifiedBadge extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
+        color: backgroundColor,
         shape: BoxShape.circle,
-        color: AppColors.verifiedGreen,
+        border: Border.all(
+          color: Colors.black,
+          width: size * 0.08,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: size * 0.25,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
-      child: Icon(
-        Icons.check,
-        size: size * 0.7,
-        color: Colors.white,
+      child: Center(
+        child: Icon(
+          Icons.check,
+          size: size * 0.65,
+          color: iconColor,
+        ),
       ),
     );
   }
