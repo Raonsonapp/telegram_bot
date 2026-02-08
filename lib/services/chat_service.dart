@@ -1,11 +1,19 @@
 import '../core/api.dart';
 import '../core/http_service.dart';
-import '../models/message.dart';
-import '../models/user.dart';
 
 class ChatService {
-  // ================= CREATE OR GET CHAT =================
-  static Future<int?> createChat(int userId) async {
+  // ================= GET CHATS =================
+  // Рӯйхати чатҳо (dialogs)
+  static Future<List<dynamic>> getChats() async {
+    final res = await HttpService.get(
+      Api.chatEndpoint,
+    );
+    return res is List ? res : [];
+  }
+
+  // ================= CREATE CHAT =================
+  // Эҷоди чат бо корбари дигар
+  static Future<int?> createChat(String userId) async {
     final res = await HttpService.post(
       '${Api.chatEndpoint}/create',
       {
@@ -13,54 +21,49 @@ class ChatService {
       },
     );
 
-    if (res == null || res is! Map) return null;
-    return res['chat_id'];
-  }
-
-  // ================= GET ALL CHATS =================
-  static Future<List<User>> getChats() async {
-    final res = await HttpService.get(
-      '${Api.chatEndpoint}/list',
-    );
-
-    if (res == null || res is! List) return [];
-
-    return res.map<User>((e) => User.fromJson(e)).toList();
+    if (res is Map && res['chat_id'] != null) {
+      return res['chat_id'];
+    }
+    return null;
   }
 
   // ================= GET MESSAGES =================
-  static Future<List<Message>> getMessages(int chatId) async {
+  // Паёмҳои як чат
+  static Future<List<dynamic>> getMessages(int chatId) async {
     final res = await HttpService.get(
       '${Api.chatEndpoint}/$chatId/messages',
     );
-
-    if (res == null || res is! List) return [];
-
-    return res.map<Message>((e) => Message.fromJson(e)).toList();
+    return res is List ? res : [];
   }
 
   // ================= SEND MESSAGE =================
-  static Future<Message?> sendMessage({
+  // Ирсоли паём
+  static Future<void> sendMessage({
     required int chatId,
     required String text,
   }) async {
-    final res = await HttpService.post(
+    await HttpService.post(
       '${Api.chatEndpoint}/$chatId/send',
       {
         'text': text,
       },
     );
-
-    if (res == null || res is! Map) return null;
-
-    return Message.fromJson(res);
   }
 
   // ================= MARK AS READ =================
+  // Қайд кардан ҳамчун хондашуда
   static Future<void> markAsRead(int chatId) async {
     await HttpService.post(
       '${Api.chatEndpoint}/$chatId/read',
       {},
+    );
+  }
+
+  // ================= DELETE CHAT =================
+  // Нест кардани чат (ихтиёрӣ)
+  static Future<void> deleteChat(int chatId) async {
+    await HttpService.delete(
+      '${Api.chatEndpoint}/$chatId',
     );
   }
 }
