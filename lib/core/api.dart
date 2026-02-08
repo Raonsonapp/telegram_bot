@@ -3,6 +3,7 @@ class Api {
    static const chatEndpoint = '$baseUrl/chats';
    static const String notificationsEndpoint = '$baseUrl/notifications';
    static const String postsEndpoint = '$baseUrl/posts';
+   static const String storiesEndpoint = '$baseUrl/stories';
 
   static const searchUsersEndpoint = '$baseUrl/search/users';
   static const searchPostsEndpoint = '$baseUrl/search/posts';
