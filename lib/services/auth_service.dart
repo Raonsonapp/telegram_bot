@@ -1,29 +1,80 @@
+import '../core/api.dart';
+import '../core/http_service.dart';
 import '../core/session.dart';
+import '../models/user.dart';
 
 class AuthService {
-  static Future<void> login(String username, String password) async {
-    // Ҳоло mock (сервер дар қадами дигар)
-    await Future.delayed(const Duration(seconds: 1));
+  // ================= LOGIN =================
+  static Future<UserModel> login({
+    required String username,
+    required String password,
+  }) async {
+    final response = await HttpService.post(
+      Api.loginEndpoint,
+      {
+        'username': username,
+        'password': password,
+      },
+    );
 
-    if (username.isEmpty || password.isEmpty) {
-      throw Exception("Invalid credentials");
+    final token = response['token'];
+    final userJson = response['user'];
+
+    if (token == null || userJson == null) {
+      throw Exception('Invalid login response');
     }
 
-    await Session.save("fake_token_123", username);
+    await Session.saveToken(token);
+
+    return UserModel.fromJson(userJson);
   }
 
-  static Future<void> register(
-      String username, String password) async {
-    await Future.delayed(const Duration(seconds: 1));
+  // ================= REGISTER =================
+  static Future<UserModel> register({
+    required String username,
+    required String password,
+  }) async {
+    final response = await HttpService.post(
+      Api.registerEndpoint,
+      {
+        'username': username,
+        'password': password,
+      },
+    );
 
-    if (username.length < 3 || password.length < 4) {
-      throw Exception("Invalid data");
+    final token = response['token'];
+    final userJson = response['user'];
+
+    if (token == null || userJson == null) {
+      throw Exception('Invalid register response');
     }
 
-    await Session.save("fake_token_123", username);
+    await Session.saveToken(token);
+
+    return UserModel.fromJson(userJson);
   }
 
+  // ================= LOGOUT =================
   static Future<void> logout() async {
-    await Session.logout();
+    try {
+      await HttpService.post(Api.logoutEndpoint, {});
+    } catch (_) {
+      // ҳатто агар сервер ҷавоб надиҳад ҳам, сессия тоза мешавад
+    }
+
+    await Session.clearSession();
+  }
+
+  // ================= CURRENT USER =================
+  static Future<UserModel?> getCurrentUser() async {
+    final token = await Session.getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await HttpService.get(Api.meEndpoint);
+      return UserModel.fromJson(response);
+    } catch (_) {
+      return null;
+    }
   }
 }
