@@ -1,37 +1,27 @@
 import '../core/api.dart';
 import '../core/http_service.dart';
-import '../models/reel.dart';
 
 class ReelService {
   // ================= GET REELS FEED =================
-  static Future<List<Reel>> getReels() async {
-    final res = await HttpService.get(Api.reelsEndpoint);
-
-    if (res == null || res is! List) {
-      return [];
-    }
-
-    return res.map<Reel>((e) => Reel.fromJson(e)).toList();
+  static Future<List<dynamic>> getReels() async {
+    final res = await HttpService.get(
+      Api.reelsEndpoint,
+    );
+    return res is List ? res : [];
   }
 
   // ================= CREATE REEL =================
-  static Future<Reel> createReel({
+  static Future<void> createReel({
     required String mediaUrl,
-    String? caption,
+    String caption = '',
   }) async {
-    final res = await HttpService.post(
+    await HttpService.post(
       Api.reelsEndpoint,
       {
         'media_url': mediaUrl,
-        'caption': caption ?? '',
+        'caption': caption,
       },
     );
-
-    if (res == null) {
-      throw Exception('Create reel failed');
-    }
-
-    return Reel.fromJson(res);
   }
 
   // ================= LIKE REEL =================
@@ -67,18 +57,10 @@ class ReelService {
   }
 
   // ================= GET SAVED REELS =================
-  static Future<List<Reel>> getSavedReels() async {
-    final res = await HttpService.get('${Api.reelsEndpoint}/saved');
-
-    if (res == null || res is! List) {
-      return [];
-    }
-
-    return res.map<Reel>((e) => Reel.fromJson(e)).toList();
-  }
-
-  // ================= DELETE REEL =================
-  static Future<void> deleteReel(int reelId) async {
-    await HttpService.delete('${Api.reelsEndpoint}/$reelId');
+  static Future<List<dynamic>> getSavedReels() async {
+    final res = await HttpService.get(
+      '${Api.reelsEndpoint}/saved',
+    );
+    return res is List ? res : [];
   }
 }
