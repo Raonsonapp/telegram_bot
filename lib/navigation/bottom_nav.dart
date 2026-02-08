@@ -5,7 +5,6 @@ import '../screens/search/search_screen.dart';
 import '../screens/reels/reels_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
 import '../screens/profile/profile_screen.dart';
-import '../theme/colors.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -17,76 +16,75 @@ class BottomNav extends StatefulWidget {
 class _BottomNavState extends State<BottomNav> {
   int _currentIndex = 0;
 
-  late final List<Widget> _screens;
+  // ================= SCREENS =================
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    SearchScreen(),
+    ReelsScreen(),
+    ChatListScreen(),
+    ProfileScreen(),
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-
-    _screens = const [
-      HomeScreen(),
-      SearchScreen(),
-      ReelsScreen(),
-      ChatListScreen(),
-      ProfileScreen(),
-    ];
-  }
-
-  void _onTabTap(int index) {
+  // ================= CHANGE TAB =================
+  void _onTabChanged(int index) {
     if (index == _currentIndex) return;
-
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  BottomNavigationBarItem _item({
-    required IconData icon,
-    required IconData activeIcon,
-  }) {
-    return BottomNavigationBarItem(
-      icon: Icon(icon),
-      activeIcon: Icon(activeIcon),
-      label: '',
-    );
+    setState(() => _currentIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: _bottomBar(),
+    );
+  }
+
+  // ================= BOTTOM BAR =================
+  Widget _bottomBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Color(0xFF1E1E1E), width: 0.5),
+        ),
+      ),
+      child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _onTabTap,
+        onTap: _onTabChanged,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.background,
-        selectedItemColor: AppColors.textPrimary,
-        unselectedItemColor: AppColors.textSecondary,
+        backgroundColor: Colors.black,
         elevation: 0,
-        items: [
-          _item(
-            icon: Icons.home_outlined,
-            activeIcon: Icons.home,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
           ),
-          _item(
-            icon: Icons.search,
-            activeIcon: Icons.search,
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            activeIcon: Icon(Icons.search),
+            label: 'Search',
           ),
-          _item(
-            icon: Icons.movie_outlined,
-            activeIcon: Icons.movie,
+          BottomNavigationBarItem(
+            icon: Icon(Icons.play_circle_outline),
+            activeIcon: Icon(Icons.play_circle),
+            label: 'Reels',
           ),
-          _item(
-            icon: Icons.chat_bubble_outline,
-            activeIcon: Icons.chat_bubble,
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Chat',
           ),
-          _item(
-            icon: Icons.person_outline,
-            activeIcon: Icons.person,
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
