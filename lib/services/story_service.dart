@@ -4,26 +4,32 @@ import '../models/story.dart';
 
 class StoryService {
   // ================= GET ALL STORIES =================
-  static Future<List<StoryModel>> getStories() async {
-    final response = await HttpService.get(Api.storiesEndpoint);
+  static Future<List<Story>> getStories() async {
+    final res = await HttpService.get(Api.storiesEndpoint);
 
-    return (response as List)
-        .map((json) => StoryModel.fromJson(json))
-        .toList();
+    if (res == null || res is! List) {
+      return [];
+    }
+
+    return res.map<Story>((e) => Story.fromJson(e)).toList();
   }
 
   // ================= CREATE STORY =================
-  static Future<StoryModel> createStory({
+  static Future<Story> createStory({
     required String mediaUrl,
   }) async {
-    final response = await HttpService.post(
+    final res = await HttpService.post(
       Api.storiesEndpoint,
       {
         'media_url': mediaUrl,
       },
     );
 
-    return StoryModel.fromJson(response);
+    if (res == null) {
+      throw Exception('Create story failed');
+    }
+
+    return Story.fromJson(res);
   }
 
   // ================= MARK STORY AS VIEWED =================
@@ -34,10 +40,19 @@ class StoryService {
     );
   }
 
+  // ================= GET MY STORIES =================
+  static Future<List<Story>> getMyStories() async {
+    final res = await HttpService.get('${Api.storiesEndpoint}/me');
+
+    if (res == null || res is! List) {
+      return [];
+    }
+
+    return res.map<Story>((e) => Story.fromJson(e)).toList();
+  }
+
   // ================= DELETE STORY =================
   static Future<void> deleteStory(int storyId) async {
-    await HttpService.delete(
-      '${Api.storiesEndpoint}/$storyId',
-    );
+    await HttpService.delete('${Api.storiesEndpoint}/$storyId');
   }
 }
