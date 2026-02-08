@@ -1,81 +1,60 @@
-// lib/core/api.dart
+/// lib/core/api.dart
+/// Central API configuration for Raonson App
+/// Version: v5 (Full Social Network)
 
 class Api {
-  /// ===============================
-  /// BASE CONFIG
-  /// ===============================
+  // ================= BASE =================
+  /// Main backend URL
+  /// Example: https://raonson-me.onrender.com
+  static const String baseUrl = 'https://raonson-me.onrender.com';
 
-  // TODO: ҳангоми deployment иваз мешавад
-  static const String baseUrl = 'https://api.raonson.com';
-
-  /// ===============================
-  /// AUTH
-  /// ===============================
-
+  // ================= AUTH =================
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/register';
   static const String logout = '$baseUrl/auth/logout';
   static const String refreshToken = '$baseUrl/auth/refresh';
 
-  /// ===============================
-  /// USER / PROFILE
-  /// ===============================
-
+  // ================= USER =================
   static const String me = '$baseUrl/users/me';
-  static String userById(int userId) => '$baseUrl/users/$userId';
+  static const String userProfile = '$baseUrl/users'; // /{username}
+  static const String editProfile = '$baseUrl/users/edit';
 
-  static String followUser(int userId) => '$baseUrl/users/$userId/follow';
-  static String unfollowUser(int userId) => '$baseUrl/users/$userId/unfollow';
+  // ================= FOLLOW =================
+  static const String follow = '$baseUrl/follow';
+  static const String unfollow = '$baseUrl/unfollow';
+  static const String followers = '$baseUrl/followers'; // /{username}
+  static const String following = '$baseUrl/following'; // /{username}
 
-  static String followers(int userId) => '$baseUrl/users/$userId/followers';
-  static String following(int userId) => '$baseUrl/users/$userId/following';
+  // ================= POSTS =================
+  static const String createPost = '$baseUrl/posts/create';
+  static const String feedPosts = '$baseUrl/posts/feed';
+  static const String userPosts = '$baseUrl/posts/user'; // /{username}
+  static const String deletePost = '$baseUrl/posts/delete'; // /{postId}
 
-  /// ===============================
-  /// POSTS (FEED)
-  /// ===============================
+  // ================= POST ACTIONS =================
+  static const String likePost = '$baseUrl/posts/like';     // /{postId}
+  static const String unlikePost = '$baseUrl/posts/unlike'; // /{postId}
+  static const String savePost = '$baseUrl/posts/save';     // /{postId}
+  static const String unsavePost = '$baseUrl/posts/unsave'; // /{postId}
 
-  static const String feed = '$baseUrl/posts/feed';
-  static const String createPost = '$baseUrl/posts';
+  // ================= COMMENTS =================
+  static const String comments = '$baseUrl/comments';        // /{postId}
+  static const String addComment = '$baseUrl/comments/add';  // /{postId}
 
-  static String postById(int postId) => '$baseUrl/posts/$postId';
-  static String deletePost(int postId) => '$baseUrl/posts/$postId';
+  // ================= STORIES =================
+  static const String createStory = '$baseUrl/stories/create';
+  static const String getStories = '$baseUrl/stories/feed';
+  static const String viewStory = '$baseUrl/stories/view'; // /{storyId}
 
-  static String likePost(int postId) => '$baseUrl/posts/$postId/like';
-  static String unlikePost(int postId) => '$baseUrl/posts/$postId/unlike';
+  // ================= REELS =================
+  static const String createReel = '$baseUrl/reels/create';
+  static const String getReels = '$baseUrl/reels/feed';
 
-  static String postComments(int postId) =>
-      '$baseUrl/posts/$postId/comments';
-
-  /// ===============================
-  /// STORIES
-  /// ===============================
-
-  static const String stories = '$baseUrl/stories';
-  static String markStoryViewed(int storyId) =>
-      '$baseUrl/stories/$storyId/view';
-
-  /// ===============================
-  /// REELS
-  /// ===============================
-
-  static const String reels = '$baseUrl/reels';
-  static String reelById(int reelId) => '$baseUrl/reels/$reelId';
-
-  static String likeReel(int reelId) => '$baseUrl/reels/$reelId/like';
-  static String unlikeReel(int reelId) => '$baseUrl/reels/$reelId/unlike';
-
-  /// ===============================
-  /// SEARCH
-  /// ===============================
-
-  static String search(String query) =>
-      '$baseUrl/search?q=$query';
-
-  /// ===============================
-  /// CHAT
-  /// ===============================
-
+  // ================= CHAT =================
   static const String chats = '$baseUrl/chats';
-  static String messages(int chatId) =>
-      '$baseUrl/chats/$chatId/messages';
+  static const String messages = '$baseUrl/messages'; // /{chatId}
+  static const String sendMessage = '$baseUrl/messages/send';
+
+  // ================= SEARCH =================
+  static const String search = '$baseUrl/search'; // ?q=keyword
 }
