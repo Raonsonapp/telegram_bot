@@ -2,124 +2,167 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-
-import 'api.dart';
-import 'session.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HttpService {
-  // ===== HEADERS =====
-  static Future<Map<String, String>> _headers() async {
-    final token = await Session.getToken();
-    return {
-      HttpHeaders.contentTypeHeader: 'application/json',
-      if (token != null) HttpHeaders.authorizationHeader: 'Bearer $token',
+  static const Duration _timeout = Duration(seconds: 20);
+
+  // ================= HEADERS =================
+  static Future<Map<String, String>> _headers({bool auth = true}) async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
+
+    if (auth) {
+      final token = await _getToken();
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+    }
+
+    return headers;
   }
 
-  // ===== GET =====
-  static Future<dynamic> get(String url) async {
-    try {
-      final res = await http
-          .get(Uri.parse(url), headers: await _headers())
-          .timeout(const Duration(seconds: 15));
+  // ================= TOKEN =================
+  static Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
 
-      return _handleResponse(res);
+  static Future<void> saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', token);
+  }
+
+  static Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+  }
+
+  // ================= GET =================
+  static Future<dynamic> get(
+    String url, {
+    bool auth = true,
+  }) async {
+    try {
+      final response = await http
+          .get(Uri.parse(url), headers: await _headers(auth: auth))
+          .timeout(_timeout);
+
+      return _handleResponse(response);
+    } on SocketException {
+      throw 'No internet connection';
+    } on HttpException {
+      throw 'Server error';
+    } on FormatException {
+      throw 'Bad response format';
     } catch (e) {
-      _handleError(e);
+      throw e.toString();
     }
   }
 
-  // ===== POST =====
+  // ================= POST =================
   static Future<dynamic> post(
     String url,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    bool auth = true,
+  }) async {
     try {
-      final res = await http
+      final response = await http
           .post(
             Uri.parse(url),
-            headers: await _headers(),
+            headers: await _headers(auth: auth),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(_timeout);
 
-      return _handleResponse(res);
+      return _handleResponse(response);
+    } on SocketException {
+      throw 'No internet connection';
+    } on HttpException {
+      throw 'Server error';
+    } on FormatException {
+      throw 'Bad response format';
     } catch (e) {
-      _handleError(e);
+      throw e.toString();
     }
   }
 
-  // ===== PUT =====
+  // ================= PUT =================
   static Future<dynamic> put(
     String url,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    bool auth = true,
+  }) async {
     try {
-      final res = await http
+      final response = await http
           .put(
             Uri.parse(url),
-            headers: await _headers(),
+            headers: await _headers(auth: auth),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(_timeout);
 
-      return _handleResponse(res);
+      return _handleResponse(response);
+    } on SocketException {
+      throw 'No internet connection';
     } catch (e) {
-      _handleError(e);
+      throw e.toString();
     }
   }
 
-  // ===== DELETE =====
-  static Future<dynamic> delete(String url) async {
+  // ================= DELETE =================
+  static Future<dynamic> delete(
+    String url, {
+    bool auth = true,
+  }) async {
     try {
-      final res = await http
-          .delete(Uri.parse(url), headers: await _headers())
-          .timeout(const Duration(seconds: 15));
+      final response = await http
+          .delete(
+            Uri.parse(url),
+            headers: await _headers(auth: auth),
+          )
+          .timeout(_timeout);
 
-      return _handleResponse(res);
+      return _handleResponse(response);
+    } on SocketException {
+      throw 'No internet connection';
     } catch (e) {
-      _handleError(e);
+      throw e.toString();
     }
   }
 
-  // ===== RESPONSE =====
-  static dynamic _handleResponse(http.Response res) {
-    final status = res.statusCode;
-    final body = res.body.isNotEmpty ? jsonDecode(res.body) : null;
+  // ================= RESPONSE HANDLER =================
+  static dynamic _handleResponse(http.Response response) {
+    final statusCode = response.statusCode;
 
-    if (status >= 200 && status < 300) {
-      return body;
+    if (response.body.isEmpty) {
+      return null;
     }
 
-    if (status == 401) {
-      throw Exception('Unauthorized');
+    final data = jsonDecode(response.body);
+
+    if (statusCode >= 200 && statusCode < 300) {
+      return data;
     }
 
-    if (status == 403) {
-      throw Exception('Forbidden');
+    if (statusCode == 401) {
+      throw 'Unauthorized. Please login again.';
     }
 
-    if (status == 404) {
-      throw Exception('Not found');
+    if (statusCode == 403) {
+      throw 'Access denied';
     }
 
-    throw Exception(body?['detail'] ?? 'Server error');
-  }
-
-  // ===== ERROR =====
-  static Never _handleError(dynamic e) {
-    if (e is SocketException) {
-      throw Exception('No internet connection');
+    if (statusCode == 404) {
+      throw 'Resource not found';
     }
 
-    if (e is HttpException) {
-      throw Exception('HTTP error');
+    if (statusCode >= 500) {
+      throw 'Server error. Try again later.';
     }
 
-    if (e.toString().contains('Timeout')) {
-      throw Exception('Request timeout');
-    }
-
-    throw Exception(e.toString());
+    throw data['message'] ?? 'Unknown error';
   }
 }
