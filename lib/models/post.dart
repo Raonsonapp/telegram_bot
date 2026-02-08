@@ -1,8 +1,8 @@
-class Post {
+import 'user.dart';
+
+class PostModel {
   final int id;
-  final int userId;
-  final String username;
-  final String? userAvatar;
+  final UserModel user;
   final String mediaUrl;
   final String? caption;
   final int likesCount;
@@ -11,11 +11,9 @@ class Post {
   final bool isSaved;
   final DateTime createdAt;
 
-  Post({
+  PostModel({
     required this.id,
-    required this.userId,
-    required this.username,
-    this.userAvatar,
+    required this.user,
     required this.mediaUrl,
     this.caption,
     required this.likesCount,
@@ -25,14 +23,12 @@ class Post {
     required this.createdAt,
   });
 
-  // ===== FROM JSON =====
-  factory Post.fromJson(Map<String, dynamic> json) {
-    return Post(
+  // ================= FROM JSON =================
+  factory PostModel.fromJson(Map<String, dynamic> json) {
+    return PostModel(
       id: json['id'],
-      userId: json['user_id'],
-      username: json['username'],
-      userAvatar: json['user_avatar'],
-      mediaUrl: json['media_url'],
+      user: UserModel.fromJson(json['user']),
+      mediaUrl: json['media_url'] ?? '',
       caption: json['caption'],
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
@@ -42,13 +38,11 @@ class Post {
     );
   }
 
-  // ===== TO JSON =====
+  // ================= TO JSON =================
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'user_id': userId,
-      'username': username,
-      'user_avatar': userAvatar,
+      'user': user.toJson(),
       'media_url': mediaUrl,
       'caption': caption,
       'likes_count': likesCount,
@@ -57,5 +51,30 @@ class Post {
       'is_saved': isSaved,
       'created_at': createdAt.toIso8601String(),
     };
+  }
+
+  // ================= COPY WITH =================
+  PostModel copyWith({
+    int? id,
+    UserModel? user,
+    String? mediaUrl,
+    String? caption,
+    int? likesCount,
+    int? commentsCount,
+    bool? isLiked,
+    bool? isSaved,
+    DateTime? createdAt,
+  }) {
+    return PostModel(
+      id: id ?? this.id,
+      user: user ?? this.user,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      caption: caption ?? this.caption,
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      isLiked: isLiked ?? this.isLiked,
+      isSaved: isSaved ?? this.isSaved,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }
