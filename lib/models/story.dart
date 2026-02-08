@@ -1,28 +1,40 @@
 import 'user.dart';
 
-class StoryModel {
+class Story {
   final int id;
-  final UserModel user;
-  final String mediaUrl;
-  final DateTime expiresAt;
-  final bool isViewed;
+  final User user;
 
-  StoryModel({
+  final String mediaUrl; // image / video
+  final String mediaType; // image | video
+
+  final bool isViewed;
+  final DateTime createdAt;
+  final DateTime expiresAt;
+
+  const Story({
     required this.id,
     required this.user,
     required this.mediaUrl,
-    required this.expiresAt,
+    required this.mediaType,
     required this.isViewed,
+    required this.createdAt,
+    required this.expiresAt,
   });
 
   // ================= FROM JSON =================
-  factory StoryModel.fromJson(Map<String, dynamic> json) {
-    return StoryModel(
-      id: json['id'],
-      user: UserModel.fromJson(json['user']),
+  factory Story.fromJson(Map<String, dynamic> json) {
+    return Story(
+      id: json['id'] is String
+          ? int.parse(json['id'])
+          : json['id'] ?? 0,
+      user: User.fromJson(json['user'] ?? {}),
       mediaUrl: json['media_url'] ?? '',
-      expiresAt: DateTime.parse(json['expires_at']),
-      isViewed: json['is_viewed'] ?? false,
+      mediaType: json['media_type'] ?? 'image',
+      isViewed: json['is_viewed'] == true || json['is_viewed'] == 1,
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ??
+          DateTime.now(),
+      expiresAt: DateTime.tryParse(json['expires_at'] ?? '') ??
+          DateTime.now().add(const Duration(hours: 24)),
     );
   }
 
@@ -32,29 +44,43 @@ class StoryModel {
       'id': id,
       'user': user.toJson(),
       'media_url': mediaUrl,
-      'expires_at': expiresAt.toIso8601String(),
+      'media_type': mediaType,
       'is_viewed': isViewed,
+      'created_at': createdAt.toIso8601String(),
+      'expires_at': expiresAt.toIso8601String(),
     };
   }
 
-  // ================= HELPERS =================
-  bool get isExpired {
-    return DateTime.now().isAfter(expiresAt);
-  }
-
-  StoryModel copyWith({
+  // ================= COPY WITH =================
+  Story copyWith({
     int? id,
-    UserModel? user,
+    User? user,
     String? mediaUrl,
-    DateTime? expiresAt,
+    String? mediaType,
     bool? isViewed,
+    DateTime? createdAt,
+    DateTime? expiresAt,
   }) {
-    return StoryModel(
+    return Story(
       id: id ?? this.id,
       user: user ?? this.user,
       mediaUrl: mediaUrl ?? this.mediaUrl,
-      expiresAt: expiresAt ?? this.expiresAt,
+      mediaType: mediaType ?? this.mediaType,
       isViewed: isViewed ?? this.isViewed,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
     );
+  }
+
+  // ================= HELPERS =================
+  bool get isVideo => mediaType == 'video';
+
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+
+  Duration get timeLeft => expiresAt.difference(DateTime.now());
+
+  @override
+  String toString() {
+    return 'Story(id: $id, user: ${user.username}, viewed: $isViewed)';
   }
 }
