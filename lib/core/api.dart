@@ -1,6 +1,7 @@
 class Api {
    static const baseUrl = 'https://YOUR_SERVER_URL';
    static const chatEndpoint = '$baseUrl/chats';
+   static const String notificationsEndpoint = '$baseUrl/notifications';
 
   static const searchUsersEndpoint = '$baseUrl/search/users';
   static const searchPostsEndpoint = '$baseUrl/search/posts';
