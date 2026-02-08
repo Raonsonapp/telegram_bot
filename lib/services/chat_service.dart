@@ -2,20 +2,14 @@ import '../core/api.dart';
 import '../core/http_service.dart';
 
 class ChatService {
-  // list of chats
   static Future<List<dynamic>> getChats() async {
-    final res = await HttpService.get(Api.chatEndpoint);
-    return List<dynamic>.from(res);
+    return await HttpService.get(Api.chatEndpoint);
   }
 
-  // messages in chat
   static Future<List<dynamic>> getMessages(int chatId) async {
-    final res =
-        await HttpService.get('${Api.chatEndpoint}/$chatId/messages');
-    return List<dynamic>.from(res);
+    return await HttpService.get('${Api.chatEndpoint}/$chatId/messages');
   }
 
-  // send message
   static Future<void> sendMessage(int chatId, String text) async {
     await HttpService.post(
       '${Api.chatEndpoint}/$chatId/send',
@@ -23,7 +17,13 @@ class ChatService {
     );
   }
 
-  // mark as read
+  static Future<void> createChat(int userId) async {
+    await HttpService.post(
+      '${Api.chatEndpoint}/create',
+      {'user_id': userId},
+    );
+  }
+
   static Future<void> markAsRead(int chatId) async {
     await HttpService.post(
       '${Api.chatEndpoint}/$chatId/read',
