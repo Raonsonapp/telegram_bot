@@ -131,4 +131,10 @@ class PostService {
       {},
     );
   }
+  // илова ба файл
+static Future<List<dynamic>> getByUser(String username) async {
+  final res =
+      await HttpService.get('${Api.postsEndpoint}/user/$username');
+  return List<dynamic>.from(res);
+}
 }
