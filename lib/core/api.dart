@@ -36,6 +36,7 @@ class Api {
 
   // ===== REELS =====
   static const String reels = '$baseUrl/reels';
+  static const String reelsEndpoint = '$baseUrl/reels';
 
   // ===== FOLLOW =====
   static String followUser(String username) =>
