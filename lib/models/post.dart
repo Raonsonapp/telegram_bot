@@ -1,21 +1,28 @@
 import 'user.dart';
 
-class PostModel {
+class Post {
   final int id;
-  final UserModel user;
-  final String mediaUrl;
-  final String? caption;
+  final User user;
+
+  final String mediaUrl; // image / video
+  final String mediaType; // image | video | reel
+
+  final String caption;
+
   final int likesCount;
   final int commentsCount;
+
   final bool isLiked;
   final bool isSaved;
+
   final DateTime createdAt;
 
-  PostModel({
+  const Post({
     required this.id,
     required this.user,
     required this.mediaUrl,
-    this.caption,
+    required this.mediaType,
+    required this.caption,
     required this.likesCount,
     required this.commentsCount,
     required this.isLiked,
@@ -24,17 +31,21 @@ class PostModel {
   });
 
   // ================= FROM JSON =================
-  factory PostModel.fromJson(Map<String, dynamic> json) {
-    return PostModel(
-      id: json['id'],
-      user: UserModel.fromJson(json['user']),
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'] is String
+          ? int.parse(json['id'])
+          : json['id'] ?? 0,
+      user: User.fromJson(json['user'] ?? {}),
       mediaUrl: json['media_url'] ?? '',
-      caption: json['caption'],
+      mediaType: json['media_type'] ?? 'image',
+      caption: json['caption'] ?? '',
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
-      isLiked: json['is_liked'] ?? false,
-      isSaved: json['is_saved'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      isLiked: json['is_liked'] == true || json['is_liked'] == 1,
+      isSaved: json['is_saved'] == true || json['is_saved'] == 1,
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -44,6 +55,7 @@ class PostModel {
       'id': id,
       'user': user.toJson(),
       'media_url': mediaUrl,
+      'media_type': mediaType,
       'caption': caption,
       'likes_count': likesCount,
       'comments_count': commentsCount,
@@ -54,10 +66,11 @@ class PostModel {
   }
 
   // ================= COPY WITH =================
-  PostModel copyWith({
+  Post copyWith({
     int? id,
-    UserModel? user,
+    User? user,
     String? mediaUrl,
+    String? mediaType,
     String? caption,
     int? likesCount,
     int? commentsCount,
@@ -65,10 +78,11 @@ class PostModel {
     bool? isSaved,
     DateTime? createdAt,
   }) {
-    return PostModel(
+    return Post(
       id: id ?? this.id,
       user: user ?? this.user,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      mediaType: mediaType ?? this.mediaType,
       caption: caption ?? this.caption,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,
@@ -76,5 +90,18 @@ class PostModel {
       isSaved: isSaved ?? this.isSaved,
       createdAt: createdAt ?? this.createdAt,
     );
+  }
+
+  // ================= HELPERS =================
+  bool get isVideo => mediaType == 'video' || mediaType == 'reel';
+
+  bool get hasCaption => caption.isNotEmpty;
+
+  String get shortCaption =>
+      caption.length > 120 ? '${caption.substring(0, 120)}...' : caption;
+
+  @override
+  String toString() {
+    return 'Post(id: $id, user: ${user.username})';
   }
 }
