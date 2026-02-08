@@ -1,5 +1,5 @@
 name: raonson
-description: "Raonson v5 Full Social Network"
+description: "Raonson full social network v5"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -11,14 +11,21 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # UI
+  # ===== UI =====
   cupertino_icons: ^1.0.6
 
-  # NETWORK
+  # ===== NETWORK =====
   http: ^1.2.1
 
-  # LOCAL STORAGE (SESSION / TOKEN)
+  # ===== LOCAL STORAGE (SESSION / TOKEN) =====
   shared_preferences: ^2.2.2
+
+  # ===== MEDIA =====
+  image_picker: ^1.0.7
+  video_player: ^2.8.6
+
+  # ===== UTILS =====
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
