@@ -1,45 +1,25 @@
 import '../core/api.dart';
 import '../core/http_service.dart';
-import '../models/user.dart';
 
 class FollowService {
-  // ===== FOLLOW =====
-  static Future<void> followUser(int userId) async {
+  static Future<void> follow(String username) async {
     await HttpService.post(
-      '${Api.baseUrl}/users/$userId/follow',
-      {},
+      Api.followEndpoint,
+      {'username': username},
     );
   }
 
-  // ===== UNFOLLOW =====
-  static Future<void> unfollowUser(int userId) async {
+  static Future<void> unfollow(String username) async {
     await HttpService.post(
-      '${Api.baseUrl}/users/$userId/unfollow',
-      {},
+      Api.unfollowEndpoint,
+      {'username': username},
     );
   }
 
-  // ===== GET FOLLOWERS =====
-  static Future<List<User>> getFollowers(int userId) async {
+  static Future<Map<String, dynamic>> getProfile(String username) async {
     final res = await HttpService.get(
-      '${Api.baseUrl}/users/$userId/followers',
+      '${Api.profileEndpoint}/$username',
     );
-
-    if (res == null) return [];
-    return List<User>.from(
-      res.map((e) => User.fromJson(e)),
-    );
-  }
-
-  // ===== GET FOLLOWING =====
-  static Future<List<User>> getFollowing(int userId) async {
-    final res = await HttpService.get(
-      '${Api.baseUrl}/users/$userId/following',
-    );
-
-    if (res == null) return [];
-    return List<User>.from(
-      res.map((e) => User.fromJson(e)),
-    );
+    return res;
   }
 }
