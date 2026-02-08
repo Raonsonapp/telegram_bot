@@ -1,17 +1,20 @@
 import 'user.dart';
 
-class ReelModel {
+class Reel {
   final int id;
-  final UserModel user;
+  final User user;
+
   final String videoUrl;
   final String caption;
+
   final int likesCount;
   final int commentsCount;
   final bool isLiked;
   final bool isSaved;
+
   final DateTime createdAt;
 
-  ReelModel({
+  const Reel({
     required this.id,
     required this.user,
     required this.videoUrl,
@@ -24,17 +27,20 @@ class ReelModel {
   });
 
   // ================= FROM JSON =================
-  factory ReelModel.fromJson(Map<String, dynamic> json) {
-    return ReelModel(
-      id: json['id'],
-      user: UserModel.fromJson(json['user']),
+  factory Reel.fromJson(Map<String, dynamic> json) {
+    return Reel(
+      id: json['id'] is String
+          ? int.parse(json['id'])
+          : json['id'] ?? 0,
+      user: User.fromJson(json['user'] ?? {}),
       videoUrl: json['video_url'] ?? '',
       caption: json['caption'] ?? '',
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
-      isLiked: json['is_liked'] ?? false,
-      isSaved: json['is_saved'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      isLiked: json['is_liked'] == true || json['is_liked'] == 1,
+      isSaved: json['is_saved'] == true || json['is_saved'] == 1,
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -54,9 +60,9 @@ class ReelModel {
   }
 
   // ================= COPY WITH =================
-  ReelModel copyWith({
+  Reel copyWith({
     int? id,
-    UserModel? user,
+    User? user,
     String? videoUrl,
     String? caption,
     int? likesCount,
@@ -65,7 +71,7 @@ class ReelModel {
     bool? isSaved,
     DateTime? createdAt,
   }) {
-    return ReelModel(
+    return Reel(
       id: id ?? this.id,
       user: user ?? this.user,
       videoUrl: videoUrl ?? this.videoUrl,
@@ -76,5 +82,22 @@ class ReelModel {
       isSaved: isSaved ?? this.isSaved,
       createdAt: createdAt ?? this.createdAt,
     );
+  }
+
+  // ================= HELPERS =================
+  Reel toggleLike() {
+    return copyWith(
+      isLiked: !isLiked,
+      likesCount: isLiked ? likesCount - 1 : likesCount + 1,
+    );
+  }
+
+  Reel toggleSave() {
+    return copyWith(isSaved: !isSaved);
+  }
+
+  @override
+  String toString() {
+    return 'Reel(id: $id, user: ${user.username}, likes: $likesCount)';
   }
 }
