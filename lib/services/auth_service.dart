@@ -1,57 +1,29 @@
-import '../core/api.dart';
-import '../core/http_service.dart';
 import '../core/session.dart';
 
 class AuthService {
-  // ===== LOGIN =====
-  static Future<bool> login({
-    required String identifier, // phone OR email OR username
-    required String password,
-  }) async {
-    final res = await HttpService.post(
-      Api.loginEndpoint,
-      {
-        'identifier': identifier,
-        'password': password,
-      },
-    );
+  static Future<void> login(String username, String password) async {
+    // Ҳоло mock (сервер дар қадами дигар)
+    await Future.delayed(const Duration(seconds: 1));
 
-    if (res != null && res['token'] != null) {
-      await Session.saveToken(res['token']);
-      return true;
+    if (username.isEmpty || password.isEmpty) {
+      throw Exception("Invalid credentials");
     }
-    return false;
+
+    await Session.save("fake_token_123", username);
   }
 
-  // ===== REGISTER =====
-  static Future<bool> register({
-    required String username,
-    required String phone,
-    required String password,
-  }) async {
-    final res = await HttpService.post(
-      Api.registerEndpoint,
-      {
-        'username': username,
-        'phone': phone,
-        'password': password,
-      },
-    );
+  static Future<void> register(
+      String username, String password) async {
+    await Future.delayed(const Duration(seconds: 1));
 
-    if (res != null && res['token'] != null) {
-      await Session.saveToken(res['token']);
-      return true;
+    if (username.length < 3 || password.length < 4) {
+      throw Exception("Invalid data");
     }
-    return false;
+
+    await Session.save("fake_token_123", username);
   }
 
-  // ===== LOGOUT =====
   static Future<void> logout() async {
-    await Session.clearSession();
-  }
-
-  // ===== CHECK AUTH =====
-  static Future<bool> isLoggedIn() async {
-    return await Session.isLoggedIn();
+    await Session.logout();
   }
 }
