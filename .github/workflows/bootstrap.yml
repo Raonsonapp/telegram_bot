@@ -1,4 +1,4 @@
-name: Bootstrap Flutter Project
+name: Bootstrap Flutter Project (ROOT)
 
 on:
   workflow_dispatch:
@@ -18,14 +18,18 @@ jobs:
         with:
           flutter-version: '3.22.3'
 
-      - name: Create Flutter project
+      - name: Clean repo root
         run: |
-          flutter create raonson
+          rm -rf android ios web linux macos windows pubspec.yaml pubspec.lock lib test
+
+      - name: Create Flutter project in ROOT
+        run: |
+          flutter create .
 
       - name: Commit Flutter structure (FORCE)
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add raonson
-          git commit -m "chore: bootstrap flutter project" || echo "Nothing to commit"
+          git add .
+          git commit -m "chore: bootstrap flutter project (root)" || echo "Nothing to commit"
           git push --force origin main
