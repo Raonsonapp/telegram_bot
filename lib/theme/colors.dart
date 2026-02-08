@@ -3,49 +3,48 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ====== BRAND ======
-  static const Color primary = Color(0xFF1ED760); // green verified / action
-  static const Color accent = Color(0xFFFFFFFF); // icons / text main
+  // ================= BACKGROUND =================
+  static const Color background = Color(0xFF0F1424); // асосӣ (dark blue/black)
+  static const Color surface = Color(0xFF151A2E); // card, sheet
+  static const Color divider = Color(0xFF262B40);
 
-  // ====== BACKGROUND ======
-  static const Color background = Color(0xFF000000); // main bg
-  static const Color surface = Color(0xFF0F1424); // cards, post bg
-  static const Color surfaceLight = Color(0xFF1C1F2E);
+  // ================= TEXT =================
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xFFB0B3C6);
+  static const Color textMuted = Color(0xFF7A7F9A);
 
-  // ====== TEXT ======
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF9AA0AC);
-  static const Color textDisabled = Color(0xFF5F6470);
+  // ================= BRAND =================
+  static const Color primary = Color(0xFF3B82F6); // blue accent
+  static const Color primarySoft = Color(0xFF1E3A8A);
 
-  // ====== ICONS ======
-  static const Color iconPrimary = Color(0xFFFFFFFF);
-  static const Color iconSecondary = Color(0xFF9AA0AC);
-  static const Color iconDisabled = Color(0xFF5F6470);
+  // ================= VERIFIED =================
+  static const Color verified = Color(0xFF22C55E); // сабз (галочка)
 
-  // ====== ACTIONS ======
-  static const Color like = Color(0xFFFF3040); // heart
-  static const Color comment = Color(0xFFFFFFFF);
-  static const Color share = Color(0xFFFFFFFF);
-  static const Color save = Color(0xFFFFFFFF);
+  // ================= ACTIONS =================
+  static const Color like = Color(0xFFE11D48); // heart
+  static const Color comment = Color(0xFF60A5FA);
+  static const Color share = Color(0xFF93C5FD);
+  static const Color save = Color(0xFFFACC15);
 
-  // ====== STATUS ======
-  static const Color success = Color(0xFF1ED760);
-  static const Color error = Color(0xFFFF4D4F);
-  static const Color warning = Color(0xFFFFB020);
+  // ================= STATUS =================
+  static const Color success = Color(0xFF22C55E);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
 
-  // ====== DIVIDER / BORDER ======
-  static const Color divider = Color(0xFF262A3A);
-  static const Color border = Color(0xFF262A3A);
+  // ================= INPUT =================
+  static const Color inputBackground = Color(0xFF1A1F36);
+  static const Color inputBorder = Color(0xFF2F365F);
+  static const Color inputFocused = primary;
 
-  // ====== STORY ======
-  static const Color storyGradientStart = Color(0xFF00F260);
-  static const Color storyGradientEnd = Color(0xFF0575E6);
+  // ================= ICONS =================
+  static const Color iconPrimary = Colors.white;
+  static const Color iconSecondary = Color(0xFF9CA3AF);
+  static const Color iconDisabled = Color(0xFF4B5563);
 
-  // ====== INPUT ======
-  static const Color inputBackground = Color(0xFF121726);
-  static const Color inputBorder = Color(0xFF262A3A);
-  static const Color inputHint = Color(0xFF7C8191);
+  // ================= STORY =================
+  static const Color storyBorder = Color(0xFF3B82F6);
+  static const Color storyViewed = Color(0xFF4B5563);
 
-  // ====== OVERLAY ======
-  static const Color overlay = Color(0x99000000);
+  // ================= OVERLAY =================
+  static const Color overlayDark = Colors.black54;
 }
