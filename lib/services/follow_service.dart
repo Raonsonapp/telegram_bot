@@ -1,60 +1,43 @@
 import '../core/api.dart';
 import '../core/http_service.dart';
-import '../models/user.dart';
 
 class FollowService {
   // ================= FOLLOW USER =================
   static Future<void> followUser(int userId) async {
     await HttpService.post(
-      '${Api.followEndpoint}/$userId/follow',
+      '${Api.followEndpoint}/$userId',
       {},
     );
   }
 
   // ================= UNFOLLOW USER =================
   static Future<void> unfollowUser(int userId) async {
-    await HttpService.post(
-      '${Api.followEndpoint}/$userId/unfollow',
-      {},
+    await HttpService.delete(
+      '${Api.followEndpoint}/$userId',
     );
   }
 
   // ================= GET FOLLOWERS =================
-  static Future<List<User>> getFollowers(int userId) async {
+  static Future<List<dynamic>> getFollowers(int userId) async {
     final res = await HttpService.get(
       '${Api.followEndpoint}/$userId/followers',
     );
-
-    if (res == null || res is! List) {
-      return [];
-    }
-
-    return res.map<User>((e) => User.fromJson(e)).toList();
+    return res is List ? res : [];
   }
 
   // ================= GET FOLLOWING =================
-  static Future<List<User>> getFollowing(int userId) async {
+  static Future<List<dynamic>> getFollowing(int userId) async {
     final res = await HttpService.get(
       '${Api.followEndpoint}/$userId/following',
     );
-
-    if (res == null || res is! List) {
-      return [];
-    }
-
-    return res.map<User>((e) => User.fromJson(e)).toList();
+    return res is List ? res : [];
   }
 
-  // ================= CHECK FOLLOW STATUS =================
+  // ================= CHECK IS FOLLOWING =================
   static Future<bool> isFollowing(int userId) async {
     final res = await HttpService.get(
-      '${Api.followEndpoint}/$userId/status',
+      '${Api.followEndpoint}/$userId/is-following',
     );
-
-    if (res == null || res is! Map) {
-      return false;
-    }
-
-    return res['is_following'] == true;
+    return res is Map && res['following'] == true;
   }
 }
