@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-
 import '../../services/search_service.dart';
 import '../profile/profile_screen.dart';
 
@@ -11,163 +9,110 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tab;
-
-  final _controller = TextEditingController();
-  Timer? _debounce;
-
-  bool _loading = false;
-  List<dynamic> _users = [];
-  List<dynamic> _posts = [];
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController _c = TextEditingController();
+  bool _loading = true;
+  List<dynamic> _items = [];
 
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 2, vsync: this);
+    _loadExplore();
   }
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _controller.dispose();
-    _tab.dispose();
-    super.dispose();
+  Future<void> _loadExplore() async {
+    setState(() => _loading = true);
+    final data = await SearchService.explore();
+    setState(() {
+      _items = data;
+      _loading = false;
+    });
   }
 
-  void _onSearch(String q) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () async {
-      setState(() => _loading = true);
-      try {
-        final u = await SearchService.users(q);
-        final p = await SearchService.posts(q);
-        setState(() {
-          _users = u;
-          _posts = p;
-          _loading = false;
-        });
-      } catch (_) {
-        setState(() => _loading = false);
-      }
+  Future<void> _search(String q) async {
+    if (q.isEmpty) {
+      _loadExplore();
+      return;
+    }
+    setState(() => _loading = true);
+    final data = await SearchService.search(q);
+    setState(() {
+      _items = data;
+      _loading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _appBar(),
-      body: Column(
-        children: [
-          _searchField(),
-          TabBar(
-            controller: _tab,
-            tabs: const [
-              Tab(text: 'Users'),
-              Tab(text: 'Posts'),
-            ],
+      backgroundColor: const Color(0xFF0F1424),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0F1424),
+        title: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C2238),
+            borderRadius: BorderRadius.circular(10),
           ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : TabBarView(
-                    controller: _tab,
-                    children: [
-                      _usersTab(),
-                      _postsTab(),
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ================= APP BAR =================
-  AppBar _appBar() {
-    return AppBar(
-      title: const Text('Search'),
-    );
-  }
-
-  // ================= SEARCH FIELD =================
-  Widget _searchField() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: TextField(
-        controller: _controller,
-        onChanged: _onSearch,
-        decoration: InputDecoration(
-          hintText: 'Search',
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+          child: TextField(
+            controller: _c,
+            onChanged: _search,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'Search',
+              hintStyle: TextStyle(color: Colors.grey),
+              prefixIcon: Icon(Icons.search, color: Colors.grey),
+              border: InputBorder.none,
+            ),
           ),
         ),
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _grid(),
     );
   }
 
-  // ================= USERS TAB =================
-  Widget _usersTab() {
-    if (_users.isEmpty) {
-      return const Center(child: Text('No users'));
-    }
-
-    return ListView.builder(
-      itemCount: _users.length,
-      itemBuilder: (_, i) {
-        final u = _users[i];
-        return ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Row(
-            children: [
-              Text(u['username']),
-              if (u['verified'] == true)
-                const Padding(
-                  padding: EdgeInsets.only(left: 6),
-                  child: Icon(Icons.verified, size: 16, color: Colors.green),
-                ),
-            ],
-          ),
-          subtitle: Text('${u['followers']} followers'),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfileScreen(username: u['username']),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ================= POSTS TAB =================
-  Widget _postsTab() {
-    if (_posts.isEmpty) {
-      return const Center(child: Text('No posts'));
+  // ===== GRID мисли Instagram =====
+  Widget _grid() {
+    if (_items.isEmpty) {
+      return const Center(
+        child: Text('Nothing found', style: TextStyle(color: Colors.grey)),
+      );
     }
 
     return GridView.builder(
+      padding: const EdgeInsets.all(2),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 2,
         mainAxisSpacing: 2,
       ),
-      itemCount: _posts.length,
+      itemCount: _items.length,
       itemBuilder: (_, i) {
-        final p = _posts[i];
-        final url = p['media_url'] ?? '';
-        return Container(
-          color: Colors.black12,
-          child: url.isEmpty
-              ? const Icon(Icons.image)
-              : Image.network(url, fit: BoxFit.cover),
+        final it = _items[i];
+        final String type = it['type']; // post | user
+
+        return GestureDetector(
+          onTap: () {
+            if (type == 'user') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ProfileScreen(username: it['username']),
+                ),
+              );
+            }
+          },
+          child: Image.network(
+            it['image'],
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: Colors.black,
+              child: const Icon(Icons.broken_image, color: Colors.grey),
+            ),
+          ),
         );
       },
     );
