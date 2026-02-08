@@ -17,72 +17,76 @@ class BottomNav extends StatefulWidget {
 class _BottomNavState extends State<BottomNav> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    SearchScreen(),
-    ReelsScreen(),
-    ChatListScreen(),
-    ProfileScreen(),
-  ];
+  late final List<Widget> _screens;
 
-  void _onTap(int index) {
+  @override
+  void initState() {
+    super.initState();
+
+    _screens = const [
+      HomeScreen(),
+      SearchScreen(),
+      ReelsScreen(),
+      ChatListScreen(),
+      ProfileScreen(),
+    ];
+  }
+
+  void _onTabTap(int index) {
     if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
+
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  BottomNavigationBarItem _item({
+    required IconData icon,
+    required IconData activeIcon,
+  }) {
+    return BottomNavigationBarItem(
+      icon: Icon(icon),
+      activeIcon: Icon(activeIcon),
+      label: '',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: _bottomBar(),
-    );
-  }
-
-  // ================= BOTTOM BAR =================
-  Widget _bottomBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.black,
-        border: Border(
-          top: BorderSide(color: AppColors.divider, width: 0.3),
-        ),
-      ),
-      child: BottomNavigationBar(
+      bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _onTap,
-        backgroundColor: AppColors.black,
+        onTap: _onTabTap,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.white,
-        unselectedItemColor: AppColors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined, size: 28),
-            activeIcon: Icon(Icons.home, size: 28),
-            label: 'Home',
+        backgroundColor: AppColors.background,
+        selectedItemColor: AppColors.textPrimary,
+        unselectedItemColor: AppColors.textSecondary,
+        elevation: 0,
+        items: [
+          _item(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search, size: 28),
-            label: 'Search',
+          _item(
+            icon: Icons.search,
+            activeIcon: Icons.search,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.play_circle_outline, size: 30),
-            activeIcon: Icon(Icons.play_circle, size: 30),
-            label: 'Reels',
+          _item(
+            icon: Icons.movie_outlined,
+            activeIcon: Icons.movie,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline, size: 26),
-            activeIcon: Icon(Icons.chat_bubble, size: 26),
-            label: 'Chat',
+          _item(
+            icon: Icons.chat_bubble_outline,
+            activeIcon: Icons.chat_bubble,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline, size: 28),
-            activeIcon: Icon(Icons.person, size: 28),
-            label: 'Profile',
+          _item(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
           ),
         ],
       ),
