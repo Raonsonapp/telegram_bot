@@ -1,1 +1,0 @@
-import 'package:flutter/widgets.dart';class ScaleAnim extends StatelessWidget{final Widget c;const ScaleAnim(this.c,{super.key});@override Widget build(_) => c;}

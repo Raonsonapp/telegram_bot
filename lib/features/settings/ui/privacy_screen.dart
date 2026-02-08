@@ -1,1 +1,0 @@
-// Privacy screen placeholder

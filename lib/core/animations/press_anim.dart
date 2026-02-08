@@ -1,1 +1,0 @@
-import 'package:flutter/widgets.dart';class PressAnim extends StatelessWidget{final Widget c;const PressAnim(this.c,{super.key});@override Widget build(_) => c;}

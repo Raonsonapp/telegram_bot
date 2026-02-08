@@ -1,1 +1,0 @@
-class Env{static const debug=true;}

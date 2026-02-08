@@ -1,1 +1,0 @@
-class Durations{static const fast=Duration(milliseconds:200);}

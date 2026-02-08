@@ -1,1 +1,0 @@
-// Notifications screen placeholder

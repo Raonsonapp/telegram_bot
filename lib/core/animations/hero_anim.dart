@@ -1,1 +1,0 @@
-import 'package:flutter/widgets.dart';class HeroAnim extends StatelessWidget{final Widget c;const HeroAnim(this.c,{super.key});@override Widget build(_) => c;}
