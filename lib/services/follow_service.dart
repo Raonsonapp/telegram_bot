@@ -20,33 +20,41 @@ class FollowService {
   }
 
   // ================= GET FOLLOWERS =================
-  static Future<List<UserModel>> getFollowers(int userId) async {
-    final response = await HttpService.get(
+  static Future<List<User>> getFollowers(int userId) async {
+    final res = await HttpService.get(
       '${Api.followEndpoint}/$userId/followers',
     );
 
-    return (response as List)
-        .map((json) => UserModel.fromJson(json))
-        .toList();
+    if (res == null || res is! List) {
+      return [];
+    }
+
+    return res.map<User>((e) => User.fromJson(e)).toList();
   }
 
   // ================= GET FOLLOWING =================
-  static Future<List<UserModel>> getFollowing(int userId) async {
-    final response = await HttpService.get(
+  static Future<List<User>> getFollowing(int userId) async {
+    final res = await HttpService.get(
       '${Api.followEndpoint}/$userId/following',
     );
 
-    return (response as List)
-        .map((json) => UserModel.fromJson(json))
-        .toList();
+    if (res == null || res is! List) {
+      return [];
+    }
+
+    return res.map<User>((e) => User.fromJson(e)).toList();
   }
 
-  // ================= CHECK IS FOLLOWING =================
+  // ================= CHECK FOLLOW STATUS =================
   static Future<bool> isFollowing(int userId) async {
-    final response = await HttpService.get(
-      '${Api.followEndpoint}/$userId/is-following',
+    final res = await HttpService.get(
+      '${Api.followEndpoint}/$userId/status',
     );
 
-    return response['following'] == true;
+    if (res == null || res is! Map) {
+      return false;
+    }
+
+    return res['is_following'] == true;
   }
 }
