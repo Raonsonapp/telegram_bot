@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'core/session.dart';
 import 'navigation/bottom_nav.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'theme/app_theme.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Session.init();
   runApp(const RaonsonApp());
 }
 
@@ -17,36 +20,27 @@ class RaonsonApp extends StatelessWidget {
     return MaterialApp(
       title: 'Raonson',
       debugShowCheckedModeBanner: false,
-      theme: _buildTheme(),
-      home: const _AuthGate(),
-    );
-  }
-
-  ThemeData _buildTheme() {
-    return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0F1424),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.black,
-        elevation: 0,
-      ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Colors.black,
-      ),
-      fontFamily: 'Roboto',
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      home: const _Root(),
     );
   }
 }
 
-// ================= AUTH GATE =================
-class _AuthGate extends StatefulWidget {
-  const _AuthGate();
+///
+/// ROOT — қарор мекунад:
+/// 1) Агар login шуда бошад → Home (BottomNav)
+/// 2) Агар не → Login
+///
+class _Root extends StatefulWidget {
+  const _Root();
 
   @override
-  State<_AuthGate> createState() => _AuthGateState();
+  State<_Root> createState() => _RootState();
 }
 
-class _AuthGateState extends State<_AuthGate> {
+class _RootState extends State<_Root> {
   bool _loading = true;
   bool _loggedIn = false;
 
@@ -72,6 +66,19 @@ class _AuthGateState extends State<_AuthGate> {
       );
     }
 
-    return _loggedIn ? const BottomNav() : const LoginScreen();
+    if (_loggedIn) {
+      return const BottomNav();
+    }
+
+    return LoginScreen(
+      onRegisterTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+        );
+      },
+      onLoginSuccess: () {
+        setState(() => _loggedIn = true);
+      },
+    );
   }
 }
