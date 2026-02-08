@@ -4,20 +4,28 @@ import '../models/post.dart';
 import '../models/story.dart';
 
 class PostService {
-  // ===== FEED POSTS =====
-  static Future<List<Post>> getFeedPosts() async {
+  // ===================== FEED =====================
+  static Future<List<dynamic>> getFeedPosts() async {
     final res = await HttpService.get(Api.postsEndpoint);
-    if (res == null) return [];
-
-    return List<Post>.from(
-      res.map((e) => Post.fromJson(e)),
-    );
+    return res as List<dynamic>;
   }
 
-  // ===== CREATE POST =====
+  static Future<List<dynamic>> getReels() async {
+    final res = await HttpService.get(Api.reelsEndpoint);
+    return res as List<dynamic>;
+  }
+
+  static Future<List<dynamic>> getByUser(String username) async {
+    final res = await HttpService.get(
+      '${Api.postsEndpoint}/user/$username',
+    );
+    return res as List<dynamic>;
+  }
+
+  // ===================== CREATE =====================
   static Future<void> createPost({
     required String mediaUrl,
-    String? caption,
+    required String caption,
   }) async {
     await HttpService.post(
       Api.postsEndpoint,
@@ -28,7 +36,26 @@ class PostService {
     );
   }
 
-  // ===== LIKE / UNLIKE =====
+  static Future<void> createReel({
+    required String mediaUrl,
+    required String caption,
+  }) async {
+    await HttpService.post(
+      Api.reelsEndpoint,
+      {
+        'media_url': mediaUrl,
+        'caption': caption,
+      },
+    );
+  }
+
+  static Future<void> deletePost(int postId) async {
+    await HttpService.delete(
+      '${Api.postsEndpoint}/$postId',
+    );
+  }
+
+  // ===================== LIKES =====================
   static Future<void> likePost(int postId) async {
     await HttpService.post(
       '${Api.postsEndpoint}/$postId/like',
@@ -43,7 +70,25 @@ class PostService {
     );
   }
 
-  // ===== SAVE / UNSAVE =====
+  // ===================== COMMENTS =====================
+  static Future<List<dynamic>> getComments(int postId) async {
+    final res = await HttpService.get(
+      '${Api.postsEndpoint}/$postId/comments',
+    );
+    return res as List<dynamic>;
+  }
+
+  static Future<void> addComment({
+    required int postId,
+    required String text,
+  }) async {
+    await HttpService.post(
+      '${Api.postsEndpoint}/$postId/comments',
+      {'text': text},
+    );
+  }
+
+  // ===================== SAVED =====================
   static Future<void> savePost(int postId) async {
     await HttpService.post(
       '${Api.postsEndpoint}/$postId/save',
@@ -58,30 +103,32 @@ class PostService {
     );
   }
 
-  // ===== STORIES =====
-  static Future<void> createStory(String mediaUrl) async {
+  static Future<List<dynamic>> getSavedPosts() async {
+    final res = await HttpService.get(
+      '${Api.postsEndpoint}/saved',
+    );
+    return res as List<dynamic>;
+  }
+
+  // ===================== STORIES =====================
+  static Future<List<dynamic>> getStories() async {
+    final res = await HttpService.get(Api.storiesEndpoint);
+    return res as List<dynamic>;
+  }
+
+  static Future<void> createStory({
+    required String mediaUrl,
+  }) async {
     await HttpService.post(
       Api.storiesEndpoint,
       {'media_url': mediaUrl},
     );
   }
 
-  static Future<List<Story>> getStories() async {
-    final res = await HttpService.get(Api.storiesEndpoint);
-    if (res == null) return [];
-
-    return List<Story>.from(
-      res.map((e) => Story.fromJson(e)),
-    );
-  }
-
-  // ===== REELS =====
-  static Future<List<Post>> getReels() async {
-    final res = await HttpService.get(Api.reelsEndpoint);
-    if (res == null) return [];
-
-    return List<Post>.from(
-      res.map((e) => Post.fromJson(e)),
+  static Future<void> markStoryViewed(int storyId) async {
+    await HttpService.post(
+      '${Api.storiesEndpoint}/$storyId/view',
+      {},
     );
   }
 }
