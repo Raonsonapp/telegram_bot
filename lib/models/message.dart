@@ -1,31 +1,43 @@
 import 'user.dart';
 
-class MessageModel {
+class Message {
   final int id;
-  final int chatId;
-  final UserModel sender;
+
+  final User sender;
+  final User receiver;
+
   final String text;
-  final bool isRead;
+  final String? mediaUrl; // image / video / voice (future-proof)
+  final String type; // text | image | video | voice
+
+  final bool isSeen;
   final DateTime createdAt;
 
-  MessageModel({
+  const Message({
     required this.id,
-    required this.chatId,
     required this.sender,
+    required this.receiver,
     required this.text,
-    required this.isRead,
+    required this.type,
+    required this.isSeen,
     required this.createdAt,
+    this.mediaUrl,
   });
 
   // ================= FROM JSON =================
-  factory MessageModel.fromJson(Map<String, dynamic> json) {
-    return MessageModel(
-      id: json['id'],
-      chatId: json['chat_id'],
-      sender: UserModel.fromJson(json['sender']),
+  factory Message.fromJson(Map<String, dynamic> json) {
+    return Message(
+      id: json['id'] is String
+          ? int.parse(json['id'])
+          : json['id'] ?? 0,
+      sender: User.fromJson(json['sender'] ?? {}),
+      receiver: User.fromJson(json['receiver'] ?? {}),
       text: json['text'] ?? '',
-      isRead: json['is_read'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      mediaUrl: json['media_url'],
+      type: json['type'] ?? 'text',
+      isSeen: json['is_seen'] == true || json['is_seen'] == 1,
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -33,33 +45,55 @@ class MessageModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'chat_id': chatId,
       'sender': sender.toJson(),
+      'receiver': receiver.toJson(),
       'text': text,
-      'is_read': isRead,
+      'media_url': mediaUrl,
+      'type': type,
+      'is_seen': isSeen,
       'created_at': createdAt.toIso8601String(),
     };
   }
 
   // ================= COPY WITH =================
-  MessageModel copyWith({
+  Message copyWith({
     int? id,
-    int? chatId,
-    UserModel? sender,
+    User? sender,
+    User? receiver,
     String? text,
-    bool? isRead,
+    String? mediaUrl,
+    String? type,
+    bool? isSeen,
     DateTime? createdAt,
   }) {
-    return MessageModel(
+    return Message(
       id: id ?? this.id,
-      chatId: chatId ?? this.chatId,
       sender: sender ?? this.sender,
+      receiver: receiver ?? this.receiver,
       text: text ?? this.text,
-      isRead: isRead ?? this.isRead,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      type: type ?? this.type,
+      isSeen: isSeen ?? this.isSeen,
       createdAt: createdAt ?? this.createdAt,
     );
   }
 
   // ================= HELPERS =================
-  bool get isMine => false; // дар UI бо username/session муайян мекунем
+  bool get isText => type == 'text';
+  bool get isImage => type == 'image';
+  bool get isVideo => type == 'video';
+  bool get isVoice => type == 'voice';
+
+  Message markSeen() {
+    return copyWith(isSeen: true);
+  }
+
+  bool isMine(String myUsername) {
+    return sender.username == myUsername;
+  }
+
+  @override
+  String toString() {
+    return 'Message(id: $id, from: ${sender.username}, to: ${receiver.username})';
+  }
 }
