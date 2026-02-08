@@ -3,12 +3,12 @@ import 'package:video_player/video_player.dart';
 
 class ReelPlayer extends StatefulWidget {
   final String videoUrl;
-  final bool autoplay;
+  final bool autoPlay;
 
   const ReelPlayer({
     super.key,
     required this.videoUrl,
-    this.autoplay = true,
+    this.autoPlay = false,
   });
 
   @override
@@ -18,29 +18,35 @@ class ReelPlayer extends StatefulWidget {
 class _ReelPlayerState extends State<ReelPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
-  bool _muted = false;
+  bool _showPlayIcon = false;
 
   @override
   void initState() {
     super.initState();
-    _initPlayer();
+    _initVideo();
   }
 
-  Future<void> _initPlayer() async {
+  Future<void> _initVideo() async {
     _controller = VideoPlayerController.networkUrl(
       Uri.parse(widget.videoUrl),
     );
 
-    await _controller.initialize();
-    _controller.setLooping(true);
+    try {
+      await _controller.initialize();
+      _controller.setLooping(true);
 
-    if (widget.autoplay) {
-      _controller.play();
+      if (widget.autoPlay) {
+        await _controller.play();
+      }
+
+      setState(() {
+        _initialized = true;
+      });
+    } catch (_) {
+      setState(() {
+        _initialized = false;
+      });
     }
-
-    setState(() {
-      _initialized = true;
-    });
   }
 
   @override
@@ -49,41 +55,32 @@ class _ReelPlayerState extends State<ReelPlayer> {
     super.dispose();
   }
 
-  void play() {
-    if (_initialized) _controller.play();
-  }
-
-  void pause() {
-    if (_initialized) _controller.pause();
-  }
-
-  void toggleMute() {
+  void _togglePlay() {
     if (!_initialized) return;
-    setState(() {
-      _muted = !_muted;
-      _controller.setVolume(_muted ? 0 : 1);
-    });
+
+    if (_controller.value.isPlaying) {
+      _controller.pause();
+      setState(() => _showPlayIcon = true);
+    } else {
+      _controller.play();
+      setState(() => _showPlayIcon = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_initialized) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
 
     return GestureDetector(
-      onTap: () {
-        if (_controller.value.isPlaying) {
-          _controller.pause();
-        } else {
-          _controller.play();
-        }
-      },
-      onLongPress: toggleMute,
+      onTap: _togglePlay,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Positioned.fill(
+          SizedBox.expand(
             child: FittedBox(
               fit: BoxFit.cover,
               child: SizedBox(
@@ -94,23 +91,20 @@ class _ReelPlayerState extends State<ReelPlayer> {
             ),
           ),
 
-          /// ▶ Play icon overlay
-          if (!_controller.value.isPlaying)
-            const Icon(
-              Icons.play_arrow,
-              size: 80,
-              color: Colors.white70,
+          // ===== PLAY ICON (ON PAUSE) =====
+          if (_showPlayIcon)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(50),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: const Icon(
+                Icons.play_arrow,
+                size: 48,
+                color: Colors.white,
+              ),
             ),
-
-          /// 🔇 Mute indicator
-          Positioned(
-            top: 40,
-            right: 16,
-            child: Icon(
-              _muted ? Icons.volume_off : Icons.volume_up,
-              color: Colors.white70,
-            ),
-          ),
         ],
       ),
     );
