@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
 
 class AppLoading extends StatelessWidget {
   final String? text;
@@ -19,19 +20,19 @@ class AppLoading extends StatelessWidget {
           SizedBox(
             width: size,
             height: size,
-            child: const CircularProgressIndicator(
+            child: CircularProgressIndicator(
               strokeWidth: 2.6,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
           if (text != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Text(
               text!,
               style: const TextStyle(
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
               ),
             ),
           ],
