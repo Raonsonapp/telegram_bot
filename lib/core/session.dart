@@ -1,32 +1,59 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Session {
-  static const _tokenKey = 'token';
-  static const _usernameKey = 'username';
+  static const String _tokenKey = 'token';
+  static const String _userIdKey = 'user_id';
+  static const String _usernameKey = 'username';
+  static const String _emailKey = 'email';
 
-  static Future<void> save(String token, String username) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString(_tokenKey, token);
-    await p.setString(_usernameKey, username);
+  // ================= SAVE SESSION =================
+  static Future<void> saveSession({
+    required String token,
+    required String userId,
+    required String username,
+    String? email,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString(_tokenKey, token);
+    await prefs.setString(_userIdKey, userId);
+    await prefs.setString(_usernameKey, username);
+
+    if (email != null) {
+      await prefs.setString(_emailKey, email);
+    }
   }
 
-  static Future<String?> token() async {
-    final p = await SharedPreferences.getInstance();
-    return p.getString(_tokenKey);
+  // ================= GETTERS =================
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
   }
 
-  static Future<String?> username() async {
-    final p = await SharedPreferences.getInstance();
-    return p.getString(_usernameKey);
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userIdKey);
   }
 
+  static Future<String?> getUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_usernameKey);
+  }
+
+  static Future<String?> getEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_emailKey);
+  }
+
+  // ================= AUTH STATE =================
   static Future<bool> isLoggedIn() async {
-    final t = await token();
-    return t != null && t.isNotEmpty;
+    final token = await getToken();
+    return token != null && token.isNotEmpty;
   }
 
+  // ================= CLEAR SESSION =================
   static Future<void> logout() async {
-    final p = await SharedPreferences.getInstance();
-    await p.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
   }
 }
