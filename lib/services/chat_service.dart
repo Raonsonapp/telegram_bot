@@ -4,59 +4,63 @@ import '../models/message.dart';
 import '../models/user.dart';
 
 class ChatService {
-  // ================= GET CHATS =================
-  static Future<List<UserModel>> getChats() async {
-    final response = await HttpService.get(
-      Api.chatEndpoint,
-    );
-
-    return (response as List)
-        .map((json) => UserModel.fromJson(json))
-        .toList();
-  }
-
-  // ================= GET MESSAGES =================
-  static Future<List<MessageModel>> getMessages(int userId) async {
-    final response = await HttpService.get(
-      '${Api.chatEndpoint}/$userId/messages',
-    );
-
-    return (response as List)
-        .map((json) => MessageModel.fromJson(json))
-        .toList();
-  }
-
-  // ================= SEND MESSAGE =================
-  static Future<MessageModel> sendMessage({
-    required int toUserId,
-    required String text,
-  }) async {
-    final response = await HttpService.post(
-      '${Api.chatEndpoint}/send',
-      {
-        'to_user_id': toUserId,
-        'text': text,
-      },
-    );
-
-    return MessageModel.fromJson(response);
-  }
-
-  // ================= MARK AS READ =================
-  static Future<void> markAsRead(int userId) async {
-    await HttpService.post(
-      '${Api.chatEndpoint}/$userId/read',
-      {},
-    );
-  }
-
-  // ================= CREATE CHAT (OPTIONAL) =================
-  static Future<void> createChat(int userId) async {
-    await HttpService.post(
+  // ================= CREATE OR GET CHAT =================
+  static Future<int?> createChat(int userId) async {
+    final res = await HttpService.post(
       '${Api.chatEndpoint}/create',
       {
         'user_id': userId,
       },
+    );
+
+    if (res == null || res is! Map) return null;
+    return res['chat_id'];
+  }
+
+  // ================= GET ALL CHATS =================
+  static Future<List<User>> getChats() async {
+    final res = await HttpService.get(
+      '${Api.chatEndpoint}/list',
+    );
+
+    if (res == null || res is! List) return [];
+
+    return res.map<User>((e) => User.fromJson(e)).toList();
+  }
+
+  // ================= GET MESSAGES =================
+  static Future<List<Message>> getMessages(int chatId) async {
+    final res = await HttpService.get(
+      '${Api.chatEndpoint}/$chatId/messages',
+    );
+
+    if (res == null || res is! List) return [];
+
+    return res.map<Message>((e) => Message.fromJson(e)).toList();
+  }
+
+  // ================= SEND MESSAGE =================
+  static Future<Message?> sendMessage({
+    required int chatId,
+    required String text,
+  }) async {
+    final res = await HttpService.post(
+      '${Api.chatEndpoint}/$chatId/send',
+      {
+        'text': text,
+      },
+    );
+
+    if (res == null || res is! Map) return null;
+
+    return Message.fromJson(res);
+  }
+
+  // ================= MARK AS READ =================
+  static Future<void> markAsRead(int chatId) async {
+    await HttpService.post(
+      '${Api.chatEndpoint}/$chatId/read',
+      {},
     );
   }
 }
