@@ -1,4 +1,13 @@
 class Api {
+   static const baseUrl = 'https://YOUR_SERVER_URL';
+
+  static const searchUsersEndpoint = '$baseUrl/search/users';
+  static const searchPostsEndpoint = '$baseUrl/search/posts';
+
+  // already existing:
+  static const followEndpoint = '$baseUrl/follow';
+  static const unfollowEndpoint = '$baseUrl/unfollow';
+  static const profileEndpoint = '$baseUrl/profile';
   // ===== BASE =====
   static const String baseUrl = 'https://raonson-me.onrender.com';
 
