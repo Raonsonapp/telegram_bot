@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../models/post.dart';
 import '../../services/post_service.dart';
-import '../../services/follow_service.dart';
 import '../../core/session.dart';
-import '../comments/comments_screen.dart';
+import 'reel_player.dart';
+import 'reel_actions.dart';
 
 class ReelsScreen extends StatefulWidget {
   const ReelsScreen({super.key});
@@ -16,69 +15,35 @@ class ReelsScreen extends StatefulWidget {
 
 class _ReelsScreenState extends State<ReelsScreen> {
   final PageController _pageController = PageController();
-  final List<Post> _reels = [];
-  final Map<int, VideoPlayerController> _controllers = {};
-
+  List<dynamic> _reels = [];
   bool _loading = true;
-  int _currentIndex = 0;
+  String _me = '';
 
   @override
   void initState() {
     super.initState();
-    _loadReels();
+    _init();
+  }
+
+  Future<void> _init() async {
+    _me = await Session.username() ?? '';
+    await _loadReels();
   }
 
   Future<void> _loadReels() async {
     try {
       final data = await PostService.getReels();
-      _reels.clear();
-      _reels.addAll(data);
-
-      for (int i = 0; i < _reels.length; i++) {
-        _initController(i);
-      }
-
+      setState(() {
+        _reels = data;
+        _loading = false;
+      });
+    } catch (_) {
       setState(() => _loading = false);
-    } catch (e) {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _initController(int index) async {
-    final reel = _reels[index];
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(reel.mediaUrl),
-    );
-
-    await controller.initialize();
-    controller.setLooping(true);
-
-    _controllers[index] = controller;
-
-    if (index == 0) {
-      controller.play();
-    }
-
-    setState(() {});
-  }
-
-  void _onPageChanged(int index) {
-    if (_controllers[_currentIndex] != null) {
-      _controllers[_currentIndex]!.pause();
-    }
-
-    _currentIndex = index;
-
-    if (_controllers[_currentIndex] != null) {
-      _controllers[_currentIndex]!.play();
     }
   }
 
   @override
   void dispose() {
-    for (final c in _controllers.values) {
-      c.dispose();
-    }
     _pageController.dispose();
     super.dispose();
   }
@@ -86,140 +51,131 @@ class _ReelsScreenState extends State<ReelsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_reels.isEmpty) {
-      return const Center(child: Text('No reels'));
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            'No reels yet',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
     }
 
-    return PageView.builder(
-      controller: _pageController,
-      scrollDirection: Axis.vertical,
-      onPageChanged: _onPageChanged,
-      itemCount: _reels.length,
-      itemBuilder: (context, index) {
-        return _reelItem(_reels[index], index);
-      },
-    );
-  }
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        itemCount: _reels.length,
+        itemBuilder: (context, index) {
+          final reel = _reels[index];
 
-  Widget _reelItem(Post reel, int index) {
-    final controller = _controllers[index];
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: controller != null && controller.value.isInitialized
-              ? VideoPlayer(controller)
-              : const Center(child: CircularProgressIndicator()),
-        ),
-
-        /// ================= BOTTOM INFO =================
-        Positioned(
-          left: 16,
-          bottom: 24,
-          right: 80,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Stack(
+            fit: StackFit.expand,
             children: [
-              Text(
-                '@${reel.username}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              // ===== VIDEO PLAYER =====
+              ReelPlayer(
+                videoUrl: reel['media_url'],
+                autoPlay: index == 0,
+              ),
+
+              // ===== GRADIENT (BOTTOM) =====
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 250,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black87,
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                reel.caption,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
 
-        /// ================= ACTIONS =================
-        Positioned(
-          right: 12,
-          bottom: 80,
-          child: Column(
-            children: [
-              _actionButton(
-                icon: reel.isLiked
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-                label: '${reel.likesCount}',
-                color: reel.isLiked ? Colors.red : Colors.white,
-                onTap: () async {
-                  if (reel.isLiked) {
-                    await PostService.unlikePost(reel.id);
-                  } else {
-                    await PostService.likePost(reel.id);
-                  }
-                  setState(() => reel.isLiked = !reel.isLiked);
-                },
+              // ===== LEFT INFO =====
+              Positioned(
+                left: 16,
+                bottom: 40,
+                right: 80,
+                child: _reelInfo(reel),
               ),
-              const SizedBox(height: 20),
-              _actionButton(
-                icon: Icons.mode_comment_outlined,
-                label: '${reel.commentsCount}',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CommentsScreen(postId: reel.id),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              _actionButton(
-                icon: Icons.send,
-                label: 'Share',
-                onTap: () {},
-              ),
-              const SizedBox(height: 20),
-              _actionButton(
-                icon: reel.isSaved
-                    ? Icons.bookmark
-                    : Icons.bookmark_border,
-                label: 'Save',
-                onTap: () async {
-                  if (reel.isSaved) {
-                    await PostService.unsavePost(reel.id);
-                  } else {
-                    await PostService.savePost(reel.id);
-                  }
-                  setState(() => reel.isSaved = !reel.isSaved);
-                },
+
+              // ===== RIGHT ACTIONS =====
+              Positioned(
+                right: 12,
+                bottom: 80,
+                child: ReelActions(
+                  postId: reel['id'],
+                  likesCount: reel['likes'] ?? 0,
+                  commentsCount: reel['comments'] ?? 0,
+                  isLiked: reel['is_liked'] ?? false,
+                  isSaved: reel['is_saved'] ?? false,
+                ),
               ),
             ],
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _actionButton({
-    required IconData icon,
-    required String label,
-    Color color = Colors.white,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(icon, size: 30, color: color),
-          const SizedBox(height: 4),
+  // ================= INFO (USERNAME + CAPTION) =================
+  Widget _reelInfo(dynamic reel) {
+    final String username = reel['username'] ?? '';
+    final String caption = reel['caption'] ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            const CircleAvatar(
+              radius: 14,
+              backgroundColor: Colors.white24,
+              child: Icon(Icons.person, size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              username,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 6),
+            if (reel['is_verified'] == true)
+              const Icon(
+                Icons.verified,
+                size: 16,
+                color: Colors.green,
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (caption.isNotEmpty)
           Text(
-            label,
-            style: const TextStyle(fontSize: 12),
+            caption,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
