@@ -23,7 +23,7 @@ class RaonsonApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: const _Root(),
+      home: _Root(), // ❗ НЕ const
     );
   }
 }
@@ -34,7 +34,7 @@ class RaonsonApp extends StatelessWidget {
 /// 2) Агар не → Login
 ///
 class _Root extends StatefulWidget {
-  const _Root();
+  _Root({super.key}); // ❗ НЕ const
 
   @override
   State<_Root> createState() => _RootState();
@@ -52,6 +52,7 @@ class _RootState extends State<_Root> {
 
   Future<void> _checkAuth() async {
     final ok = await Session.isLoggedIn();
+    if (!mounted) return;
     setState(() {
       _loggedIn = ok;
       _loading = false;
