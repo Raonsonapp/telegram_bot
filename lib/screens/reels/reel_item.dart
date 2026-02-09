@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import '../../services/reel_service.dart';
-import '../comments/comments_screen.dart';
 
+import '../../models/post.dart';
+import '../../widgets/verified_badge.dart';
+import '../../widgets/loading.dart';
+import '../../widgets/reel_actions.dart';
+
+/// ReelItem
+/// --------------------------------------------------
+/// Намоиши 1 Reel (видео):
+/// - autoplay
+/// - loop
+/// - overlay UI (username, caption)
+/// - actions (like, comment, save)
+///
+/// Version: v5 FULL
 class ReelItem extends StatefulWidget {
-  final dynamic reel;
-  const ReelItem({super.key, required this.reel});
+  final Post reel;
+  final bool isActive; // барои autoplay ҳангоми scroll
+
+  const ReelItem({
+    super.key,
+    required this.reel,
+    required this.isActive,
+  });
 
   @override
   State<ReelItem> createState() => _ReelItemState();
@@ -13,18 +31,41 @@ class ReelItem extends StatefulWidget {
 
 class _ReelItemState extends State<ReelItem> {
   late VideoPlayerController _controller;
-  bool _liked = false;
+  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
-    _liked = widget.reel['is_liked'] ?? false;
-    _controller = VideoPlayerController.network(widget.reel['video_url'])
-      ..initialize().then((_) {
-        setState(() {});
-        _controller.play();
-        _controller.setLooping(true);
-      });
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.reel.mediaUrl),
+    );
+
+    await _controller.initialize();
+    _controller.setLooping(true);
+
+    if (widget.isActive) {
+      _controller.play();
+    }
+
+    setState(() {
+      _ready = true;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ReelItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // autoplay / pause ҳангоми scroll
+    if (widget.isActive && !_controller.value.isPlaying) {
+      _controller.play();
+    } else if (!widget.isActive && _controller.value.isPlaying) {
+      _controller.pause();
+    }
   }
 
   @override
@@ -33,81 +74,111 @@ class _ReelItemState extends State<ReelItem> {
     super.dispose();
   }
 
+  // =========================
+  // UI
+  // =========================
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // VIDEO
-        Positioned.fill(
-          child: _controller.value.isInitialized
-              ? VideoPlayer(_controller)
-              : const Center(child: CircularProgressIndicator()),
-        ),
+    if (!_ready) {
+      return const Center(child: Loading());
+    }
 
-        // RIGHT ACTIONS
-        Positioned(
-          right: 12,
-          bottom: 120,
-          child: Column(
-            children: [
-              IconButton(
-                icon: Icon(
-                  _liked ? Icons.favorite : Icons.favorite_border,
-                  color: _liked ? Colors.red : Colors.white,
-                  size: 32,
-                ),
-                onPressed: () async {
-                  setState(() => _liked = !_liked);
-                  _liked
-                      ? await ReelService.like(widget.reel['id'])
-                      : await ReelService.unlike(widget.reel['id']);
-                },
-              ),
-              const SizedBox(height: 12),
-              IconButton(
-                icon: const Icon(Icons.comment, color: Colors.white, size: 30),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          CommentsScreen(postId: widget.reel['id']),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              IconButton(
-                icon: const Icon(Icons.send, color: Colors.white, size: 28),
-                onPressed: () {},
-              ),
-            ],
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ===== VIDEO =====
+        GestureDetector(
+          onTap: () {
+            if (_controller.value.isPlaying) {
+              _controller.pause();
+            } else {
+              _controller.play();
+            }
+          },
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _controller.value.size.width,
+              height: _controller.value.size.height,
+              child: VideoPlayer(_controller),
+            ),
           ),
         ),
 
-        // USER + CAPTION
+        // ===== GRADIENT OVERLAY =====
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 200,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black87,
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // ===== INFO (USERNAME + CAPTION) =====
         Positioned(
           left: 12,
-          bottom: 40,
+          bottom: 20,
           right: 80,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.reel['username'] ?? '',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                widget.reel['caption'] ?? '',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
+          child: _Info(reel: widget.reel),
         ),
+
+        // ===== ACTIONS =====
+        Positioned(
+          right: 8,
+          bottom: 40,
+          child: ReelActions(reel: widget.reel),
+        ),
+      ],
+    );
+  }
+}
+
+///
+/// INFO BLOCK
+///
+class _Info extends StatelessWidget {
+  final Post reel;
+
+  const _Info({required this.reel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Text(
+              '@${reel.username}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 6),
+            if (reel.isVerified) const VerifiedBadge(),
+          ],
+        ),
+        const SizedBox(height: 6),
+        if (reel.caption.isNotEmpty)
+          Text(
+            reel.caption,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white),
+          ),
       ],
     );
   }
