@@ -1,3 +1,5 @@
+// lib/screens/chat/chat_list_screen.dart
+
 import 'package:flutter/material.dart';
 
 import '../../models/message.dart';
@@ -8,11 +10,10 @@ import '../../widgets/loading.dart';
 import '../../widgets/empty_state.dart';
 import 'chat_room_screen.dart';
 
-/// ChatListScreen
-/// ------------------------------------------------
+/// =====================================================
+/// CHAT LIST SCREEN – FINAL v5 (BUILD SAFE)
 /// Shows all user chats (Instagram-like)
-///
-/// Version: v5 FULL
+/// =====================================================
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
@@ -30,14 +31,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _loadChats();
   }
 
+  // ================= LOAD CHATS =================
   Future<void> _loadChats() async {
     try {
-      final data = await ChatService.getChats();
+      final res = await ChatService.getChats();
+
+      final items = res
+          .whereType<Map<String, dynamic>>()
+          .map((e) => ChatItem.fromJson(e))
+          .toList();
+
+      if (!mounted) return;
       setState(() {
-        _chats = data;
+        _chats = items;
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
@@ -55,18 +65,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Loading();
-    }
-
-    if (_chats.isEmpty) {
-      return const EmptyState(
-        icon: Icons.chat_bubble_outline,
-        title: 'No messages',
-        subtitle: 'Start a conversation to see it here',
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -74,23 +72,32 @@ class _ChatListScreenState extends State<ChatListScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: ListView.separated(
-        itemCount: _chats.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final chat = _chats[index];
-          return _ChatTile(
-            chat: chat,
-            onTap: () => _openChat(chat),
-          );
-        },
-      ),
+      body: _loading
+          ? const Center(child: Loading())
+          : _chats.isEmpty
+              ? const EmptyState(
+                  icon: Icons.chat_bubble_outline,
+                  title: 'No messages',
+                  subtitle: 'Start a conversation to see it here',
+                )
+              : ListView.separated(
+                  itemCount: _chats.length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final chat = _chats[index];
+                    return _ChatTile(
+                      chat: chat,
+                      onTap: () => _openChat(chat),
+                    );
+                  },
+                ),
     );
   }
 }
 
-/// ------------------------------------------------
-/// Chat Tile
+/// =====================================================
+/// CHAT TILE
 class _ChatTile extends StatelessWidget {
   final ChatItem chat;
   final VoidCallback onTap;
@@ -105,7 +112,7 @@ class _ChatTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       leading: Avatar(
-        imageUrl: chat.user.avatar,
+        imageUrl: chat.user.avatarUrl,
         size: 44,
       ),
       title: Text(
@@ -120,7 +127,8 @@ class _ChatTile extends StatelessWidget {
       trailing: chat.unreadCount > 0
           ? CircleAvatar(
               radius: 10,
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary,
               child: Text(
                 chat.unreadCount.toString(),
                 style: const TextStyle(
@@ -135,8 +143,8 @@ class _ChatTile extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------
-/// ChatItem (local UI model)
+/// =====================================================
+/// CHAT ITEM (UI MODEL)
 class ChatItem {
   final String chatId;
   final User user;
@@ -152,7 +160,7 @@ class ChatItem {
 
   factory ChatItem.fromJson(Map<String, dynamic> json) {
     return ChatItem(
-      chatId: json['chat_id'],
+      chatId: json['chat_id']?.toString() ?? '',
       user: User.fromJson(json['user']),
       lastMessage: json['last_message'] != null
           ? Message.fromJson(json['last_message'])
