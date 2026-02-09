@@ -1,59 +1,67 @@
+/// lib/core/session.dart
+/// =====================================================
+/// SESSION MANAGER – FINAL (v5)
+/// Handles auth state, token & user identity
+/// =====================================================
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Session {
-  static const String _tokenKey = 'token';
-  static const String _userIdKey = 'user_id';
-  static const String _usernameKey = 'username';
-  static const String _emailKey = 'email';
+  Session._();
 
-  // ================= SAVE SESSION =================
-  static Future<void> saveSession({
-    required String token,
-    required String userId,
-    required String username,
-    String? email,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
+  static SharedPreferences? _prefs;
 
-    await prefs.setString(_tokenKey, token);
-    await prefs.setString(_userIdKey, userId);
-    await prefs.setString(_usernameKey, username);
+  // =====================================================
+  // INIT
+  // =====================================================
 
-    if (email != null) {
-      await prefs.setString(_emailKey, email);
-    }
+  static Future<void> init() async {
+    _prefs ??= await SharedPreferences.getInstance();
   }
 
-  // ================= GETTERS =================
-  static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+  // =====================================================
+  // TOKEN
+  // =====================================================
+
+  static Future<void> saveToken(String token) async {
+    await _prefs?.setString('access_token', token);
   }
 
-  static Future<String?> getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_userIdKey);
+  static String? getToken() {
+    return _prefs?.getString('access_token');
   }
 
-  static Future<String?> getUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_usernameKey);
+  static Future<void> clearToken() async {
+    await _prefs?.remove('access_token');
   }
 
-  static Future<String?> getEmail() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_emailKey);
+  // =====================================================
+  // USERNAME
+  // =====================================================
+
+  static Future<void> saveUsername(String username) async {
+    await _prefs?.setString('username', username);
   }
 
-  // ================= AUTH STATE =================
+  static String? getUsername() {
+    return _prefs?.getString('username');
+  }
+
+  // =====================================================
+  // LOGIN STATE
+  // =====================================================
+
   static Future<bool> isLoggedIn() async {
-    final token = await getToken();
+    final token = getToken();
     return token != null && token.isNotEmpty;
   }
 
-  // ================= CLEAR SESSION =================
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
   static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await clearToken();
+    await _prefs?.remove('username');
   }
 }
