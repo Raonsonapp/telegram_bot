@@ -1,5 +1,8 @@
+// lib/screens/chat/chat_room_screen.dart
+
 import 'package:flutter/material.dart';
 
+import '../../core/session.dart';
 import '../../models/message.dart';
 import '../../models/user.dart';
 import '../../services/chat_service.dart';
@@ -29,25 +32,36 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _sending = false;
   List<Message> _messages = [];
 
+  int? _myUserId;
+
   @override
   void initState() {
     super.initState();
-    _loadMessages();
+    _init();
   }
 
+  Future<void> _init() async {
+    _myUserId = await Session.getUserId();
+    await _loadMessages();
+  }
+
+  // ================= LOAD MESSAGES =================
   Future<void> _loadMessages() async {
     try {
       final data = await ChatService.getMessages(widget.chatId);
+      if (!mounted) return;
       setState(() {
         _messages = data;
         _loading = false;
       });
       _scrollToBottom();
-    } catch (e) {
+    } catch (_) {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
 
+  // ================= SEND MESSAGE =================
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _sending) return;
@@ -60,18 +74,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         text: text,
       );
 
-      setState(() {
-        _messages.add(message);
-        _controller.clear();
-        _sending = false;
-      });
-
-      _scrollToBottom();
-    } catch (e) {
-      setState(() => _sending = false);
+      if (message != null && mounted) {
+        setState(() {
+          _messages.add(message);
+          _controller.clear();
+        });
+        _scrollToBottom();
+      }
+    } catch (_) {
+      // ignore
+    } finally {
+      if (mounted) {
+        setState(() => _sending = false);
+      }
     }
   }
 
+  // ================= SCROLL =================
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
@@ -85,13 +104,24 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  // ================= UI =================
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
         title: Row(
           children: [
-            Avatar(imageUrl: widget.user.avatar, size: 36),
+            Avatar(
+              imageUrl: widget.user.avatarUrl,
+              size: 36,
+            ),
             const SizedBox(width: 10),
             Text(
               widget.user.username,
@@ -102,6 +132,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
       body: Column(
         children: [
+          // ===== MESSAGES =====
           Expanded(
             child: _loading
                 ? const Loading()
@@ -114,10 +145,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
-                      return ChatBubble(message: msg);
+                      final isMe = _myUserId != null &&
+                          msg.sender.id == _myUserId;
+
+                      return ChatBubble(
+                        message: msg.text,
+                        isMe: isMe,
+                        createdAt: msg.createdAt,
+                        isRead: msg.isRead,
+                      );
                     },
                   ),
           ),
+
+          // ===== INPUT =====
           _InputBar(
             controller: _controller,
             sending: _sending,
@@ -130,7 +171,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 }
 
 /// ------------------------------------------------
-/// Message Input Bar
+/// MESSAGE INPUT BAR
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
