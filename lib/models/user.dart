@@ -1,6 +1,6 @@
 /// lib/models/user.dart
 /// =====================================================
-/// USER MODEL – FINAL v5 (FIXED)
+/// USER MODEL – FINAL v5.1 (BUILD SAFE)
 /// Compatible with UI, Search, Follow, Chat
 /// =====================================================
 
@@ -25,11 +25,7 @@ class User {
   final bool isFollowing;
 
   // ================= META =================
-  final DateTime createdAt;
-
-  // =====================================================
-  // CONSTRUCTOR
-  // =====================================================
+  final DateTime? createdAt;
 
   const User({
     required this.id,
@@ -43,13 +39,12 @@ class User {
     required this.followingCount,
     required this.postsCount,
     required this.isFollowing,
-    required this.createdAt,
+    this.createdAt,
   });
 
   // =====================================================
-  // FROM JSON (BACKEND → APP)
+  // FROM JSON
   // =====================================================
-
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as int,
@@ -58,7 +53,11 @@ class User {
       email: json['email'] as String?,
       phone: json['phone'] as String?,
 
-      avatarUrl: json['avatar_url'] as String?,
+      // support avatar OR avatar_url
+      avatarUrl:
+          json['avatar_url'] as String? ??
+          json['avatar'] as String?,
+
       bio: json['bio'] as String?,
 
       isVerified: json['is_verified'] == true,
@@ -67,16 +66,17 @@ class User {
       followingCount: json['following_count'] ?? 0,
       postsCount: json['posts_count'] ?? 0,
 
-      isFollowing: json['is_following'] ?? false,
+      isFollowing: json['is_following'] == true,
 
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
     );
   }
 
   // =====================================================
-  // TO JSON (APP → BACKEND)
+  // TO JSON
   // =====================================================
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -90,14 +90,13 @@ class User {
       'following_count': followingCount,
       'posts_count': postsCount,
       'is_following': isFollowing,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 
   // =====================================================
   // COPY WITH
   // =====================================================
-
   User copyWith({
     String? username,
     String? avatarUrl,
@@ -125,20 +124,16 @@ class User {
   }
 
   // =====================================================
-  // 🔧 UI HELPERS (IMPORTANT FIXES)
+  // UI HELPERS
   // =====================================================
-
-  /// UI uses: user.avatar
   String? get avatar => avatarUrl;
 
-  /// UI safe checks
   bool get hasAvatar =>
       avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
   bool get hasBio =>
       bio != null && bio!.trim().isNotEmpty;
 
-  /// Display helpers
   String get displayName => username;
 
   @override
