@@ -1,19 +1,17 @@
 /// lib/core/api.dart
 /// =====================================================
-/// RAONSON API – FULL & FINAL (v5)
-/// Contract between Flutter <-> Backend
+/// RAONSON API – FULL & FINAL (v5) ✅ FIXED
+/// Single source of truth for all endpoints
 /// =====================================================
 
 class Api {
-  Api._(); // no instance
+  Api._();
 
   // =====================================================
   // BASE
   // =====================================================
 
-  /// CHANGE ONLY THIS IF SERVER MOVES
   static const String baseUrl = 'https://raonson-me.onrender.com';
-
   static const String api = '$baseUrl/api';
 
   // =====================================================
@@ -21,26 +19,22 @@ class Api {
   // =====================================================
 
   static const String auth = '$api/auth';
-
   static const String login = '$auth/login';
   static const String register = '$auth/register';
   static const String logout = '$auth/logout';
   static const String refresh = '$auth/refresh';
 
   // =====================================================
-  // USER / PROFILE
+  // USERS / PROFILE
   // =====================================================
 
   static const String users = '$api/users';
 
-  /// GET /users/me
   static const String me = '$users/me';
 
-  /// GET /users/{username}
   static String userProfile(String username) =>
       '$users/$username';
 
-  /// PUT /users/me
   static const String editProfile = '$users/me';
 
   // =====================================================
@@ -48,26 +42,25 @@ class Api {
   // =====================================================
 
   static const String follow = '$api/follow';
+  static const String unfollow = '$api/unfollow';
 
-  /// POST /follow/{username}
   static String followUser(String username) =>
       '$follow/$username';
 
-  /// DELETE /follow/{username}
   static String unfollowUser(String username) =>
-      '$follow/$username';
+      '$unfollow/$username';
 
-  /// GET /follow/{username}/followers
   static String followers(String username) =>
       '$follow/$username/followers';
 
-  /// GET /follow/{username}/following
   static String following(String username) =>
       '$follow/$username/following';
 
-  /// GET /follow/{username}/is-following
   static String isFollowing(String username) =>
       '$follow/$username/is-following';
+
+  static String followCounts(String username) =>
+      '$follow/counts/$username';
 
   // =====================================================
   // POSTS
@@ -75,41 +68,29 @@ class Api {
 
   static const String posts = '$api/posts';
 
-  /// POST /posts
   static const String createPost = posts;
-
-  /// GET /posts/feed
   static const String feedPosts = '$posts/feed';
 
-  /// GET /posts/user/{username}
   static String userPosts(String username) =>
       '$posts/user/$username';
 
-  /// DELETE /posts/{postId}
   static String deletePost(int postId) =>
       '$posts/$postId';
 
-  // =====================================================
-  // POST ACTIONS (LIKE / SAVE)
-  // =====================================================
+  // ---------- POST ACTIONS ----------
 
-  /// POST /posts/{id}/like
   static String likePost(int postId) =>
       '$posts/$postId/like';
 
-  /// POST /posts/{id}/unlike
   static String unlikePost(int postId) =>
       '$posts/$postId/unlike';
 
-  /// POST /posts/{id}/save
   static String savePost(int postId) =>
       '$posts/$postId/save';
 
-  /// POST /posts/{id}/unsave
   static String unsavePost(int postId) =>
       '$posts/$postId/unsave';
 
-  /// GET /posts/saved
   static const String savedPosts = '$posts/saved';
 
   // =====================================================
@@ -118,13 +99,17 @@ class Api {
 
   static const String comments = '$api/comments';
 
-  /// GET /comments/{postId}
   static String getComments(int postId) =>
       '$comments/$postId';
 
-  /// POST /comments/{postId}
   static String addComment(int postId) =>
       '$comments/$postId';
+
+  static String likeComment(int commentId) =>
+      '$comments/$commentId/like';
+
+  static String unlikeComment(int commentId) =>
+      '$comments/$commentId/unlike';
 
   // =====================================================
   // STORIES
@@ -132,13 +117,9 @@ class Api {
 
   static const String stories = '$api/stories';
 
-  /// POST /stories
   static const String createStory = stories;
+  static const String getStories = '$stories/feed';
 
-  /// GET /stories/feed
-  static const String storiesFeed = '$stories/feed';
-
-  /// POST /stories/{id}/view
   static String viewStory(int storyId) =>
       '$stories/$storyId/view';
 
@@ -148,52 +129,79 @@ class Api {
 
   static const String reels = '$api/reels';
 
-  /// POST /reels
   static const String createReel = reels;
+  static const String getReels = '$reels/feed';
 
-  /// GET /reels/feed
-  static const String reelsFeed = '$reels/feed';
-
-  /// POST /reels/{id}/like
   static String likeReel(int reelId) =>
       '$reels/$reelId/like';
 
-  /// POST /reels/{id}/unlike
   static String unlikeReel(int reelId) =>
       '$reels/$reelId/unlike';
 
-  /// POST /reels/{id}/save
   static String saveReel(int reelId) =>
       '$reels/$reelId/save';
 
-  /// POST /reels/{id}/unsave
   static String unsaveReel(int reelId) =>
       '$reels/$reelId/unsave';
 
-  /// GET /reels/saved
   static const String savedReels = '$reels/saved';
 
   // =====================================================
-  // CHAT
+  // CHAT / MESSAGES
   // =====================================================
 
   static const String chats = '$api/chats';
 
-  /// GET /chats
-  static const String chatList = chats;
-
-  /// GET /chats/{chatId}
   static String chatMessages(int chatId) =>
       '$chats/$chatId';
 
-  /// POST /chats/{chatId}/send
   static String sendMessage(int chatId) =>
       '$chats/$chatId/send';
+
+  static String markChatRead(int chatId) =>
+      '$chats/$chatId/read';
+
+  // =====================================================
+  // NOTIFICATIONS
+  // =====================================================
+
+  static const String notifications = '$api/notifications';
+
+  static const String notificationsUnreadCount =
+      '$notifications/unread-count';
+
+  static String markNotificationRead(int id) =>
+      '$notifications/$id/read';
+
+  static const String markAllNotificationsRead =
+      '$notifications/read-all';
+
+  static String deleteNotification(int id) =>
+      '$notifications/$id';
+
+  static const String clearNotifications =
+      '$notifications/clear';
 
   // =====================================================
   // SEARCH
   // =====================================================
 
-  /// GET /search?q=keyword
   static const String search = '$api/search';
+
+  static String searchUsers(String query) =>
+      '$search/users?q=$query';
+
+  static String searchPosts(String query) =>
+      '$search/posts?q=$query';
+
+  static String searchHashtags(String query) =>
+      '$search/hashtags?q=$query';
+
+  // =====================================================
+  // REPORTS
+  // =====================================================
+
+  static const String reports = '$api/reports';
+
+  static const String createReport = reports;
 }
