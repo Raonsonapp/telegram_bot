@@ -1,53 +1,87 @@
 import 'package:flutter/material.dart';
+
+import '../../models/message.dart';
+import '../../models/user.dart';
+import '../../services/chat_service.dart';
+import '../../widgets/avatar.dart';
+import '../../widgets/loading.dart';
+import '../../widgets/empty_state.dart';
 import 'chat_room_screen.dart';
 
-class ChatListScreen extends StatelessWidget {
+/// ChatListScreen
+/// ------------------------------------------------
+/// Shows all user chats (Instagram-like)
+///
+/// Version: v5 FULL
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
   @override
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> {
+  bool _loading = true;
+  List<ChatItem> _chats = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChats();
+  }
+
+  Future<void> _loadChats() async {
+    try {
+      final data = await ChatService.getChats();
+      setState(() {
+        _chats = data;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _openChat(ChatItem chat) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatRoomScreen(
+          chatId: chat.chatId,
+          user: chat.user,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Loading();
+    }
+
+    if (_chats.isEmpty) {
+      return const EmptyState(
+        icon: Icons.chat_bubble_outline,
+        title: 'No messages',
+        subtitle: 'Start a conversation to see it here',
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Messages',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () {},
-          )
-        ],
       ),
-      body: ListView.builder(
-        itemCount: _mockChats.length,
+      body: ListView.separated(
+        itemCount: _chats.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
         itemBuilder: (context, index) {
-          final chat = _mockChats[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.grey.shade800,
-              child: Text(chat['name'][0]),
-            ),
-            title: Text(chat['name']),
-            subtitle: Text(
-              chat['lastMessage'],
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Text(
-              chat['time'],
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ChatRoomScreen(
-                    username: chat['name'],
-                  ),
-                ),
-              );
-            },
+          final chat = _chats[index];
+          return _ChatTile(
+            chat: chat,
+            onTap: () => _openChat(chat),
           );
         },
       ),
@@ -55,21 +89,75 @@ class ChatListScreen extends StatelessWidget {
   }
 }
 
-// ===== MOCK DATA =====
-final List<Map<String, dynamic>> _mockChats = [
-  {
-    'name': 'jarvis',
-    'lastMessage': 'Ready for the next build 🚀',
-    'time': 'Now',
-  },
-  {
-    'name': 'raonson_team',
-    'lastMessage': 'Design approved',
-    'time': '12:40',
-  },
-  {
-    'name': 'developer',
-    'lastMessage': 'Push the update',
-    'time': 'Yesterday',
-  },
-];
+/// ------------------------------------------------
+/// Chat Tile
+class _ChatTile extends StatelessWidget {
+  final ChatItem chat;
+  final VoidCallback onTap;
+
+  const _ChatTile({
+    required this.chat,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      leading: Avatar(
+        imageUrl: chat.user.avatar,
+        size: 44,
+      ),
+      title: Text(
+        chat.user.username,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        chat.lastMessage?.text ?? 'No messages yet',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: chat.unreadCount > 0
+          ? CircleAvatar(
+              radius: 10,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Text(
+                chat.unreadCount.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+/// ------------------------------------------------
+/// ChatItem (local UI model)
+class ChatItem {
+  final String chatId;
+  final User user;
+  final Message? lastMessage;
+  final int unreadCount;
+
+  ChatItem({
+    required this.chatId,
+    required this.user,
+    this.lastMessage,
+    required this.unreadCount,
+  });
+
+  factory ChatItem.fromJson(Map<String, dynamic> json) {
+    return ChatItem(
+      chatId: json['chat_id'],
+      user: User.fromJson(json['user']),
+      lastMessage: json['last_message'] != null
+          ? Message.fromJson(json['last_message'])
+          : null,
+      unreadCount: json['unread_count'] ?? 0,
+    );
+  }
+}
