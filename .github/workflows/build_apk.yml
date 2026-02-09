@@ -1,0 +1,51 @@
+name: Build Raonson APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Flutter (STABLE + version safe)
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.22.3"
+          channel: stable
+          cache: true
+
+      # 3️⃣ Flutter doctor (debug)
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      # 4️⃣ Clean (VERY IMPORTANT)
+      - name: Flutter clean
+        run: flutter clean
+
+      # 5️⃣ Get dependencies (72 files linked here)
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # 6️⃣ Analyze (optional but safe)
+      - name: Flutter analyze
+        run: flutter analyze || true
+
+      # 7️⃣ Build APK (RELEASE)
+      - name: Build APK
+        run: flutter build apk --release
+
+      # 8️⃣ Upload APK artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: raonson-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
