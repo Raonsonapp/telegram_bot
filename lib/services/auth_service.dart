@@ -1,6 +1,6 @@
 /// lib/services/auth_service.dart
 /// =====================================================
-/// AUTH SERVICE – FINAL v5
+/// AUTH SERVICE – FINAL v5 (FIXED)
 /// Handles:
 /// - Login
 /// - Register
@@ -22,7 +22,7 @@ class AuthService {
     required String emailOrUsername,
     required String password,
   }) async {
-    final response = await HttpService.post(
+    final res = await HttpService.post(
       Api.login,
       body: {
         'login': emailOrUsername,
@@ -31,11 +31,15 @@ class AuthService {
       auth: false,
     );
 
-    final token = response['access_token'];
-    final userJson = response['user'];
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid login response format');
+    }
 
-    if (token == null || userJson == null) {
-      throw Exception('Invalid login response');
+    final token = res['access_token'];
+    final userJson = res['user'];
+
+    if (token is! String || userJson is! Map<String, dynamic>) {
+      throw Exception('Invalid login response data');
     }
 
     await Session.saveToken(token);
@@ -52,7 +56,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final response = await HttpService.post(
+    final res = await HttpService.post(
       Api.register,
       body: {
         'username': username,
@@ -62,11 +66,15 @@ class AuthService {
       auth: false,
     );
 
-    final token = response['access_token'];
-    final userJson = response['user'];
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid register response format');
+    }
 
-    if (token == null || userJson == null) {
-      throw Exception('Invalid register response');
+    final token = res['access_token'];
+    final userJson = res['user'];
+
+    if (token is! String || userJson is! Map<String, dynamic>) {
+      throw Exception('Invalid register response data');
     }
 
     await Session.saveToken(token);
@@ -86,9 +94,9 @@ class AuthService {
         auth: true,
       );
     } catch (_) {
-      // ignore backend failure
+      // backend failure ignored
     } finally {
-      await Session.clear();
+      await Session.clearSession();
     }
   }
 
@@ -97,11 +105,20 @@ class AuthService {
   // =====================================================
 
   static Future<User> me() async {
-    final response = await HttpService.get(
+    final token = await Session.getToken();
+    if (token == null) {
+      throw Exception('Not authenticated');
+    }
+
+    final res = await HttpService.get(
       Api.me,
       auth: true,
     );
 
-    return User.fromJson(response);
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid user response');
+    }
+
+    return User.fromJson(res);
   }
 }
