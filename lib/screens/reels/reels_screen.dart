@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../services/post_service.dart';
-import '../../core/session.dart';
-import 'reel_player.dart';
-import 'reel_actions.dart';
+import '../../models/reel.dart';
+import '../../services/reel_service.dart';
+import '../../widgets/avatar.dart';
+import '../../widgets/verified_badge.dart';
+import '../../widgets/loading.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/reel_actions.dart';
 
 class ReelsScreen extends StatefulWidget {
   const ReelsScreen({super.key});
@@ -15,37 +18,55 @@ class ReelsScreen extends StatefulWidget {
 
 class _ReelsScreenState extends State<ReelsScreen> {
   final PageController _pageController = PageController();
-  List<dynamic> _reels = [];
+  final List<VideoPlayerController> _controllers = [];
+
   bool _loading = true;
-  String _me = '';
+  List<Reel> _reels = [];
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _init();
-  }
-
-  Future<void> _init() async {
-    _me = await Session.username() ?? '';
-    await _loadReels();
+    _loadReels();
   }
 
   Future<void> _loadReels() async {
     try {
-      final data = await PostService.getReels();
-      setState(() {
-        _reels = data;
-        _loading = false;
-      });
-    } catch (_) {
+      final data = await ReelService.getReels();
+      _reels = data;
+
+      for (final r in _reels) {
+        final c = VideoPlayerController.networkUrl(Uri.parse(r.videoUrl));
+        await c.initialize();
+        c.setLooping(true);
+        _controllers.add(c);
+      }
+
+      if (_controllers.isNotEmpty) {
+        _controllers.first.play();
+      }
+
+      setState(() => _loading = false);
+    } catch (e) {
       setState(() => _loading = false);
     }
   }
 
   @override
   void dispose() {
+    for (final c in _controllers) {
+      c.dispose();
+    }
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    if (_controllers.isEmpty) return;
+
+    _controllers[_currentIndex].pause();
+    _currentIndex = index;
+    _controllers[_currentIndex].play();
   }
 
   @override
@@ -53,19 +74,14 @@ class _ReelsScreenState extends State<ReelsScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: Loading()),
       );
     }
 
     if (_reels.isEmpty) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: Text(
-            'No reels yet',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
+        body: EmptyState(text: 'No reels yet'),
       );
     }
 
@@ -75,106 +91,97 @@ class _ReelsScreenState extends State<ReelsScreen> {
         controller: _pageController,
         scrollDirection: Axis.vertical,
         itemCount: _reels.length,
+        onPageChanged: _onPageChanged,
         itemBuilder: (context, index) {
-          final reel = _reels[index];
-
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // ===== VIDEO PLAYER =====
-              ReelPlayer(
-                videoUrl: reel['media_url'],
-                autoPlay: index == 0,
-              ),
-
-              // ===== GRADIENT (BOTTOM) =====
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 250,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black87,
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ===== LEFT INFO =====
-              Positioned(
-                left: 16,
-                bottom: 40,
-                right: 80,
-                child: _reelInfo(reel),
-              ),
-
-              // ===== RIGHT ACTIONS =====
-              Positioned(
-                right: 12,
-                bottom: 80,
-                child: ReelActions(
-                  postId: reel['id'],
-                  likesCount: reel['likes'] ?? 0,
-                  commentsCount: reel['comments'] ?? 0,
-                  isLiked: reel['is_liked'] ?? false,
-                  isSaved: reel['is_saved'] ?? false,
-                ),
-              ),
-            ],
-          );
+          return _reelItem(_reels[index], _controllers[index]);
         },
       ),
     );
   }
 
-  // ================= INFO (USERNAME + CAPTION) =================
-  Widget _reelInfo(dynamic reel) {
-    final String username = reel['username'] ?? '';
-    final String caption = reel['caption'] ?? '';
+  // ================= REEL ITEM =================
+  Widget _reelItem(Reel reel, VideoPlayerController controller) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ===== VIDEO =====
+        GestureDetector(
+          onTap: () {
+            if (controller.value.isPlaying) {
+              controller.pause();
+            } else {
+              controller.play();
+            }
+            setState(() {});
+          },
+          child: VideoPlayer(controller),
+        ),
 
+        // ===== GRADIENT =====
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.center,
+              colors: [
+                Colors.black87,
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+
+        // ===== LEFT INFO =====
+        Positioned(
+          left: 12,
+          bottom: 24,
+          right: 80,
+          child: _reelInfo(reel),
+        ),
+
+        // ===== ACTIONS =====
+        Positioned(
+          right: 8,
+          bottom: 24,
+          child: ReelActions(
+            reel: reel,
+            onChanged: _loadReels,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= INFO =================
+  Widget _reelInfo(Reel reel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.person, size: 16, color: Colors.white),
-            ),
+            Avatar(url: reel.userAvatar, size: 36),
             const SizedBox(width: 8),
             Text(
-              username,
+              reel.username,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(width: 6),
-            if (reel['is_verified'] == true)
-              const Icon(
-                Icons.verified,
-                size: 16,
-                color: Colors.green,
-              ),
+            if (reel.isVerified) const SizedBox(width: 4),
+            if (reel.isVerified) const VerifiedBadge(),
           ],
         ),
-        const SizedBox(height: 8),
-        if (caption.isNotEmpty)
+        if (reel.caption.isNotEmpty) ...[
+          const SizedBox(height: 6),
           Text(
-            caption,
+            reel.caption,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white),
           ),
+        ],
       ],
     );
   }
