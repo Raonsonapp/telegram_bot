@@ -1,28 +1,43 @@
+/// lib/models/post.dart
+/// =====================================================
+/// POST MODEL – FINAL v5
+/// Used in:
+/// Feed, Profile, Search, Comments
+/// =====================================================
+
 import 'user.dart';
 
 class Post {
+  // ================= IDENTITY =================
   final int id;
+
+  // ================= OWNER =================
   final User user;
 
-  final String mediaUrl; // image / video
-  final String mediaType; // image | video | reel
+  // ================= CONTENT =================
+  final String mediaUrl; // image or video
+  final String? caption;
 
-  final String caption;
-
+  // ================= STATS =================
   final int likesCount;
   final int commentsCount;
 
+  // ================= USER STATE =================
   final bool isLiked;
   final bool isSaved;
 
+  // ================= META =================
   final DateTime createdAt;
+
+  // =====================================================
+  // CONSTRUCTOR
+  // =====================================================
 
   const Post({
     required this.id,
     required this.user,
     required this.mediaUrl,
-    required this.mediaType,
-    required this.caption,
+    this.caption,
     required this.likesCount,
     required this.commentsCount,
     required this.isLiked,
@@ -30,32 +45,38 @@ class Post {
     required this.createdAt,
   });
 
-  // ================= FROM JSON =================
+  // =====================================================
+  // FROM JSON (BACKEND → APP)
+  // =====================================================
+
   factory Post.fromJson(Map<String, dynamic> json) {
     return Post(
-      id: json['id'] is String
-          ? int.parse(json['id'])
-          : json['id'] ?? 0,
-      user: User.fromJson(json['user'] ?? {}),
-      mediaUrl: json['media_url'] ?? '',
-      mediaType: json['media_type'] ?? 'image',
-      caption: json['caption'] ?? '',
+      id: json['id'] as int,
+
+      user: User.fromJson(json['user']),
+
+      mediaUrl: json['media_url'] as String,
+      caption: json['caption'],
+
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
-      isLiked: json['is_liked'] == true || json['is_liked'] == 1,
-      isSaved: json['is_saved'] == true || json['is_saved'] == 1,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ??
-          DateTime.now(),
+
+      isLiked: json['is_liked'] ?? false,
+      isSaved: json['is_saved'] ?? false,
+
+      createdAt: DateTime.parse(json['created_at']),
     );
   }
 
-  // ================= TO JSON =================
+  // =====================================================
+  // TO JSON (APP → BACKEND)
+  // =====================================================
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'user': user.toJson(),
       'media_url': mediaUrl,
-      'media_type': mediaType,
       'caption': caption,
       'likes_count': likesCount,
       'comments_count': commentsCount,
@@ -65,40 +86,42 @@ class Post {
     };
   }
 
-  // ================= COPY WITH =================
+  // =====================================================
+  // COPY WITH (STATE UPDATE SAFE)
+  // =====================================================
+
   Post copyWith({
-    int? id,
-    User? user,
-    String? mediaUrl,
-    String? mediaType,
-    String? caption,
     int? likesCount,
     int? commentsCount,
     bool? isLiked,
     bool? isSaved,
-    DateTime? createdAt,
   }) {
     return Post(
-      id: id ?? this.id,
-      user: user ?? this.user,
-      mediaUrl: mediaUrl ?? this.mediaUrl,
-      mediaType: mediaType ?? this.mediaType,
-      caption: caption ?? this.caption,
+      id: id,
+      user: user,
+      mediaUrl: mediaUrl,
+      caption: caption,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,
       isLiked: isLiked ?? this.isLiked,
       isSaved: isSaved ?? this.isSaved,
-      createdAt: createdAt ?? this.createdAt,
+      createdAt: createdAt,
     );
   }
 
-  // ================= HELPERS =================
-  bool get isVideo => mediaType == 'video' || mediaType == 'reel';
+  // =====================================================
+  // HELPERS
+  // =====================================================
 
-  bool get hasCaption => caption.isNotEmpty;
+  bool get hasCaption =>
+      caption != null && caption!.isNotEmpty;
 
-  String get shortCaption =>
-      caption.length > 120 ? '${caption.substring(0, 120)}...' : caption;
+  bool get isVideo =>
+      mediaUrl.toLowerCase().endsWith('.mp4') ||
+      mediaUrl.toLowerCase().endsWith('.mov') ||
+      mediaUrl.toLowerCase().endsWith('.webm');
+
+  bool get isImage => !isVideo;
 
   @override
   String toString() {
