@@ -1,33 +1,29 @@
-/// lib/core/api.dart
 /// =====================================================
-/// RAONSON API – FULL & FINAL (v5) ✅ FIXED
-/// Single source of truth for all endpoints
+/// RAONSON API CONFIG – CORE
+/// Central place for all backend endpoints
 /// =====================================================
 
 class Api {
   Api._();
 
-  // =====================================================
-  // BASE
-  // =====================================================
-
-  static const String baseUrl = 'https://raonson-me.onrender.com';
+  // ================= BASE =================
+  static const String baseUrl = 'https://api.raonson.com';
   static const String api = '$baseUrl/api';
 
-  // =====================================================
-  // AUTH
-  // =====================================================
-
+  // ================= AUTH =================
   static const String auth = '$api/auth';
+
   static const String login = '$auth/login';
   static const String register = '$auth/register';
   static const String logout = '$auth/logout';
   static const String refresh = '$auth/refresh';
 
-  // =====================================================
-  // USERS / PROFILE
-  // =====================================================
+  static const String forgotPassword = '$auth/forgot-password';
+  static const String changePassword = '$auth/change-password';
+  static const String verifyEmail = '$auth/verify-email';
+  static const String verifyPhone = '$auth/verify-phone';
 
+  // ================= USERS / PROFILE =================
   static const String users = '$api/users';
 
   static const String me = '$users/me';
@@ -35,20 +31,26 @@ class Api {
   static String userProfile(String username) =>
       '$users/$username';
 
-  static const String editProfile = '$users/me';
+  static const String editProfile = '$users/edit';
+  static const String uploadAvatar = '$users/avatar';
 
-  // =====================================================
-  // FOLLOW SYSTEM
-  // =====================================================
+  static String blockUser(int userId) =>
+      '$users/$userId/block';
 
+  static String unblockUser(int userId) =>
+      '$users/$userId/unblock';
+
+  static String reportUser(int userId) =>
+      '$users/$userId/report';
+
+  // ================= FOLLOW SYSTEM =================
   static const String follow = '$api/follow';
-  static const String unfollow = '$api/unfollow';
 
   static String followUser(String username) =>
       '$follow/$username';
 
   static String unfollowUser(String username) =>
-      '$unfollow/$username';
+      '$follow/$username/unfollow';
 
   static String followers(String username) =>
       '$follow/$username/followers';
@@ -56,16 +58,13 @@ class Api {
   static String following(String username) =>
       '$follow/$username/following';
 
-  static String isFollowing(String username) =>
-      '$follow/$username/is-following';
+  static String followRequests(String username) =>
+      '$follow/$username/requests';
 
-  static String followCounts(String username) =>
-      '$follow/counts/$username';
+  static String removeFollower(String username) =>
+      '$follow/$username/remove';
 
-  // =====================================================
-  // POSTS
-  // =====================================================
-
+  // ================= POSTS =================
   static const String posts = '$api/posts';
 
   static const String createPost = posts;
@@ -74,11 +73,16 @@ class Api {
   static String userPosts(String username) =>
       '$posts/user/$username';
 
+  static String postById(int postId) =>
+      '$posts/$postId';
+
   static String deletePost(int postId) =>
       '$posts/$postId';
 
-  // ---------- POST ACTIONS ----------
+  static String editPost(int postId) =>
+      '$posts/$postId/edit';
 
+  // ===== POST ACTIONS =====
   static String likePost(int postId) =>
       '$posts/$postId/like';
 
@@ -91,46 +95,49 @@ class Api {
   static String unsavePost(int postId) =>
       '$posts/$postId/unsave';
 
-  static const String savedPosts = '$posts/saved';
+  static String sharePost(int postId) =>
+      '$posts/$postId/share';
 
-  // =====================================================
-  // COMMENTS
-  // =====================================================
-
+  // ================= COMMENTS =================
   static const String comments = '$api/comments';
 
   static String getComments(int postId) =>
-      '$comments/$postId';
+      '$comments/post/$postId';
 
   static String addComment(int postId) =>
-      '$comments/$postId';
+      '$comments/post/$postId';
 
-  static String likeComment(int commentId) =>
-      '$comments/$commentId/like';
+  static String deleteComment(int commentId) =>
+      '$comments/$commentId';
 
-  static String unlikeComment(int commentId) =>
-      '$comments/$commentId/unlike';
+  static String reportComment(int commentId) =>
+      '$comments/$commentId/report';
 
-  // =====================================================
-  // STORIES
-  // =====================================================
-
+  // ================= STORIES =================
   static const String stories = '$api/stories';
 
   static const String createStory = stories;
-  static const String getStories = '$stories/feed';
+  static const String storiesFeed = '$stories/feed';
 
   static String viewStory(int storyId) =>
       '$stories/$storyId/view';
 
-  // =====================================================
-  // REELS
-  // =====================================================
+  static String storyViewers(int storyId) =>
+      '$stories/$storyId/viewers';
 
+  static String muteStory(String username) =>
+      '$stories/mute/$username';
+
+  static const String highlights = '$stories/highlights';
+
+  // ================= REELS =================
   static const String reels = '$api/reels';
 
+  static const String reelsFeed = '$reels/feed';
   static const String createReel = reels;
-  static const String getReels = '$reels/feed';
+
+  static String reelById(int reelId) =>
+      '$reels/$reelId';
 
   static String likeReel(int reelId) =>
       '$reels/$reelId/like';
@@ -144,27 +151,39 @@ class Api {
   static String unsaveReel(int reelId) =>
       '$reels/$reelId/unsave';
 
-  static const String savedReels = '$reels/saved';
+  // ================= SEARCH =================
+  static const String search = '$api/search';
 
-  // =====================================================
-  // CHAT / MESSAGES
-  // =====================================================
+  static String searchUsers(String q) =>
+      '$search/users?q=$q';
 
+  static String searchPosts(String q) =>
+      '$search/posts?q=$q';
+
+  static String searchReels(String q) =>
+      '$search/reels?q=$q';
+
+  static String searchHashtag(String tag) =>
+      '$search/hashtag/$tag';
+
+  static const String trending = '$search/trending';
+
+  // ================= CHAT =================
   static const String chats = '$api/chats';
 
-  static String chatMessages(int chatId) =>
-      '$chats/$chatId';
+  static String messages(String chatId) =>
+      '$chats/$chatId/messages';
 
-  static String sendMessage(int chatId) =>
+  static String sendMessage(String chatId) =>
       '$chats/$chatId/send';
 
-  static String markChatRead(int chatId) =>
-      '$chats/$chatId/read';
+  static String deleteMessage(String messageId) =>
+      '$chats/message/$messageId';
 
-  // =====================================================
-  // NOTIFICATIONS
-  // =====================================================
+  static String typing(String chatId) =>
+      '$chats/$chatId/typing';
 
+  // ================= NOTIFICATIONS =================
   static const String notifications = '$api/notifications';
 
   static const String notificationsUnreadCount =
@@ -181,27 +200,4 @@ class Api {
 
   static const String clearNotifications =
       '$notifications/clear';
-
-  // =====================================================
-  // SEARCH
-  // =====================================================
-
-  static const String search = '$api/search';
-
-  static String searchUsers(String query) =>
-      '$search/users?q=$query';
-
-  static String searchPosts(String query) =>
-      '$search/posts?q=$query';
-
-  static String searchHashtags(String query) =>
-      '$search/hashtags?q=$query';
-
-  // =====================================================
-  // REPORTS
-  // =====================================================
-
-  static const String reports = '$api/reports';
-
-  static const String createReport = reports;
 }
