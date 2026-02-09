@@ -24,18 +24,11 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   late Post _post;
-  bool _busy = false;
 
   @override
   void initState() {
     super.initState();
     _post = widget.post;
-  }
-
-  Future<void> _refresh() async {
-    final updated = await PostService.getPostById(_post.id);
-    if (!mounted) return;
-    setState(() => _post = updated);
   }
 
   @override
@@ -44,37 +37,25 @@ class _PostCardState extends State<PostCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PostHeader(
-          username: _post.username,
-          avatarUrl: _post.avatar,
-          isVerified: _post.isVerified,
-          onMore: _openMenu,
+          username: _post.user.username,
+          avatarUrl: _post.user.avatarUrl ?? '',
+          isVerified: _post.user.isVerified,
+          onMoreTap: _openMenu,
         ),
 
         PostMedia(
           mediaUrl: _post.mediaUrl,
+          isVideo: _post.isVideo,
         ),
 
         PostActions(
           postId: _post.id,
-          liked: _post.isLiked,
-          saved: _post.isSaved,
+          isLiked: _post.isLiked,
+          isSaved: _post.isSaved,
           likesCount: _post.likesCount,
-          loading: _busy,
-          onLike: _like,
-          onUnlike: _unlike,
-          onSave: _save,
-          onUnsave: _unsave,
-          onComment: () {
-            Navigator.pushNamed(
-              context,
-              '/comments',
-              arguments: _post.id,
-            );
-          },
-          onShare: () {},
         ),
 
-        _caption(),
+        if (_post.hasCaption) _caption(),
 
         const SizedBox(height: 14),
       ],
@@ -84,8 +65,6 @@ class _PostCardState extends State<PostCard> {
   // ================= CAPTION =================
 
   Widget _caption() {
-    if (_post.caption.isEmpty) return const SizedBox.shrink();
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: RichText(
@@ -93,7 +72,7 @@ class _PostCardState extends State<PostCard> {
           style: const TextStyle(color: Colors.white),
           children: [
             TextSpan(
-              text: '${_post.username} ',
+              text: '${_post.user.username} ',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             TextSpan(text: _post.caption),
@@ -101,40 +80,6 @@ class _PostCardState extends State<PostCard> {
         ),
       ),
     );
-  }
-
-  // ================= ACTIONS =================
-
-  Future<void> _like() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await PostService.likePost(_post.id);
-    await _refresh();
-    setState(() => _busy = false);
-  }
-
-  Future<void> _unlike() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await PostService.unlikePost(_post.id);
-    await _refresh();
-    setState(() => _busy = false);
-  }
-
-  Future<void> _save() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await PostService.savePost(_post.id);
-    await _refresh();
-    setState(() => _busy = false);
-  }
-
-  Future<void> _unsave() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await PostService.unsavePost(_post.id);
-    await _refresh();
-    setState(() => _busy = false);
   }
 
   // ================= MENU =================
@@ -163,7 +108,7 @@ class _PostCardState extends State<PostCard> {
                   );
                 },
               ),
-              if (_post.username == widget.me)
+              if (_post.user.username == widget.me)
                 _sheetItem(
                   icon: Icons.delete_outline,
                   label: 'Delete',
@@ -179,7 +124,7 @@ class _PostCardState extends State<PostCard> {
 
   Future<void> _delete() async {
     Navigator.pop(context);
-    await PostService.deletePost(_post.id);
+    await PostService.delete(_post.id);
     widget.onDeleted();
   }
 
