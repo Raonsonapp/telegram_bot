@@ -1,6 +1,6 @@
 /// lib/models/like.dart
 /// =====================================================
-/// LIKE MODEL – FINAL v5
+/// LIKE MODEL – FINAL v5 (FIXED & SAFE)
 /// Used for:
 /// - Post likes
 /// - Reel likes
@@ -42,9 +42,23 @@ class Like {
   factory Like.fromJson(Map<String, dynamic> json) {
     return Like(
       id: json['id'] as int,
-      user: User.fromJson(json['user']),
+
+      user: json['user'] != null
+          ? User.fromJson(json['user'])
+          : const User(
+              id: 0,
+              username: 'unknown',
+              isVerified: false,
+              followersCount: 0,
+              followingCount: 0,
+              postsCount: 0,
+              isFollowing: false,
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+
       targetId: json['target_id'] as int,
-      targetType: json['target_type'] as String,
+      targetType: _safeTargetType(json['target_type']),
+
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -64,12 +78,26 @@ class Like {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI HELPERS
   // =====================================================
+
+  String get username => user.username;
+  String? get avatar => user.avatar;
 
   bool get isPost => targetType == 'post';
   bool get isReel => targetType == 'reel';
   bool get isComment => targetType == 'comment';
+
+  // =====================================================
+  // INTERNAL SAFETY
+  // =====================================================
+
+  static String _safeTargetType(dynamic value) {
+    if (value == 'post' || value == 'reel' || value == 'comment') {
+      return value;
+    }
+    return 'post';
+  }
 
   @override
   String toString() {
