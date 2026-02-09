@@ -1,83 +1,101 @@
+/// lib/models/story.dart
+/// =====================================================
+/// STORY MODEL – FINAL v5
+/// Used in:
+/// StoryBar, Story Viewer
+/// =====================================================
+
 import 'user.dart';
 
 class Story {
+  // ================= IDENTITY =================
   final int id;
+
+  // ================= OWNER =================
   final User user;
 
-  final String mediaUrl; // image / video
-  final String mediaType; // image | video
+  // ================= CONTENT =================
+  final String mediaUrl; // image or video
 
+  // ================= STATE =================
   final bool isViewed;
+
+  // ================= TIME =================
   final DateTime createdAt;
   final DateTime expiresAt;
+
+  // =====================================================
+  // CONSTRUCTOR
+  // =====================================================
 
   const Story({
     required this.id,
     required this.user,
     required this.mediaUrl,
-    required this.mediaType,
     required this.isViewed,
     required this.createdAt,
     required this.expiresAt,
   });
 
-  // ================= FROM JSON =================
+  // =====================================================
+  // FROM JSON (BACKEND → APP)
+  // =====================================================
+
   factory Story.fromJson(Map<String, dynamic> json) {
     return Story(
-      id: json['id'] is String
-          ? int.parse(json['id'])
-          : json['id'] ?? 0,
-      user: User.fromJson(json['user'] ?? {}),
-      mediaUrl: json['media_url'] ?? '',
-      mediaType: json['media_type'] ?? 'image',
-      isViewed: json['is_viewed'] == true || json['is_viewed'] == 1,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ??
-          DateTime.now(),
-      expiresAt: DateTime.tryParse(json['expires_at'] ?? '') ??
-          DateTime.now().add(const Duration(hours: 24)),
+      id: json['id'] as int,
+
+      user: User.fromJson(json['user']),
+
+      mediaUrl: json['media_url'] as String,
+
+      isViewed: json['is_viewed'] ?? false,
+
+      createdAt: DateTime.parse(json['created_at']),
+      expiresAt: DateTime.parse(json['expires_at']),
     );
   }
 
-  // ================= TO JSON =================
+  // =====================================================
+  // TO JSON (APP → BACKEND)
+  // =====================================================
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'user': user.toJson(),
       'media_url': mediaUrl,
-      'media_type': mediaType,
       'is_viewed': isViewed,
       'created_at': createdAt.toIso8601String(),
       'expires_at': expiresAt.toIso8601String(),
     };
   }
 
-  // ================= COPY WITH =================
-  Story copyWith({
-    int? id,
-    User? user,
-    String? mediaUrl,
-    String? mediaType,
-    bool? isViewed,
-    DateTime? createdAt,
-    DateTime? expiresAt,
-  }) {
-    return Story(
-      id: id ?? this.id,
-      user: user ?? this.user,
-      mediaUrl: mediaUrl ?? this.mediaUrl,
-      mediaType: mediaType ?? this.mediaType,
-      isViewed: isViewed ?? this.isViewed,
-      createdAt: createdAt ?? this.createdAt,
-      expiresAt: expiresAt ?? this.expiresAt,
-    );
-  }
-
-  // ================= HELPERS =================
-  bool get isVideo => mediaType == 'video';
+  // =====================================================
+  // HELPERS
+  // =====================================================
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 
-  Duration get timeLeft => expiresAt.difference(DateTime.now());
+  bool get isVideo =>
+      mediaUrl.toLowerCase().endsWith('.mp4') ||
+      mediaUrl.toLowerCase().endsWith('.mov') ||
+      mediaUrl.toLowerCase().endsWith('.webm');
+
+  bool get isImage => !isVideo;
+
+  Story copyWith({
+    bool? isViewed,
+  }) {
+    return Story(
+      id: id,
+      user: user,
+      mediaUrl: mediaUrl,
+      isViewed: isViewed ?? this.isViewed,
+      createdAt: createdAt,
+      expiresAt: expiresAt,
+    );
+  }
 
   @override
   String toString() {
