@@ -1,4 +1,8 @@
 // lib/widgets/post_actions.dart
+// =====================================================
+// POST ACTIONS – FINAL v5
+// Like / Comment / Save (build-safe)
+// =====================================================
 
 import 'package:flutter/material.dart';
 
@@ -40,42 +44,57 @@ class _PostActionsState extends State<PostActions> {
   // ================= LIKE =================
   Future<void> _toggleLike() async {
     if (_loading) return;
+
     setState(() => _loading = true);
 
     try {
       if (_liked) {
-        await LikeService.unlike(widget.postId);
-        _likes--;
+        await LikeService.unlike(
+          type: 'post',
+          id: widget.postId,
+        );
+        if (_likes > 0) _likes--;
       } else {
-        await LikeService.like(widget.postId);
+        await LikeService.like(
+          type: 'post',
+          id: widget.postId,
+        );
         _likes++;
       }
-      _liked = !_liked;
-    } catch (_) {}
 
-    setState(() => _loading = false);
+      _liked = !_liked;
+    } catch (_) {
+      // ignore error (optimistic UI)
+    }
+
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   // ================= SAVE =================
   Future<void> _toggleSave() async {
     if (_loading) return;
+
     setState(() => _loading = true);
 
     try {
       if (_saved) {
-        await PostService.unsavePost(widget.postId);
+        await PostService.unsave(widget.postId);
       } else {
-        await PostService.savePost(widget.postId);
+        await PostService.save(widget.postId);
       }
+
       _saved = !_saved;
     } catch (_) {}
 
-    setState(() => _loading = false);
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   // ================= SHARE =================
   void _share() {
-    // Placeholder — баъд ShareService мегузорем
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Share coming soon')),
     );
@@ -83,6 +102,8 @@ class _PostActionsState extends State<PostActions> {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).iconTheme.color;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -93,12 +114,12 @@ class _PostActionsState extends State<PostActions> {
               onPressed: _toggleLike,
               icon: Icon(
                 _liked ? Icons.favorite : Icons.favorite_border,
-                color: _liked ? Colors.red : Colors.white,
+                color: _liked ? Colors.red : iconColor,
               ),
             ),
             IconButton(
               onPressed: () {
-                // Навигация ба comments_screen
+                // TODO: navigate to comments screen
               },
               icon: const Icon(Icons.mode_comment_outlined),
             ),
@@ -111,6 +132,7 @@ class _PostActionsState extends State<PostActions> {
               onPressed: _toggleSave,
               icon: Icon(
                 _saved ? Icons.bookmark : Icons.bookmark_border,
+                color: iconColor,
               ),
             ),
           ],
@@ -122,9 +144,9 @@ class _PostActionsState extends State<PostActions> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               '$_likes likes',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
       ],
