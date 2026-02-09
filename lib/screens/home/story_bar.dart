@@ -1,77 +1,91 @@
 import 'package:flutter/material.dart';
 
 import '../../models/story.dart';
-import '../../theme/colors.dart';
+import '../../services/story_service.dart';
 import '../../widgets/avatar.dart';
+import '../../widgets/story_ring.dart';
+import '../../widgets/loading.dart';
+import '../../widgets/empty_state.dart';
 
-class StoryBar extends StatelessWidget {
-  final List<Story> stories;
-
+class StoryBar extends StatefulWidget {
   const StoryBar({
     super.key,
-    required this.stories,
+    required this.me,
   });
+
+  final String me;
+
+  @override
+  State<StoryBar> createState() => _StoryBarState();
+}
+
+class _StoryBarState extends State<StoryBar> {
+  bool _loading = true;
+  List<Story> _stories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStories();
+  }
+
+  Future<void> _loadStories() async {
+    try {
+      final data = await StoryService.getStories();
+      if (!mounted) return;
+      setState(() {
+        _stories = data;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (stories.isEmpty) {
-      return const SizedBox(height: 90);
+    if (_loading) {
+      return const SizedBox(
+        height: 96,
+        child: Loading(),
+      );
     }
 
-    return Container(
-      height: 100,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.divider,
-            width: 0.3,
-          ),
+    if (_stories.isEmpty) {
+      return const SizedBox(
+        height: 96,
+        child: EmptyState(
+          icon: Icons.auto_stories,
+          text: 'No stories yet',
         ),
-      ),
+      );
+    }
+
+    return SizedBox(
+      height: 96,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: stories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final story = stories[index];
-          return _storyItem(context, story);
-        },
+        itemCount: _stories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (_, i) => _item(_stories[i]),
       ),
     );
   }
 
-  Widget _storyItem(BuildContext context, Story story) {
-    final bool viewed = story.isViewed;
+  Widget _item(Story story) {
+    final isMe = story.username == widget.me;
 
     return GestureDetector(
-      onTap: () {
-        // open story viewer (step later)
-      },
+      onTap: () => _openStory(story),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(2.5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: viewed
-                  ? null
-                  : const LinearGradient(
-                      colors: [
-                        Color(0xFF9B2282),
-                        Color(0xFFEEA863),
-                      ],
-                    ),
-              border: viewed
-                  ? Border.all(
-                      color: AppColors.divider,
-                      width: 1,
-                    )
-                  : null,
-            ),
+          StoryRing(
+            viewed: story.isViewed,
+            isMe: isMe,
             child: Avatar(
-              imageUrl: story.userAvatar,
+              url: story.avatar,
               size: 64,
             ),
           ),
@@ -79,17 +93,31 @@ class StoryBar extends StatelessWidget {
           SizedBox(
             width: 70,
             child: Text(
-              story.username,
+              isMe ? 'Your story' : story.username,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 12,
+                color: Colors.white,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _openStory(Story story) async {
+    Navigator.pushNamed(
+      context,
+      '/story',
+      arguments: story,
+    );
+
+    if (!story.isViewed) {
+      await StoryService.markViewed(story.id);
+      _loadStories();
+    }
   }
 }
