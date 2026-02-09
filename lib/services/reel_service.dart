@@ -1,6 +1,6 @@
 /// lib/services/reel_service.dart
 /// =====================================================
-/// REEL SERVICE – FINAL v5
+/// REEL SERVICE – FINAL v5 (FIXED)
 /// Handles:
 /// - Get reels feed
 /// - Create reel
@@ -19,12 +19,17 @@ class ReelService {
 
   static Future<List<Reel>> getFeed() async {
     final res = await HttpService.get(
-      Api.getReels,
+      Api.reelsFeed,
       auth: true,
     );
 
-    return (res as List)
-        .map((e) => Reel.fromJson(e))
+    if (res is! List) {
+      return [];
+    }
+
+    return res
+        .whereType<Map<String, dynamic>>()
+        .map(Reel.fromJson)
         .toList();
   }
 
@@ -40,10 +45,14 @@ class ReelService {
       Api.createReel,
       body: {
         'video_url': videoUrl,
-        'caption': caption,
+        if (caption != null) 'caption': caption,
       },
       auth: true,
     );
+
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid create reel response');
+    }
 
     return Reel.fromJson(res);
   }
@@ -54,8 +63,8 @@ class ReelService {
 
   static Future<void> like(int reelId) async {
     await HttpService.post(
-      '${Api.likePost}/$reelId',
-      body: {},
+      Api.likeReel(reelId),
+      body: const {},
       auth: true,
     );
   }
@@ -66,8 +75,8 @@ class ReelService {
 
   static Future<void> unlike(int reelId) async {
     await HttpService.post(
-      '${Api.unlikePost}/$reelId',
-      body: {},
+      Api.unlikeReel(reelId),
+      body: const {},
       auth: true,
     );
   }
@@ -78,8 +87,8 @@ class ReelService {
 
   static Future<void> save(int reelId) async {
     await HttpService.post(
-      '${Api.savePost}/$reelId',
-      body: {},
+      Api.saveReel(reelId),
+      body: const {},
       auth: true,
     );
   }
@@ -90,8 +99,8 @@ class ReelService {
 
   static Future<void> unsave(int reelId) async {
     await HttpService.post(
-      '${Api.unsavePost}/$reelId',
-      body: {},
+      Api.unsaveReel(reelId),
+      body: const {},
       auth: true,
     );
   }
