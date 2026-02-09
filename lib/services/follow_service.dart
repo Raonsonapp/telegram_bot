@@ -1,43 +1,112 @@
+/// lib/services/follow_service.dart
+/// Raonson v5 – Follow System
+/// FULL backend-connected service
+/// Build-safe, no missing methods
+
 import '../core/api.dart';
 import '../core/http_service.dart';
+import '../core/session.dart';
 
 class FollowService {
-  // ================= FOLLOW USER =================
-  static Future<void> followUser(int userId) async {
+  // ==============================
+  // FOLLOW USER
+  // ==============================
+  /// POST /follow/{username}
+  static Future<void> followUser(String username) async {
+    final token = await Session.getToken();
+    if (token == null) {
+      throw Exception('User not logged in');
+    }
+
     await HttpService.post(
-      '${Api.followEndpoint}/$userId',
+      '${Api.follow}/$username',
       {},
+      auth: true,
     );
   }
 
-  // ================= UNFOLLOW USER =================
-  static Future<void> unfollowUser(int userId) async {
-    await HttpService.delete(
-      '${Api.followEndpoint}/$userId',
+  // ==============================
+  // UNFOLLOW USER
+  // ==============================
+  /// POST /unfollow/{username}
+  static Future<void> unfollowUser(String username) async {
+    final token = await Session.getToken();
+    if (token == null) {
+      throw Exception('User not logged in');
+    }
+
+    await HttpService.post(
+      '${Api.unfollow}/$username',
+      {},
+      auth: true,
     );
   }
 
-  // ================= GET FOLLOWERS =================
-  static Future<List<dynamic>> getFollowers(int userId) async {
+  // ==============================
+  // GET FOLLOWERS
+  // ==============================
+  /// GET /followers/{username}
+  static Future<List<dynamic>> getFollowers(String username) async {
     final res = await HttpService.get(
-      '${Api.followEndpoint}/$userId/followers',
+      '${Api.followers}/$username',
+      auth: true,
     );
-    return res is List ? res : [];
+
+    if (res is List) {
+      return res;
+    }
+    return [];
   }
 
-  // ================= GET FOLLOWING =================
-  static Future<List<dynamic>> getFollowing(int userId) async {
+  // ==============================
+  // GET FOLLOWING
+  // ==============================
+  /// GET /following/{username}
+  static Future<List<dynamic>> getFollowing(String username) async {
     final res = await HttpService.get(
-      '${Api.followEndpoint}/$userId/following',
+      '${Api.following}/$username',
+      auth: true,
     );
-    return res is List ? res : [];
+
+    if (res is List) {
+      return res;
+    }
+    return [];
   }
 
-  // ================= CHECK IS FOLLOWING =================
-  static Future<bool> isFollowing(int userId) async {
+  // ==============================
+  // CHECK IS FOLLOWING
+  // ==============================
+  /// GET /follow/is-following/{username}
+  static Future<bool> isFollowing(String username) async {
     final res = await HttpService.get(
-      '${Api.followEndpoint}/$userId/is-following',
+      '${Api.follow}/is-following/$username',
+      auth: true,
     );
-    return res is Map && res['following'] == true;
+
+    if (res is Map && res['following'] == true) {
+      return true;
+    }
+    return false;
+  }
+
+  // ==============================
+  // GET FOLLOW COUNTS
+  // ==============================
+  /// GET /follow/counts/{username}
+  static Future<Map<String, int>> getFollowCounts(String username) async {
+    final res = await HttpService.get(
+      '${Api.follow}/counts/$username',
+      auth: true,
+    );
+
+    if (res is Map) {
+      return {
+        'followers': res['followers'] ?? 0,
+        'following': res['following'] ?? 0,
+      };
+    }
+
+    return {'followers': 0, 'following': 0};
   }
 }
