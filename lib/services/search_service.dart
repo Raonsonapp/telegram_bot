@@ -1,60 +1,117 @@
+// lib/services/search_service.dart
+
 import '../core/api.dart';
 import '../core/http_service.dart';
 
 class SearchService {
-  // ================= SEARCH USERS =================
-  // Ҷустуҷӯи корбарон аз рӯи username / name
+  // =========================
+  // GLOBAL SEARCH
+  // q = keyword
+  // =========================
+  static Future<Map<String, dynamic>> search(String query) async {
+    if (query.trim().isEmpty) {
+      return {
+        'users': [],
+        'posts': [],
+        'reels': [],
+        'hashtags': [],
+      };
+    }
+
+    final res = await HttpService.get(
+      '${Api.search}?q=${Uri.encodeComponent(query)}',
+      auth: true,
+    );
+
+    if (res is Map<String, dynamic>) {
+      return {
+        'users': res['users'] ?? [],
+        'posts': res['posts'] ?? [],
+        'reels': res['reels'] ?? [],
+        'hashtags': res['hashtags'] ?? [],
+      };
+    }
+
+    return {
+      'users': [],
+      'posts': [],
+      'reels': [],
+      'hashtags': [],
+    };
+  }
+
+  // =========================
+  // SEARCH USERS ONLY
+  // =========================
   static Future<List<dynamic>> searchUsers(String query) async {
     if (query.trim().isEmpty) return [];
 
     final res = await HttpService.get(
-      '${Api.searchEndpoint}/users?q=$query',
+      '${Api.search}/users?q=${Uri.encodeComponent(query)}',
+      auth: true,
     );
 
-    return res is List ? res : [];
+    if (res is List) return res;
+    return [];
   }
 
-  // ================= SEARCH POSTS =================
-  // Ҷустуҷӯи постҳо (caption, hashtag)
+  // =========================
+  // SEARCH POSTS ONLY
+  // =========================
   static Future<List<dynamic>> searchPosts(String query) async {
     if (query.trim().isEmpty) return [];
 
     final res = await HttpService.get(
-      '${Api.searchEndpoint}/posts?q=$query',
+      '${Api.search}/posts?q=${Uri.encodeComponent(query)}',
+      auth: true,
     );
 
-    return res is List ? res : [];
+    if (res is List) return res;
+    return [];
   }
 
-  // ================= SEARCH REELS =================
-  // Ҷустуҷӯи reels
+  // =========================
+  // SEARCH REELS ONLY
+  // =========================
   static Future<List<dynamic>> searchReels(String query) async {
     if (query.trim().isEmpty) return [];
 
     final res = await HttpService.get(
-      '${Api.searchEndpoint}/reels?q=$query',
+      '${Api.search}/reels?q=${Uri.encodeComponent(query)}',
+      auth: true,
     );
 
-    return res is List ? res : [];
+    if (res is List) return res;
+    return [];
   }
 
-  // ================= TRENDING POSTS =================
-  // Постҳои тренд (барои grid мисли Instagram)
-  static Future<List<dynamic>> getTrendingPosts() async {
+  // =========================
+  // SEARCH BY HASHTAG
+  // =========================
+  static Future<List<dynamic>> searchHashtag(String hashtag) async {
+    if (hashtag.trim().isEmpty) return [];
+
+    final tag = hashtag.replaceAll('#', '');
+
     final res = await HttpService.get(
-      '${Api.searchEndpoint}/trending',
+      '${Api.search}/hashtag/$tag',
+      auth: true,
     );
 
-    return res is List ? res : [];
+    if (res is List) return res;
+    return [];
   }
 
-  // ================= SUGGESTED USERS =================
-  // Корбарони тавсияшаванда
-  static Future<List<dynamic>> getSuggestedUsers() async {
+  // =========================
+  // TRENDING SEARCH (EXPLORE)
+  // =========================
+  static Future<List<dynamic>> getTrending() async {
     final res = await HttpService.get(
-      '${Api.searchEndpoint}/suggested',
+      '${Api.search}/trending',
+      auth: true,
     );
 
-    return res is List ? res : [];
+    if (res is List) return res;
+    return [];
   }
 }
