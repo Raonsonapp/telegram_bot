@@ -1,22 +1,17 @@
-// lib/widgets/reel_actions.dart
-
 import 'package:flutter/material.dart';
 
+import '../models/reel.dart';
 import '../services/reel_service.dart';
 
 class ReelActions extends StatefulWidget {
-  final int reelId;
-  final bool isLiked;
-  final bool isSaved;
-  final int likesCount;
+  final Reel reel;
+  final VoidCallback onChanged;
   final VoidCallback? onCommentTap;
 
   const ReelActions({
     super.key,
-    required this.reelId,
-    required this.isLiked,
-    required this.isSaved,
-    required this.likesCount,
+    required this.reel,
+    required this.onChanged,
     this.onCommentTap,
   });
 
@@ -25,18 +20,9 @@ class ReelActions extends StatefulWidget {
 }
 
 class _ReelActionsState extends State<ReelActions> {
-  late bool _liked;
-  late bool _saved;
-  late int _likes;
   bool _loading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _liked = widget.isLiked;
-    _saved = widget.isSaved;
-    _likes = widget.likesCount;
-  }
+  Reel get _reel => widget.reel;
 
   // ================= LIKE =================
   Future<void> _toggleLike() async {
@@ -44,17 +30,15 @@ class _ReelActionsState extends State<ReelActions> {
     setState(() => _loading = true);
 
     try {
-      if (_liked) {
-        await ReelService.unlike(widget.reelId);
-        _likes--;
+      if (_reel.isLiked) {
+        await ReelService.unlike(_reel.id);
       } else {
-        await ReelService.like(widget.reelId);
-        _likes++;
+        await ReelService.like(_reel.id);
       }
-      _liked = !_liked;
+      widget.onChanged();
     } catch (_) {}
 
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
   // ================= SAVE =================
@@ -63,20 +47,19 @@ class _ReelActionsState extends State<ReelActions> {
     setState(() => _loading = true);
 
     try {
-      if (_saved) {
-        await ReelService.unsave(widget.reelId);
+      if (_reel.isSaved) {
+        await ReelService.unsave(_reel.id);
       } else {
-        await ReelService.save(widget.reelId);
+        await ReelService.save(_reel.id);
       }
-      _saved = !_saved;
+      widget.onChanged();
     } catch (_) {}
 
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
   // ================= SHARE =================
   void _share() {
-    // Placeholder — баъд ShareService илова мекунем
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Share coming soon')),
     );
@@ -91,16 +74,16 @@ class _ReelActionsState extends State<ReelActions> {
         IconButton(
           onPressed: _toggleLike,
           icon: Icon(
-            _liked ? Icons.favorite : Icons.favorite_border,
-            color: _liked ? Colors.red : Colors.white,
+            _reel.isLiked ? Icons.favorite : Icons.favorite_border,
+            color: _reel.isLiked ? Colors.red : Colors.white,
             size: 28,
           ),
         ),
-        if (_likes > 0)
+        if (_reel.likesCount > 0)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
-              '$_likes',
+              '${_reel.likesCount}',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -134,7 +117,7 @@ class _ReelActionsState extends State<ReelActions> {
         IconButton(
           onPressed: _toggleSave,
           icon: Icon(
-            _saved ? Icons.bookmark : Icons.bookmark_border,
+            _reel.isSaved ? Icons.bookmark : Icons.bookmark_border,
             color: Colors.white,
             size: 26,
           ),
