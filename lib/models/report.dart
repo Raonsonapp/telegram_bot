@@ -1,6 +1,6 @@
 /// lib/models/report.dart
 /// =====================================================
-/// REPORT MODEL – FINAL v5
+/// REPORT MODEL – FINAL v5 (FIXED & SAFE)
 /// Used for:
 /// - Reporting posts
 /// - Reporting reels
@@ -35,7 +35,7 @@ class Report {
   final int id;
 
   // ================= ACTOR =================
-  /// User who sent report
+  /// User who sent report (can be system)
   final User reporter;
 
   // ================= TARGET =================
@@ -74,12 +74,18 @@ class Report {
   factory Report.fromJson(Map<String, dynamic> json) {
     return Report(
       id: json['id'] as int,
-      reporter: User.fromJson(json['reporter']),
+
+      reporter: json['reporter'] != null
+          ? User.fromJson(json['reporter'])
+          : _systemUser(),
+
       targetType: _parseTargetType(json['target_type']),
       targetId: json['target_id'] as int,
+
       reason: _parseReason(json['reason']),
       description: json['description'],
-      resolved: json['resolved'] ?? false,
+
+      resolved: _parseResolved(json['resolved']),
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -105,7 +111,9 @@ class Report {
   // HELPERS
   // =====================================================
 
-  static ReportTargetType _parseTargetType(String? value) {
+  static ReportTargetType _parseTargetType(dynamic value) {
+    if (value is! String) return ReportTargetType.post;
+
     switch (value) {
       case 'user':
         return ReportTargetType.user;
@@ -120,7 +128,9 @@ class Report {
     }
   }
 
-  static ReportReason _parseReason(String? value) {
+  static ReportReason _parseReason(dynamic value) {
+    if (value is! String) return ReportReason.other;
+
     switch (value) {
       case 'spam':
         return ReportReason.spam;
@@ -141,7 +151,13 @@ class Report {
     }
   }
 
-  /// Human readable label
+  static bool _parseResolved(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    return false;
+  }
+
+  /// Human readable label (UI)
   String get reasonLabel {
     switch (reason) {
       case ReportReason.spam:
@@ -163,8 +179,35 @@ class Report {
     }
   }
 
+  /// Is resolved
+  bool get isResolved => resolved;
+
+  /// Reporter username
+  String get reporterUsername => reporter.username;
+
+  // =====================================================
+  // INTERNAL SYSTEM USER
+  // =====================================================
+
+  static User _systemUser() {
+    return User(
+      id: 0,
+      username: 'System',
+      email: null,
+      phone: null,
+      avatarUrl: null,
+      bio: null,
+      isVerified: true,
+      followersCount: 0,
+      followingCount: 0,
+      postsCount: 0,
+      isFollowing: false,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+
   @override
   String toString() {
-    return 'Report($targetType #$targetId by ${reporter.username}, resolved: $resolved)';
+    return 'Report(target: $targetType#$targetId, reason: $reason, resolved: $resolved)';
   }
 }
