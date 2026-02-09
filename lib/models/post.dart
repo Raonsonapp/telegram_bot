@@ -1,8 +1,7 @@
 /// lib/models/post.dart
 /// =====================================================
-/// POST MODEL – FINAL v5
-/// Used in:
-/// Feed, Profile, Search, Comments
+/// POST MODEL – FINAL v5 (FIXED)
+/// Compatible with UI, Search, Reels, Services
 /// =====================================================
 
 import 'user.dart';
@@ -53,10 +52,10 @@ class Post {
     return Post(
       id: json['id'] as int,
 
-      user: User.fromJson(json['user']),
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
 
       mediaUrl: json['media_url'] as String,
-      caption: json['caption'],
+      caption: json['caption'] as String?,
 
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
@@ -87,7 +86,7 @@ class Post {
   }
 
   // =====================================================
-  // COPY WITH (STATE UPDATE SAFE)
+  // COPY WITH
   // =====================================================
 
   Post copyWith({
@@ -110,11 +109,21 @@ class Post {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI HELPERS (IMPORTANT FIXES)
   // =====================================================
 
+  /// Used in UI: post.username
+  String get username => user.username;
+
+  /// Used in UI: post.avatar
+  String? get avatar => user.avatar;
+
+  /// Used in search & grid previews
+  /// (backend can return same media or separate thumbnail later)
+  String get mediaThumbnail => mediaUrl;
+
   bool get hasCaption =>
-      caption != null && caption!.isNotEmpty;
+      caption != null && caption!.trim().isNotEmpty;
 
   bool get isVideo =>
       mediaUrl.toLowerCase().endsWith('.mp4') ||
