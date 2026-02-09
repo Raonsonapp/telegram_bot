@@ -1,54 +1,47 @@
+// lib/widgets/loading.dart
+
 import 'package:flutter/material.dart';
 
 class AppLoading extends StatelessWidget {
-  final String? message;
-  final double size;
-  final Color color;
+  final String? text;
   final bool fullscreen;
 
   const AppLoading({
     super.key,
-    this.message,
-    this.size = 36,
-    this.color = Colors.white,
-    this.fullscreen = false,
+    this.text,
+    this.fullscreen = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final loader = Column(
+    final content = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: size,
-          height: size,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.6,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
+        const SizedBox(
+          width: 36,
+          height: 36,
+          child: CircularProgressIndicator(strokeWidth: 3),
         ),
-        if (message != null) ...[
-          const SizedBox(height: 12),
+        if (text != null) ...[
+          const SizedBox(height: 14),
           Text(
-            message!,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            text!,
             textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.white70,
+                ),
           ),
         ],
       ],
     );
 
-    if (fullscreen) {
-      return Container(
-        color: const Color(0xFF0F1424),
-        alignment: Alignment.center,
-        child: loader,
-      );
+    if (!fullscreen) {
+      return Center(child: content);
     }
 
-    return Center(child: loader);
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F1424),
+      body: Center(child: content),
+    );
   }
 }
