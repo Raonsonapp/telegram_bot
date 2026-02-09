@@ -8,14 +8,6 @@ import '../../widgets/empty_state.dart';
 import '../profile/profile_screen.dart';
 import '../reels/reels_screen.dart';
 
-/// SearchTabs
-/// --------------------------------------------------
-/// Tabs for Search results:
-/// - Users
-/// - Posts
-/// - Reels
-///
-/// Version: v5 FULL
 class SearchTabs extends StatefulWidget {
   final String query;
 
@@ -58,11 +50,11 @@ class _SearchTabsState extends State<SearchTabs>
     super.dispose();
   }
 
-  // =========================
-  // LOAD DATA
-  // =========================
+  // ================= LOAD =================
   Future<void> _load() async {
-    if (widget.query.trim().isEmpty) {
+    final q = widget.query.trim();
+    if (q.isEmpty) {
+      if (!mounted) return;
       setState(() {
         _users = [];
         _posts = [];
@@ -75,26 +67,33 @@ class _SearchTabsState extends State<SearchTabs>
     setState(() => _loading = true);
 
     try {
-      final result = await SearchService.search(widget.query);
-      setState(() {
-        _users = result.users;
-        _posts = result.posts.where((p) => !p.isReel).toList();
-        _reels = result.posts.where((p) => p.isReel).toList();
-      });
+      final res = await SearchService.search(q);
+
+      if (!mounted) return;
+
+      _users = (res['users'] as List? ?? [])
+          .map((e) => User.fromJson(e))
+          .toList();
+
+      _posts = (res['posts'] as List? ?? [])
+          .map((e) => Post.fromJson(e))
+          .toList();
+
+      _reels = (res['reels'] as List? ?? [])
+          .map((e) => Post.fromJson(e))
+          .toList();
     } catch (_) {
-      setState(() {
-        _users = [];
-        _posts = [];
-        _reels = [];
-      });
+      if (!mounted) return;
+      _users = [];
+      _posts = [];
+      _reels = [];
     } finally {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
 
-  // =========================
-  // UI
-  // =========================
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -102,7 +101,7 @@ class _SearchTabsState extends State<SearchTabs>
         _tabBar(),
         Expanded(
           child: _loading
-              ? const Center(child: Loading())
+              ? const Center(child: AppLoading(fullscreen: false))
               : TabBarView(
                   controller: _tabController,
                   children: [
@@ -116,9 +115,7 @@ class _SearchTabsState extends State<SearchTabs>
     );
   }
 
-  // =========================
-  // TAB BAR
-  // =========================
+  // ================= TAB BAR =================
   Widget _tabBar() {
     return TabBar(
       controller: _tabController,
@@ -133,9 +130,7 @@ class _SearchTabsState extends State<SearchTabs>
     );
   }
 
-  // =========================
-  // USERS TAB
-  // =========================
+  // ================= USERS =================
   Widget _usersTab() {
     if (_users.isEmpty) {
       return const EmptyState(
@@ -147,25 +142,24 @@ class _SearchTabsState extends State<SearchTabs>
 
     return ListView.builder(
       itemCount: _users.length,
-      itemBuilder: (context, index) {
-        final user = _users[index];
+      itemBuilder: (context, i) {
+        final u = _users[i];
 
         return ListTile(
           leading: CircleAvatar(
             backgroundImage:
-                user.avatar.isNotEmpty ? NetworkImage(user.avatar) : null,
-            child: user.avatar.isEmpty
+                u.avatarUrl != null ? NetworkImage(u.avatarUrl!) : null,
+            child: u.avatarUrl == null
                 ? const Icon(Icons.person)
                 : null,
           ),
-          title: Text(user.username),
-          subtitle: Text('${user.followersCount} followers'),
+          title: Text(u.username),
+          subtitle: Text('${u.followersCount} followers'),
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    ProfileScreen(username: user.username),
+                builder: (_) => ProfileScreen(username: u.username),
               ),
             );
           },
@@ -174,9 +168,7 @@ class _SearchTabsState extends State<SearchTabs>
     );
   }
 
-  // =========================
-  // POSTS TAB
-  // =========================
+  // ================= POSTS =================
   Widget _postsTab() {
     if (_posts.isEmpty) {
       return const EmptyState(
@@ -194,11 +186,11 @@ class _SearchTabsState extends State<SearchTabs>
         crossAxisSpacing: 1,
       ),
       itemCount: _posts.length,
-      itemBuilder: (context, index) {
-        final post = _posts[index];
+      itemBuilder: (_, i) {
+        final p = _posts[i];
 
         return Image.network(
-          post.mediaThumbnail,
+          p.mediaUrl,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) =>
               Container(color: Colors.grey.shade800),
@@ -207,9 +199,7 @@ class _SearchTabsState extends State<SearchTabs>
     );
   }
 
-  // =========================
-  // REELS TAB
-  // =========================
+  // ================= REELS =================
   Widget _reelsTab() {
     if (_reels.isEmpty) {
       return const EmptyState(
@@ -227,24 +217,21 @@ class _SearchTabsState extends State<SearchTabs>
         crossAxisSpacing: 1,
       ),
       itemCount: _reels.length,
-      itemBuilder: (context, index) {
-        final reel = _reels[index];
+      itemBuilder: (_, i) {
+        final r = _reels[i];
 
         return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    ReelsScreen(initialReelId: reel.id),
-              ),
+              MaterialPageRoute(builder: (_) => const ReelsScreen()),
             );
           },
           child: Stack(
             fit: StackFit.expand,
             children: [
               Image.network(
-                reel.mediaThumbnail,
+                r.mediaUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
                     Container(color: Colors.grey.shade800),
