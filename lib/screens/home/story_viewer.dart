@@ -23,7 +23,6 @@ class _StoryViewerState extends State<StoryViewer>
     with SingleTickerProviderStateMixin {
   late int _index;
   late AnimationController _progress;
-  Timer? _timer;
 
   static const Duration _storyDuration = Duration(seconds: 5);
 
@@ -63,9 +62,7 @@ class _StoryViewerState extends State<StoryViewer>
 
   void _next() {
     if (_index < widget.stories.length - 1) {
-      setState(() {
-        _index++;
-      });
+      setState(() => _index++);
       _markViewed();
       _progress.forward(from: 0);
     } else {
@@ -75,9 +72,7 @@ class _StoryViewerState extends State<StoryViewer>
 
   void _prev() {
     if (_index > 0) {
-      setState(() {
-        _index--;
-      });
+      setState(() => _index--);
       _progress.forward(from: 0);
     }
   }
@@ -91,7 +86,6 @@ class _StoryViewerState extends State<StoryViewer>
 
   @override
   void dispose() {
-    _timer?.cancel();
     _progress.dispose();
     super.dispose();
   }
@@ -116,17 +110,18 @@ class _StoryViewerState extends State<StoryViewer>
         onLongPressEnd: (_) => _resume(),
         child: Stack(
           children: [
-            /// MEDIA
+            // ================= MEDIA =================
             Positioned.fill(
               child: Image.network(
                 story.mediaUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Center(child: Icon(Icons.broken_image, color: Colors.white)),
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.broken_image, color: Colors.white),
+                ),
               ),
             ),
 
-            /// TOP GRADIENT
+            // ================= TOP GRADIENT =================
             Positioned(
               top: 0,
               left: 0,
@@ -143,16 +138,18 @@ class _StoryViewerState extends State<StoryViewer>
               ),
             ),
 
-            /// PROGRESS BARS
+            // ================= PROGRESS =================
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
                   children: List.generate(
                     widget.stories.length,
                     (i) => Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 2),
                         child: LinearProgressIndicator(
                           value: i < _index
                               ? 1
@@ -161,7 +158,8 @@ class _StoryViewerState extends State<StoryViewer>
                                   : 0,
                           backgroundColor: Colors.white30,
                           valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.white),
+                              const AlwaysStoppedAnimation<Color>(
+                                  Colors.white),
                         ),
                       ),
                     ),
@@ -170,17 +168,20 @@ class _StoryViewerState extends State<StoryViewer>
               ),
             ),
 
-            /// HEADER
+            // ================= HEADER =================
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 40, 12, 0),
                 child: Row(
                   children: [
-                    Avatar(url: story.avatar, size: 36),
+                    Avatar(
+                      imageUrl: story.user.avatarUrl,
+                      size: 36,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        story.username,
+                        story.user.username,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -188,8 +189,10 @@ class _StoryViewerState extends State<StoryViewer>
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
+                      icon:
+                          const Icon(Icons.close, color: Colors.white),
+                      onPressed: () =>
+                          Navigator.of(context).pop(),
                     ),
                   ],
                 ),
