@@ -1,97 +1,74 @@
 /// lib/services/like_service.dart
-/// Like Service – Raonson v5
-/// Handles likes for posts, reels, comments
-/// 100% backend-connected & build-safe
+/// =====================================================
+/// LIKE SERVICE – FINAL v5 (FIXED)
+/// Handles likes for:
+/// - Posts
+/// - Reels
+/// - Comments
+/// =====================================================
 
 import '../core/api.dart';
 import '../core/http_service.dart';
-import '../core/session.dart';
 
 class LikeService {
-  // ================================
-  // POST LIKE (POST / REEL / COMMENT)
-  // ================================
+  // =====================================================
+  // LIKE
+  // =====================================================
   /// type: post | reel | comment
-  /// POST /{type}s/{id}/like
   static Future<void> like({
     required String type,
     required int id,
   }) async {
-    final token = await Session.getToken();
-    if (token == null) {
-      throw Exception('Not authenticated');
-    }
-
-    final endpoint = _endpoint(type, id, action: 'like');
+    final endpoint = _likeEndpoint(type, id);
 
     await HttpService.post(
       endpoint,
-      {},
+      body: const {},
       auth: true,
     );
   }
 
-  // ================================
-  // POST UNLIKE
-  // ================================
-  /// POST /{type}s/{id}/unlike
+  // =====================================================
+  // UNLIKE
+  // =====================================================
   static Future<void> unlike({
     required String type,
     required int id,
   }) async {
-    final token = await Session.getToken();
-    if (token == null) {
-      throw Exception('Not authenticated');
-    }
-
-    final endpoint = _endpoint(type, id, action: 'unlike');
+    final endpoint = _unlikeEndpoint(type, id);
 
     await HttpService.post(
       endpoint,
-      {},
+      body: const {},
       auth: true,
     );
   }
 
-  // ================================
-  // CHECK IF LIKED
-  // ================================
-  /// GET /{type}s/{id}/is-liked
-  static Future<bool> isLiked({
-    required String type,
-    required int id,
-  }) async {
-    final token = await Session.getToken();
+  // =====================================================
+  // INTERNAL HELPERS (API v5 SAFE)
+  // =====================================================
 
-    final endpoint = _endpoint(type, id, action: 'is-liked');
-
-    final res = await HttpService.get(
-      endpoint,
-      auth: token != null,
-    );
-
-    if (res is Map && res['liked'] == true) {
-      return true;
-    }
-
-    return false;
-  }
-
-  // ================================
-  // INTERNAL ENDPOINT BUILDER
-  // ================================
-  static String _endpoint(
-    String type,
-    int id, {
-    required String action,
-  }) {
+  static String _likeEndpoint(String type, int id) {
     switch (type) {
       case 'post':
-        return '${Api.baseUrl}/posts/$id/$action';
+        return Api.likePost(id);
       case 'reel':
-        return '${Api.baseUrl}/reels/$id/$action';
+        return Api.likeReel(id);
       case 'comment':
-        return '${Api.baseUrl}/comments/$id/$action';
+        return '${Api.comments}/$id/like';
+      default:
+        throw Exception('Invalid like type: $type');
+    }
+  }
+
+  static String _unlikeEndpoint(String type, int id) {
+    switch (type) {
+      case 'post':
+        return Api.unlikePost(id);
+      case 'reel':
+        return Api.unlikeReel(id);
+      case 'comment':
+        return '${Api.comments}/$id/unlike';
       default:
         throw Exception('Invalid like type: $type');
     }
