@@ -1,6 +1,6 @@
 /// lib/models/story.dart
 /// =====================================================
-/// STORY MODEL – FINAL v5
+/// STORY MODEL – FINAL v5 (FIXED)
 /// Used in:
 /// StoryBar, Story Viewer
 /// =====================================================
@@ -15,7 +15,7 @@ class Story {
   final User user;
 
   // ================= CONTENT =================
-  final String mediaUrl; // image or video
+  final String mediaUrl;
 
   // ================= STATE =================
   final bool isViewed;
@@ -45,9 +45,20 @@ class Story {
     return Story(
       id: json['id'] as int,
 
-      user: User.fromJson(json['user']),
+      user: json['user'] != null
+          ? User.fromJson(json['user'])
+          : const User(
+              id: 0,
+              username: 'unknown',
+              isVerified: false,
+              followersCount: 0,
+              followingCount: 0,
+              postsCount: 0,
+              isFollowing: false,
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
 
-      mediaUrl: json['media_url'] as String,
+      mediaUrl: (json['media_url'] as String?) ?? '',
 
       isViewed: json['is_viewed'] ?? false,
 
@@ -72,17 +83,29 @@ class Story {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI HELPERS (IMPORTANT)
   // =====================================================
 
+  /// For StoryBar ring
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 
+  /// Media type
   bool get isVideo =>
       mediaUrl.toLowerCase().endsWith('.mp4') ||
       mediaUrl.toLowerCase().endsWith('.mov') ||
       mediaUrl.toLowerCase().endsWith('.webm');
 
   bool get isImage => !isVideo;
+
+  /// UI safe avatar access
+  String? get userAvatar => user.avatar;
+
+  /// Viewer safe check
+  bool get hasMedia => mediaUrl.trim().isNotEmpty;
+
+  // =====================================================
+  // COPY WITH
+  // =====================================================
 
   Story copyWith({
     bool? isViewed,
