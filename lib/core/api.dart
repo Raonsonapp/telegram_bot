@@ -1,56 +1,199 @@
 /// lib/core/api.dart
+/// =====================================================
+/// RAONSON API – FULL & FINAL (v5)
+/// Contract between Flutter <-> Backend
+/// =====================================================
+
 class Api {
+  Api._(); // no instance
+
+  // =====================================================
+  // BASE
+  // =====================================================
+
+  /// CHANGE ONLY THIS IF SERVER MOVES
   static const String baseUrl = 'https://raonson-me.onrender.com';
 
-  // ===== AUTH =====
-  static const String login = '$baseUrl/auth/login';
-  static const String register = '$baseUrl/auth/register';
-  static const String logout = '$baseUrl/auth/logout';
-  static const String refreshToken = '$baseUrl/auth/refresh';
+  static const String api = '$baseUrl/api';
 
-  // ===== USER =====
-  static const String me = '$baseUrl/users/me';
-  static const String userProfile = '$baseUrl/users';
-  static const String editProfile = '$baseUrl/users/edit';
+  // =====================================================
+  // AUTH
+  // =====================================================
 
-  // ===== FOLLOW =====
-  static const String follow = '$baseUrl/follow';
+  static const String auth = '$api/auth';
 
-  /// ✅ ALIAS (барои service-ҳо)
-  static const String followEndpoint = follow;
+  static const String login = '$auth/login';
+  static const String register = '$auth/register';
+  static const String logout = '$auth/logout';
+  static const String refresh = '$auth/refresh';
 
-  // ===== POSTS =====
-  static const String createPost = '$baseUrl/posts/create';
-  static const String feedPosts = '$baseUrl/posts/feed';
-  static const String userPosts = '$baseUrl/posts/user';
-  static const String deletePost = '$baseUrl/posts/delete';
+  // =====================================================
+  // USER / PROFILE
+  // =====================================================
 
-  static const String likePost = '$baseUrl/posts/like';
-  static const String unlikePost = '$baseUrl/posts/unlike';
-  static const String savePost = '$baseUrl/posts/save';
-  static const String unsavePost = '$baseUrl/posts/unsave';
+  static const String users = '$api/users';
 
-  // ===== COMMENTS =====
-  static const String comments = '$baseUrl/comments';
-  static const String addComment = '$baseUrl/comments/add';
+  /// GET /users/me
+  static const String me = '$users/me';
 
-  // ===== STORIES =====
-  static const String createStory = '$baseUrl/stories/create';
-  static const String getStories = '$baseUrl/stories/feed';
-  static const String viewStory = '$baseUrl/stories/view';
+  /// GET /users/{username}
+  static String userProfile(String username) =>
+      '$users/$username';
 
-  // ===== REELS =====
-  static const String createReel = '$baseUrl/reels/create';
-  static const String getReels = '$baseUrl/reels/feed';
+  /// PUT /users/me
+  static const String editProfile = '$users/me';
 
-  /// ✅ ALIAS (барои reel_service)
-  static const String reelsEndpoint = '$baseUrl/reels';
+  // =====================================================
+  // FOLLOW SYSTEM
+  // =====================================================
 
-  // ===== CHAT =====
-  static const String chats = '$baseUrl/chats';
-  static const String messages = '$baseUrl/messages';
-  static const String sendMessage = '$baseUrl/messages/send';
+  static const String follow = '$api/follow';
 
-  // ===== SEARCH =====
-  static const String search = '$baseUrl/search';
+  /// POST /follow/{username}
+  static String followUser(String username) =>
+      '$follow/$username';
+
+  /// DELETE /follow/{username}
+  static String unfollowUser(String username) =>
+      '$follow/$username';
+
+  /// GET /follow/{username}/followers
+  static String followers(String username) =>
+      '$follow/$username/followers';
+
+  /// GET /follow/{username}/following
+  static String following(String username) =>
+      '$follow/$username/following';
+
+  /// GET /follow/{username}/is-following
+  static String isFollowing(String username) =>
+      '$follow/$username/is-following';
+
+  // =====================================================
+  // POSTS
+  // =====================================================
+
+  static const String posts = '$api/posts';
+
+  /// POST /posts
+  static const String createPost = posts;
+
+  /// GET /posts/feed
+  static const String feedPosts = '$posts/feed';
+
+  /// GET /posts/user/{username}
+  static String userPosts(String username) =>
+      '$posts/user/$username';
+
+  /// DELETE /posts/{postId}
+  static String deletePost(int postId) =>
+      '$posts/$postId';
+
+  // =====================================================
+  // POST ACTIONS (LIKE / SAVE)
+  // =====================================================
+
+  /// POST /posts/{id}/like
+  static String likePost(int postId) =>
+      '$posts/$postId/like';
+
+  /// POST /posts/{id}/unlike
+  static String unlikePost(int postId) =>
+      '$posts/$postId/unlike';
+
+  /// POST /posts/{id}/save
+  static String savePost(int postId) =>
+      '$posts/$postId/save';
+
+  /// POST /posts/{id}/unsave
+  static String unsavePost(int postId) =>
+      '$posts/$postId/unsave';
+
+  /// GET /posts/saved
+  static const String savedPosts = '$posts/saved';
+
+  // =====================================================
+  // COMMENTS
+  // =====================================================
+
+  static const String comments = '$api/comments';
+
+  /// GET /comments/{postId}
+  static String getComments(int postId) =>
+      '$comments/$postId';
+
+  /// POST /comments/{postId}
+  static String addComment(int postId) =>
+      '$comments/$postId';
+
+  // =====================================================
+  // STORIES
+  // =====================================================
+
+  static const String stories = '$api/stories';
+
+  /// POST /stories
+  static const String createStory = stories;
+
+  /// GET /stories/feed
+  static const String storiesFeed = '$stories/feed';
+
+  /// POST /stories/{id}/view
+  static String viewStory(int storyId) =>
+      '$stories/$storyId/view';
+
+  // =====================================================
+  // REELS
+  // =====================================================
+
+  static const String reels = '$api/reels';
+
+  /// POST /reels
+  static const String createReel = reels;
+
+  /// GET /reels/feed
+  static const String reelsFeed = '$reels/feed';
+
+  /// POST /reels/{id}/like
+  static String likeReel(int reelId) =>
+      '$reels/$reelId/like';
+
+  /// POST /reels/{id}/unlike
+  static String unlikeReel(int reelId) =>
+      '$reels/$reelId/unlike';
+
+  /// POST /reels/{id}/save
+  static String saveReel(int reelId) =>
+      '$reels/$reelId/save';
+
+  /// POST /reels/{id}/unsave
+  static String unsaveReel(int reelId) =>
+      '$reels/$reelId/unsave';
+
+  /// GET /reels/saved
+  static const String savedReels = '$reels/saved';
+
+  // =====================================================
+  // CHAT
+  // =====================================================
+
+  static const String chats = '$api/chats';
+
+  /// GET /chats
+  static const String chatList = chats;
+
+  /// GET /chats/{chatId}
+  static String chatMessages(int chatId) =>
+      '$chats/$chatId';
+
+  /// POST /chats/{chatId}/send
+  static String sendMessage(int chatId) =>
+      '$chats/$chatId/send';
+
+  // =====================================================
+  // SEARCH
+  // =====================================================
+
+  /// GET /search?q=keyword
+  static const String search = '$api/search';
 }
