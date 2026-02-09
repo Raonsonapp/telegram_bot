@@ -1,17 +1,11 @@
 /// lib/models/notification.dart
 /// =====================================================
-/// NOTIFICATION MODEL – FINAL v5 (FIXED & SAFE)
-/// Used for:
-/// - Likes
-/// - Comments
-/// - Follows
-/// - Messages
-/// - System events
+/// NOTIFICATION MODEL – FINAL v5.1 (BUILD SAFE)
+/// Compatible with NotificationsScreen & backend
 /// =====================================================
 
 import 'user.dart';
 
-/// Supported notification types
 enum NotificationType {
   like,
   comment,
@@ -25,14 +19,10 @@ class AppNotification {
   final int id;
 
   // ================= ACTOR =================
-  /// User who triggered notification (can be system)
   final User fromUser;
 
   // ================= TARGET =================
-  /// Optional post / reel / story / comment ID
   final int? targetId;
-
-  /// Optional target type: post | reel | comment | story
   final String? targetType;
 
   // ================= CONTENT =================
@@ -43,11 +33,7 @@ class AppNotification {
   final bool isRead;
 
   // ================= TIME =================
-  final DateTime createdAt;
-
-  // =====================================================
-  // CONSTRUCTOR
-  // =====================================================
+  final DateTime? createdAt;
 
   const AppNotification({
     required this.id,
@@ -57,13 +43,12 @@ class AppNotification {
     this.targetId,
     this.targetType,
     required this.isRead,
-    required this.createdAt,
+    this.createdAt,
   });
 
   // =====================================================
   // FROM JSON (BACKEND → APP)
   // =====================================================
-
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
       id: json['id'] as int,
@@ -75,18 +60,23 @@ class AppNotification {
       type: _parseType(json['type']),
       message: json['message'] ?? '',
 
-      targetId: json['target_id'],
-      targetType: json['target_type'],
+      targetId: json['target_id'] is int
+          ? json['target_id']
+          : int.tryParse('${json['target_id']}'),
 
-      isRead: json['is_read'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      targetType: json['target_type'] as String?,
+
+      isRead: json['is_read'] == true,
+
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
     );
   }
 
   // =====================================================
-  // TO JSON (APP → BACKEND)
+  // TO JSON
   // =====================================================
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -96,13 +86,22 @@ class AppNotification {
       'target_id': targetId,
       'target_type': targetType,
       'is_read': isRead,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 
   // =====================================================
-  // HELPERS
+  // HELPERS (UI COMPATIBILITY)
   // =====================================================
+
+  /// 🔧 Used by NotificationsScreen
+  String get rawType => type.name;
+
+  /// 🔧 Used by NotificationsScreen
+  String get fromUsername => fromUser.username;
+
+  /// 🔧 Used by NotificationsScreen
+  bool get read => isRead;
 
   static NotificationType _parseType(dynamic type) {
     if (type is! String) return NotificationType.system;
@@ -121,7 +120,7 @@ class AppNotification {
     }
   }
 
-  /// Human readable title (UI)
+  /// UI title
   String get title {
     switch (type) {
       case NotificationType.like:
@@ -137,27 +136,16 @@ class AppNotification {
     }
   }
 
-  /// Actor username
-  String get fromUsername => fromUser.username;
-
-  /// Avatar helper
   String? get fromAvatar => fromUser.avatar;
-
-  /// Is system notification
   bool get isSystem => type == NotificationType.system;
 
   // =====================================================
   // INTERNAL SYSTEM USER
   // =====================================================
-
   static User _systemUser() {
     return User(
-      id: 0,
+      id: -1,
       username: 'Raonson',
-      avatarUrl: null,
-      bio: null,
-      email: null,
-      phone: null,
       isVerified: true,
       followersCount: 0,
       followingCount: 0,
@@ -169,6 +157,6 @@ class AppNotification {
 
   @override
   String toString() {
-    return 'Notification(type: $type, from: ${fromUser.username}, read: $isRead)';
+    return 'Notification(id: $id, type: $type, read: $isRead)';
   }
 }
