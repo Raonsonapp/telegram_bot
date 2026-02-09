@@ -8,13 +8,6 @@ import '../../widgets/empty_state.dart';
 import '../profile/profile_screen.dart';
 import '../reels/reels_screen.dart';
 
-/// SearchScreen
-/// --------------------------------------------------
-/// - Search users / posts / reels
-/// - Grid UI (Instagram style)
-/// - Live search
-///
-/// Version: v5 FULL
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -40,9 +33,10 @@ class _SearchScreenState extends State<SearchScreen> {
   // =========================
   Future<void> _search(String query) async {
     if (query.trim().isEmpty) {
+      if (!mounted) return;
       setState(() {
-        _users.clear();
-        _posts.clear();
+        _users = [];
+        _posts = [];
       });
       return;
     }
@@ -50,17 +44,23 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() => _loading = true);
 
     try {
-      final result = await SearchService.search(query);
-      setState(() {
-        _users = result.users;
-        _posts = result.posts;
-      });
+      final res = await SearchService.search(query);
+
+      if (!mounted) return;
+
+      _users = (res['users'] as List)
+          .map<User>((e) => User.fromJson(e))
+          .toList();
+
+      _posts = (res['posts'] as List)
+          .map<Post>((e) => Post.fromJson(e))
+          .toList();
     } catch (_) {
-      setState(() {
-        _users = [];
-        _posts = [];
-      });
+      if (!mounted) return;
+      _users = [];
+      _posts = [];
     } finally {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
@@ -73,7 +73,7 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       appBar: _appBar(),
       body: _loading
-          ? const Center(child: Loading())
+          ? const Center(child: AppLoading(fullscreen: false))
           : _controller.text.isEmpty
               ? _exploreGrid()
               : _searchResult(),
@@ -149,9 +149,12 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _userTile(User user) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundImage:
-            user.avatar.isNotEmpty ? NetworkImage(user.avatar) : null,
-        child: user.avatar.isEmpty ? const Icon(Icons.person) : null,
+        backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+            ? NetworkImage(user.avatarUrl!)
+            : null,
+        child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+            ? const Icon(Icons.person)
+            : null,
       ),
       title: Text(user.username),
       subtitle: Text('${user.followersCount} followers'),
@@ -167,7 +170,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   // =========================
-  // EXPLORE GRID (default)
+  // EXPLORE GRID
   // =========================
   Widget _exploreGrid() {
     if (_posts.isEmpty) {
@@ -193,7 +196,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
         return GestureDetector(
           onTap: () {
-            if (post.isReel) {
+            if (post.isVideo) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -203,7 +206,7 @@ class _SearchScreenState extends State<SearchScreen> {
             }
           },
           child: Image.network(
-            post.mediaThumbnail,
+            post.mediaUrl,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) =>
                 Container(color: Colors.grey.shade800),
@@ -214,7 +217,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   // =========================
-  // POSTS GRID (search result)
+  // POSTS GRID (search)
   // =========================
   Widget _postsGrid() {
     return GridView.builder(
@@ -232,7 +235,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
         return GestureDetector(
           onTap: () {
-            if (post.isReel) {
+            if (post.isVideo) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -242,7 +245,7 @@ class _SearchScreenState extends State<SearchScreen> {
             }
           },
           child: Image.network(
-            post.mediaThumbnail,
+            post.mediaUrl,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) =>
                 Container(color: Colors.grey.shade800),
