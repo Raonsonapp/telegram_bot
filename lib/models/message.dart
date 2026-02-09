@@ -1,6 +1,6 @@
 /// lib/models/message.dart
 /// =====================================================
-/// MESSAGE MODEL – FINAL v5
+/// MESSAGE MODEL – FINAL v5 (FIXED & SAFE)
 /// Used for:
 /// - Chats
 /// - Direct Messages
@@ -53,8 +53,15 @@ class Message {
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
       id: json['id'] as int,
-      sender: User.fromJson(json['sender']),
-      receiver: User.fromJson(json['receiver']),
+
+      sender: json['sender'] != null
+          ? User.fromJson(json['sender'])
+          : _emptyUser(json['sender_id']),
+
+      receiver: json['receiver'] != null
+          ? User.fromJson(json['receiver'])
+          : _emptyUser(json['receiver_id']),
+
       text: json['text'] ?? '',
       mediaUrl: json['media_url'],
       isRead: json['is_read'] ?? false,
@@ -79,7 +86,7 @@ class Message {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI HELPERS (CHAT)
   // =====================================================
 
   /// True if message contains media
@@ -91,8 +98,32 @@ class Message {
   /// Receiver username
   String get receiverUsername => receiver.username;
 
+  /// For chat bubbles
+  bool isFromUser(int myUserId) => sender.id == myUserId;
+
+  /// Avatars
+  String? get senderAvatar => sender.avatar;
+  String? get receiverAvatar => receiver.avatar;
+
+  // =====================================================
+  // INTERNAL SAFE USER
+  // =====================================================
+
+  static User _emptyUser(dynamic id) {
+    return User(
+      id: id is int ? id : 0,
+      username: 'unknown',
+      isVerified: false,
+      followersCount: 0,
+      followingCount: 0,
+      postsCount: 0,
+      isFollowing: false,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+
   @override
   String toString() {
-    return 'Message(from: $senderUsername → $receiverUsername, read: $isRead)';
+    return 'Message(id: $id, from: ${sender.username}, read: $isRead)';
   }
 }
