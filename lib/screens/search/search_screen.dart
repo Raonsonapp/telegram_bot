@@ -1,5 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../models/post.dart';
+import '../../models/user.dart';
+import '../../services/search_service.dart';
+import '../../widgets/loading.dart';
+import '../../widgets/empty_state.dart';
+import '../profile/profile_screen.dart';
+import '../reels/reels_screen.dart';
+
+/// SearchScreen
+/// --------------------------------------------------
+/// - Search users / posts / reels
+/// - Grid UI (Instagram style)
+/// - Live search
+///
+/// Version: v5 FULL
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -9,58 +24,79 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
-  bool _isSearching = false;
 
-  final List<String> _recentSearches = [
-    'raonson',
-    'flutter',
-    'tajik',
-    'design',
-    'reels',
-  ];
+  bool _loading = false;
+  List<User> _users = [];
+  List<Post> _posts = [];
 
-  final List<Map<String, dynamic>> _results = List.generate(20, (i) {
-    return {
-      'username': 'user_$i',
-      'verified': i % 4 == 0,
-    };
-  });
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
+  // =========================
+  // SEARCH
+  // =========================
+  Future<void> _search(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _users.clear();
+        _posts.clear();
+      });
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      final result = await SearchService.search(query);
+      setState(() {
+        _users = result.users;
+        _posts = result.posts;
+      });
+    } catch (_) {
+      setState(() {
+        _users = [];
+        _posts = [];
+      });
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  // =========================
+  // UI
+  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _searchBar(),
-            Expanded(
-              child: _isSearching ? _searchResults() : _exploreGrid(),
-            ),
-          ],
-        ),
-      ),
+      appBar: _appBar(),
+      body: _loading
+          ? const Center(child: Loading())
+          : _controller.text.isEmpty
+              ? _exploreGrid()
+              : _searchResult(),
     );
   }
 
-  // ================= SEARCH BAR =================
-  Widget _searchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: TextField(
+  // =========================
+  // APP BAR
+  // =========================
+  PreferredSizeWidget _appBar() {
+    return AppBar(
+      title: TextField(
         controller: _controller,
-        onChanged: (v) {
-          setState(() => _isSearching = v.isNotEmpty);
-        },
-        style: const TextStyle(color: Colors.white),
+        autofocus: false,
+        onChanged: _search,
         decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
           hintText: 'Search',
-          hintStyle: const TextStyle(color: Colors.grey),
           filled: true,
-          fillColor: const Color(0xFF1A1A1A),
+          fillColor: Colors.grey.shade900,
+          prefixIcon: const Icon(Icons.search),
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
           ),
         ),
@@ -68,86 +104,148 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // ================= SEARCH RESULTS =================
-  Widget _searchResults() {
+  // =========================
+  // SEARCH RESULT
+  // =========================
+  Widget _searchResult() {
+    if (_users.isEmpty && _posts.isEmpty) {
+      return const EmptyState(
+        icon: Icons.search_off,
+        title: 'Nothing found',
+        subtitle: 'Try another keyword',
+      );
+    }
+
     return ListView(
       children: [
-        if (_recentSearches.isNotEmpty) _recentSection(),
-        const Divider(color: Colors.grey),
-        ..._results.map(_userTile).toList(),
+        // ===== USERS =====
+        if (_users.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              'Users',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ..._users.map(_userTile),
+
+        // ===== POSTS =====
+        if (_posts.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              'Posts',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        _postsGrid(),
       ],
     );
   }
 
-  Widget _recentSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Recent',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ..._recentSearches.map((s) {
-            return ListTile(
-              leading: const Icon(Icons.history, color: Colors.grey),
-              title: Text(s),
-              trailing: const Icon(Icons.close, size: 16),
-              onTap: () {
-                _controller.text = s;
-                setState(() => _isSearching = true);
-              },
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _userTile(Map<String, dynamic> u) {
+  // =========================
+  // USER TILE
+  // =========================
+  Widget _userTile(User user) {
     return ListTile(
-      leading: const CircleAvatar(
-        backgroundColor: Colors.grey,
-        child: Icon(Icons.person, color: Colors.white),
+      leading: CircleAvatar(
+        backgroundImage:
+            user.avatar.isNotEmpty ? NetworkImage(user.avatar) : null,
+        child: user.avatar.isEmpty ? const Icon(Icons.person) : null,
       ),
-      title: Row(
-        children: [
-          Text(u['username']),
-          if (u['verified'])
-            const Padding(
-              padding: EdgeInsets.only(left: 4),
-              child: Icon(
-                Icons.verified,
-                size: 16,
-                color: Colors.green,
-              ),
-            ),
-        ],
-      ),
-      subtitle: const Text('Raonson user'),
+      title: Text(user.username),
+      subtitle: Text('${user.followersCount} followers'),
       onTap: () {
-        // ҚАДАМИ 32 → Profile by username
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(username: user.username),
+          ),
+        );
       },
     );
   }
 
-  // ================= EXPLORE GRID =================
+  // =========================
+  // EXPLORE GRID (default)
+  // =========================
   Widget _exploreGrid() {
+    if (_posts.isEmpty) {
+      return const Center(
+        child: EmptyState(
+          icon: Icons.grid_on,
+          title: 'Explore',
+          subtitle: 'Discover new posts',
+        ),
+      );
+    }
+
     return GridView.builder(
-      padding: const EdgeInsets.all(2),
+      padding: const EdgeInsets.all(1),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
+        mainAxisSpacing: 1,
+        crossAxisSpacing: 1,
       ),
-      itemCount: 30,
-      itemBuilder: (context, i) {
-        return Container(
-          color: Colors.grey.shade800,
-          child: const Center(
-            child: Icon(Icons.image, color: Colors.white24),
+      itemCount: _posts.length,
+      itemBuilder: (context, index) {
+        final post = _posts[index];
+
+        return GestureDetector(
+          onTap: () {
+            if (post.isReel) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReelsScreen(initialReelId: post.id),
+                ),
+              );
+            }
+          },
+          child: Image.network(
+            post.mediaThumbnail,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                Container(color: Colors.grey.shade800),
+          ),
+        );
+      },
+    );
+  }
+
+  // =========================
+  // POSTS GRID (search result)
+  // =========================
+  Widget _postsGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(1),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 1,
+        crossAxisSpacing: 1,
+      ),
+      itemCount: _posts.length,
+      itemBuilder: (context, index) {
+        final post = _posts[index];
+
+        return GestureDetector(
+          onTap: () {
+            if (post.isReel) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReelsScreen(initialReelId: post.id),
+                ),
+              );
+            }
+          },
+          child: Image.network(
+            post.mediaThumbnail,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                Container(color: Colors.grey.shade800),
           ),
         );
       },
