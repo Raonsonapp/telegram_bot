@@ -1,6 +1,6 @@
 /// lib/services/post_service.dart
 /// =====================================================
-/// POST SERVICE – FINAL v5
+/// POST SERVICE – FINAL v5 (FIXED)
 /// Handles:
 /// - Feed posts
 /// - User posts
@@ -26,8 +26,13 @@ class PostService {
       auth: true,
     );
 
-    return (res as List)
-        .map((e) => Post.fromJson(e))
+    if (res is! List) {
+      return [];
+    }
+
+    return res
+        .whereType<Map<String, dynamic>>()
+        .map(Post.fromJson)
         .toList();
   }
 
@@ -37,12 +42,17 @@ class PostService {
 
   static Future<List<Post>> getByUser(String username) async {
     final res = await HttpService.get(
-      '${Api.userPosts}/$username',
+      Api.userPosts(username),
       auth: true,
     );
 
-    return (res as List)
-        .map((e) => Post.fromJson(e))
+    if (res is! List) {
+      return [];
+    }
+
+    return res
+        .whereType<Map<String, dynamic>>()
+        .map(Post.fromJson)
         .toList();
   }
 
@@ -63,6 +73,10 @@ class PostService {
       auth: true,
     );
 
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid create post response');
+    }
+
     return Post.fromJson(res);
   }
 
@@ -72,7 +86,7 @@ class PostService {
 
   static Future<void> delete(int postId) async {
     await HttpService.delete(
-      '${Api.deletePost}/$postId',
+      Api.deletePost(postId),
       auth: true,
     );
   }
@@ -83,8 +97,8 @@ class PostService {
 
   static Future<void> like(int postId) async {
     await HttpService.post(
-      '${Api.likePost}/$postId',
-      body: {},
+      Api.likePost(postId),
+      body: const {},
       auth: true,
     );
   }
@@ -95,8 +109,8 @@ class PostService {
 
   static Future<void> unlike(int postId) async {
     await HttpService.post(
-      '${Api.unlikePost}/$postId',
-      body: {},
+      Api.unlikePost(postId),
+      body: const {},
       auth: true,
     );
   }
@@ -107,8 +121,8 @@ class PostService {
 
   static Future<void> save(int postId) async {
     await HttpService.post(
-      '${Api.savePost}/$postId',
-      body: {},
+      Api.savePost(postId),
+      body: const {},
       auth: true,
     );
   }
@@ -119,8 +133,8 @@ class PostService {
 
   static Future<void> unsave(int postId) async {
     await HttpService.post(
-      '${Api.unsavePost}/$postId',
-      body: {},
+      Api.unsavePost(postId),
+      body: const {},
       auth: true,
     );
   }
@@ -131,12 +145,17 @@ class PostService {
 
   static Future<List<Comment>> getComments(int postId) async {
     final res = await HttpService.get(
-      '${Api.comments}/$postId',
+      Api.getComments(postId),
       auth: true,
     );
 
-    return (res as List)
-        .map((e) => Comment.fromJson(e))
+    if (res is! List) {
+      return [];
+    }
+
+    return res
+        .whereType<Map<String, dynamic>>()
+        .map(Comment.fromJson)
         .toList();
   }
 
@@ -149,10 +168,14 @@ class PostService {
     required String text,
   }) async {
     final res = await HttpService.post(
-      '${Api.addComment}/$postId',
+      Api.addComment(postId),
       body: {'text': text},
       auth: true,
     );
+
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid add comment response');
+    }
 
     return Comment.fromJson(res);
   }
