@@ -1,8 +1,8 @@
 /// lib/models/story.dart
 /// =====================================================
-/// STORY MODEL – FINAL v5 (FIXED)
+/// STORY MODEL – FINAL v5.1 (BUILD SAFE)
 /// Used in:
-/// StoryBar, Story Viewer
+/// StoryBar, StoryViewer
 /// =====================================================
 
 import 'user.dart';
@@ -21,34 +21,35 @@ class Story {
   final bool isViewed;
 
   // ================= TIME =================
-  final DateTime createdAt;
-  final DateTime expiresAt;
-
-  // =====================================================
-  // CONSTRUCTOR
-  // =====================================================
+  final DateTime? createdAt;
+  final DateTime? expiresAt;
 
   const Story({
     required this.id,
     required this.user,
     required this.mediaUrl,
     required this.isViewed,
-    required this.createdAt,
-    required this.expiresAt,
+    this.createdAt,
+    this.expiresAt,
   });
 
   // =====================================================
   // FROM JSON (BACKEND → APP)
   // =====================================================
-
   factory Story.fromJson(Map<String, dynamic> json) {
+    final media =
+        json['media_url'] ??
+        json['media'] ??
+        json['mediaUrl'] ??
+        '';
+
     return Story(
       id: json['id'] as int,
 
       user: json['user'] != null
           ? User.fromJson(json['user'])
-          : const User(
-              id: 0,
+          : User(
+              id: -1,
               username: 'unknown',
               isVerified: false,
               followersCount: 0,
@@ -58,36 +59,45 @@ class Story {
               createdAt: DateTime.fromMillisecondsSinceEpoch(0),
             ),
 
-      mediaUrl: (json['media_url'] as String?) ?? '',
+      mediaUrl: media as String,
 
-      isViewed: json['is_viewed'] ?? false,
+      isViewed: json['is_viewed'] == true,
 
-      createdAt: DateTime.parse(json['created_at']),
-      expiresAt: DateTime.parse(json['expires_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+
+      expiresAt: json['expires_at'] != null
+          ? DateTime.tryParse(json['expires_at'])
+          : null,
     );
   }
 
   // =====================================================
-  // TO JSON (APP → BACKEND)
+  // TO JSON
   // =====================================================
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'user': user.toJson(),
       'media_url': mediaUrl,
       'is_viewed': isViewed,
-      'created_at': createdAt.toIso8601String(),
-      'expires_at': expiresAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
+      'expires_at': expiresAt?.toIso8601String(),
     };
   }
 
   // =====================================================
-  // 🔧 UI HELPERS (IMPORTANT)
+  // 🔧 UI HELPERS (VERY IMPORTANT)
   // =====================================================
 
-  /// For StoryBar ring
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  /// Used in StoryBar / Viewer
+  String get username => user.username;
+  String? get avatar => user.avatar;
+
+  /// Expiry check (safe)
+  bool get isExpired =>
+      expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   /// Media type
   bool get isVideo =>
@@ -97,16 +107,11 @@ class Story {
 
   bool get isImage => !isVideo;
 
-  /// UI safe avatar access
-  String? get userAvatar => user.avatar;
-
-  /// Viewer safe check
   bool get hasMedia => mediaUrl.trim().isNotEmpty;
 
   // =====================================================
   // COPY WITH
   // =====================================================
-
   Story copyWith({
     bool? isViewed,
   }) {
