@@ -1,6 +1,6 @@
 /// lib/models/post.dart
 /// =====================================================
-/// POST MODEL – FINAL v5 (FIXED)
+/// POST MODEL – FINAL v5.1 (BUILD SAFE)
 /// Compatible with UI, Search, Reels, Services
 /// =====================================================
 
@@ -15,7 +15,7 @@ class Post {
 
   // ================= CONTENT =================
   final String mediaUrl; // image or video
-  final String? caption;
+  final String caption;
 
   // ================= STATS =================
   final int likesCount;
@@ -26,51 +26,52 @@ class Post {
   final bool isSaved;
 
   // ================= META =================
-  final DateTime createdAt;
-
-  // =====================================================
-  // CONSTRUCTOR
-  // =====================================================
+  final DateTime? createdAt;
 
   const Post({
     required this.id,
     required this.user,
     required this.mediaUrl,
-    this.caption,
+    required this.caption,
     required this.likesCount,
     required this.commentsCount,
     required this.isLiked,
     required this.isSaved,
-    required this.createdAt,
+    this.createdAt,
   });
 
   // =====================================================
-  // FROM JSON (BACKEND → APP)
+  // FROM JSON
   // =====================================================
-
   factory Post.fromJson(Map<String, dynamic> json) {
+    final media =
+        json['media_url'] ??
+        json['video_url'] ??
+        '';
+
     return Post(
       id: json['id'] as int,
 
       user: User.fromJson(json['user'] as Map<String, dynamic>),
 
-      mediaUrl: json['media_url'] as String,
-      caption: json['caption'] as String?,
+      mediaUrl: media as String,
+      caption: (json['caption'] as String?) ?? '',
 
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
 
-      isLiked: json['is_liked'] ?? false,
-      isSaved: json['is_saved'] ?? false,
+      isLiked: json['is_liked'] == true,
+      isSaved: json['is_saved'] == true,
 
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
     );
   }
 
   // =====================================================
-  // TO JSON (APP → BACKEND)
+  // TO JSON
   // =====================================================
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -81,14 +82,13 @@ class Post {
       'comments_count': commentsCount,
       'is_liked': isLiked,
       'is_saved': isSaved,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 
   // =====================================================
   // COPY WITH
   // =====================================================
-
   Post copyWith({
     int? likesCount,
     int? commentsCount,
@@ -109,21 +109,15 @@ class Post {
   }
 
   // =====================================================
-  // 🔧 UI HELPERS (IMPORTANT FIXES)
+  // UI HELPERS (CRITICAL)
   // =====================================================
-
-  /// Used in UI: post.username
   String get username => user.username;
-
-  /// Used in UI: post.avatar
   String? get avatar => user.avatar;
 
-  /// Used in search & grid previews
-  /// (backend can return same media or separate thumbnail later)
+  /// Used in grids & previews
   String get mediaThumbnail => mediaUrl;
 
-  bool get hasCaption =>
-      caption != null && caption!.trim().isNotEmpty;
+  bool get hasCaption => caption.trim().isNotEmpty;
 
   bool get isVideo =>
       mediaUrl.toLowerCase().endsWith('.mp4') ||
@@ -131,6 +125,9 @@ class Post {
       mediaUrl.toLowerCase().endsWith('.webm');
 
   bool get isImage => !isVideo;
+
+  /// 🔥 REQUIRED BY SEARCH / GRID / UI
+  bool get isReel => isVideo;
 
   @override
   String toString() {
