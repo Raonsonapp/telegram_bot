@@ -1,4 +1,8 @@
 // lib/navigation/app_router.dart
+// =====================================================
+// APP ROUTER – FINAL v5
+// Build-safe, async-safe, production-ready
+// =====================================================
 
 import 'package:flutter/material.dart';
 
@@ -9,7 +13,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 
 // Main
-import '../navigation/bottom_nav.dart';
+import 'bottom_nav.dart';
 
 // Profile
 import '../screens/profile/edit_profile_screen.dart';
@@ -35,7 +39,8 @@ class AppRouter {
   static Route<dynamic> generate(RouteSettings settings) {
     switch (settings.name) {
       case root:
-        return _guarded(const BottomNav());
+      case home:
+        return _guard(const BottomNav());
 
       case login:
         return _page(
@@ -48,21 +53,29 @@ class AppRouter {
       case register:
         return _page(const RegisterScreen());
 
-      case home:
-        return _guarded(const BottomNav());
-
       case editProfile:
-        return _guarded(const EditProfileScreen());
+        return _guard(const EditProfileScreen());
 
       case settings:
-        return _guarded(const SettingsScreen());
+        return _guard(const SettingsScreen());
 
       case chatRoom:
-        final args = settings.arguments as Map<String, dynamic>;
-        return _guarded(
+        final args = settings.arguments;
+        if (args is! Map<String, dynamic>) {
+          return _error();
+        }
+
+        final chatId = args['chatId'];
+        final username = args['username'];
+
+        if (chatId == null || username == null) {
+          return _error();
+        }
+
+        return _guard(
           ChatRoomScreen(
-            chatId: args['chatId'],
-            username: args['username'],
+            chatId: chatId.toString(),
+            username: username.toString(),
           ),
         );
 
@@ -77,32 +90,26 @@ class AppRouter {
     return MaterialPageRoute(builder: (_) => child);
   }
 
-  static MaterialPageRoute _guarded(Widget child) {
+  /// AUTH GUARD (SYNC, SAFE)
+  static MaterialPageRoute _guard(Widget child) {
     return MaterialPageRoute(
-      builder: (_) => FutureBuilder<bool>(
-        future: Session.isLoggedIn(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
+      builder: (context) {
+        final loggedIn = Session.isLoggedInSync();
 
-          if (!snapshot.data!) {
-            return LoginScreen(
-              onLoginSuccess: () {
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil(home, (_) => false);
-              },
-              onRegisterTap: () {
-                Navigator.of(context).pushNamed(register);
-              },
-            );
-          }
+        if (!loggedIn) {
+          return LoginScreen(
+            onLoginSuccess: () {
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil(home, (_) => false);
+            },
+            onRegisterTap: () {
+              Navigator.of(context).pushNamed(register);
+            },
+          );
+        }
 
-          return child;
-        },
-      ),
+        return child;
+      },
     );
   }
 
