@@ -1,6 +1,6 @@
 /// lib/models/reel.dart
 /// =====================================================
-/// REEL MODEL – FINAL v5 (FIXED & SAFE)
+/// REEL MODEL – FINAL v5.1 (BUILD SAFE)
 /// Used in:
 /// Reels feed, Reel player, Reel actions, Search
 /// =====================================================
@@ -16,7 +16,7 @@ class Reel {
 
   // ================= CONTENT =================
   final String videoUrl;
-  final String? caption;
+  final String caption;
 
   // ================= STATS =================
   final int likesCount;
@@ -28,37 +28,37 @@ class Reel {
   final bool isSaved;
 
   // ================= TIME =================
-  final DateTime createdAt;
-
-  // =====================================================
-  // CONSTRUCTOR
-  // =====================================================
+  final DateTime? createdAt;
 
   const Reel({
     required this.id,
     required this.user,
     required this.videoUrl,
-    this.caption,
+    required this.caption,
     required this.likesCount,
     required this.commentsCount,
     required this.viewsCount,
     required this.isLiked,
     required this.isSaved,
-    required this.createdAt,
+    this.createdAt,
   });
 
   // =====================================================
   // FROM JSON (BACKEND → APP)
   // =====================================================
-
   factory Reel.fromJson(Map<String, dynamic> json) {
+    final media =
+        json['video_url'] ??
+        json['media_url'] ??
+        '';
+
     return Reel(
       id: json['id'] as int,
 
       user: json['user'] != null
           ? User.fromJson(json['user'])
-          : const User(
-              id: 0,
+          : User(
+              id: -1,
               username: 'unknown',
               isVerified: false,
               followersCount: 0,
@@ -68,24 +68,25 @@ class Reel {
               createdAt: DateTime.fromMillisecondsSinceEpoch(0),
             ),
 
-      videoUrl: (json['video_url'] as String?) ?? '',
-      caption: json['caption'],
+      videoUrl: media as String,
+      caption: (json['caption'] as String?) ?? '',
 
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
       viewsCount: json['views_count'] ?? 0,
 
-      isLiked: json['is_liked'] ?? false,
-      isSaved: json['is_saved'] ?? false,
+      isLiked: json['is_liked'] == true,
+      isSaved: json['is_saved'] == true,
 
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
     );
   }
 
   // =====================================================
-  // TO JSON (APP → BACKEND)
+  // TO JSON
   // =====================================================
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -97,31 +98,26 @@ class Reel {
       'views_count': viewsCount,
       'is_liked': isLiked,
       'is_saved': isSaved,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 
   // =====================================================
-  // 🔧 UI / PLAYER HELPERS (IMPORTANT)
+  // UI / PLAYER HELPERS
   // =====================================================
-
-  /// video_player safety
   bool get hasVideo => videoUrl.trim().isNotEmpty;
 
-  /// Always video (Reels)
   bool get isVideo => true;
 
-  /// UI shortcuts
   String get username => user.username;
   String? get userAvatar => user.avatar;
 
-  /// For grids / preview (future-proof)
-  String? get thumbnail => null;
+  /// Used in search & grids (fallback)
+  String get thumbnail => videoUrl;
 
   // =====================================================
-  // COPY WITH (STATE SAFE)
+  // COPY WITH
   // =====================================================
-
   Reel copyWith({
     int? likesCount,
     int? commentsCount,
