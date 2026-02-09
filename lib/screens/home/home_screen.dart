@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../services/post_service.dart';
-import '../../services/story_service.dart';
+import '../../core/session.dart';
 import '../../models/post.dart';
-import '../../models/story.dart';
-import '../../theme/colors.dart';
+import '../../services/post_service.dart';
 import '../../widgets/loading.dart';
 import '../../widgets/empty_state.dart';
-
+import '../../widgets/post_header.dart';
+import '../../widgets/post_media.dart';
+import '../../widgets/post_actions.dart';
 import 'story_bar.dart';
-import 'post_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,71 +20,60 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   List<Post> _posts = [];
-  List<Story> _stories = [];
+  String _me = '';
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _init();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _init() async {
+    final u = await Session.getUsername();
+    _me = u ?? '';
+    await _loadFeed();
+  }
+
+  Future<void> _loadFeed() async {
     setState(() => _loading = true);
 
     try {
-      final posts = await PostService.getFeedPosts();
-      final stories = await StoryService.getStories();
-
+      final data = await PostService.getFeedPosts();
       setState(() {
-        _posts = posts;
-        _stories = stories;
-        _loading = false;
+        _posts = data;
       });
-    } catch (e) {
-      setState(() => _loading = false);
+    } catch (_) {
+      // error handled by empty state
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.black,
       appBar: _appBar(),
       body: _loading
-          ? const Loading()
+          ? const Center(child: Loading())
           : RefreshIndicator(
-              onRefresh: _loadData,
-              color: AppColors.primary,
+              onRefresh: _loadFeed,
+              color: Colors.white,
+              backgroundColor: Colors.black,
               child: _posts.isEmpty
                   ? const EmptyState(
-                      icon: Icons.image_not_supported_outlined,
+                      icon: Icons.image_outlined,
                       title: 'No posts yet',
+                      subtitle: 'Follow people to see posts here',
                     )
                   : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: _posts.length + 1,
                       itemBuilder: (context, index) {
                         if (index == 0) {
-                          return StoryBar(stories: _stories);
+                          return StoryBar(me: _me);
                         }
-
-                        final post = _posts[index - 1];
-                        return PostCard(
-                          post: post,
-                          onLike: () async {
-                            await PostService.likePost(post.id);
-                            _loadData();
-                          },
-                          onUnlike: () async {
-                            await PostService.unlikePost(post.id);
-                            _loadData();
-                          },
-                          onSave: () async {
-                            await PostService.savePost(post.id);
-                          },
-                          onComment: () {
-                            // comments screen later
-                          },
-                        );
+                        return _postItem(_posts[index - 1]);
                       },
                     ),
             ),
@@ -93,30 +81,195 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================= APP BAR =================
+
   PreferredSizeWidget _appBar() {
     return AppBar(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.black,
       elevation: 0,
       centerTitle: false,
       title: const Text(
         'Raonson',
         style: TextStyle(
           fontWeight: FontWeight.bold,
-          fontSize: 22,
+          fontSize: 20,
         ),
       ),
       leading: IconButton(
         icon: const Icon(Icons.add_box_outlined),
         onPressed: () {
-          // create post (step later)
+          Navigator.pushNamed(context, '/create');
         },
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.smart_toy_outlined), // Jarvis
-          onPressed: () {},
+          icon: const Icon(Icons.favorite_border),
+          onPressed: () {
+            Navigator.pushNamed(context, '/notifications');
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.smart_toy_outlined),
+          onPressed: () {
+            Navigator.pushNamed(context, '/ai');
+          },
         ),
       ],
+    );
+  }
+
+  // ================= POST ITEM =================
+
+  Widget _postItem(Post post) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PostHeader(
+          username: post.username,
+          avatarUrl: post.avatar,
+          isVerified: post.isVerified,
+          onMore: () {
+            _openPostMenu(post);
+          },
+        ),
+
+        PostMedia(
+          mediaUrl: post.mediaUrl,
+        ),
+
+        PostActions(
+          postId: post.id,
+          liked: post.isLiked,
+          saved: post.isSaved,
+          likesCount: post.likesCount,
+          onLike: () async {
+            await PostService.likePost(post.id);
+            _reloadSingle(post.id);
+          },
+          onUnlike: () async {
+            await PostService.unlikePost(post.id);
+            _reloadSingle(post.id);
+          },
+          onSave: () async {
+            await PostService.savePost(post.id);
+            _reloadSingle(post.id);
+          },
+          onUnsave: () async {
+            await PostService.unsavePost(post.id);
+            _reloadSingle(post.id);
+          },
+          onComment: () {
+            Navigator.pushNamed(
+              context,
+              '/comments',
+              arguments: post.id,
+            );
+          },
+          onShare: () {
+            // future: share logic
+          },
+        ),
+
+        _caption(post),
+
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _caption(Post post) {
+    if (post.caption.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(color: Colors.white),
+          children: [
+            TextSpan(
+              text: '${post.username} ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: post.caption),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================= HELPERS =================
+
+  void _reloadSingle(int postId) async {
+    try {
+      final updated = await PostService.getPostById(postId);
+      final index = _posts.indexWhere((p) => p.id == postId);
+      if (index != -1 && mounted) {
+        setState(() {
+          _posts[index] = updated;
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _openPostMenu(Post post) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF121212),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _sheetItem(
+                icon: Icons.report,
+                label: 'Report',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(
+                    context,
+                    '/report',
+                    arguments: post.id,
+                  );
+                },
+              ),
+              if (post.username == _me)
+                _sheetItem(
+                  icon: Icons.delete_outline,
+                  label: 'Delete',
+                  danger: true,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await PostService.deletePost(post.id);
+                    _loadFeed();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetItem({
+    required IconData icon,
+    required String label,
+    bool danger = false,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: danger ? Colors.redAccent : Colors.white,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: danger ? Colors.redAccent : Colors.white,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 }
