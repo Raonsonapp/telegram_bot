@@ -6,12 +6,6 @@ import '../../widgets/loading.dart';
 import '../../widgets/empty_state.dart';
 import 'search_grid.dart';
 
-/// HashtagScreen
-/// --------------------------------------------
-/// Shows posts for a specific hashtag
-/// Example: #raonson
-///
-/// Version: v5 FULL
 class HashtagScreen extends StatefulWidget {
   final String hashtag;
 
@@ -36,12 +30,18 @@ class _HashtagScreenState extends State<HashtagScreen> {
 
   Future<void> _load() async {
     try {
-      final data = await SearchService.searchHashtag(widget.hashtag);
-      setState(() {
-        _posts = data;
-        _loading = false;
-      });
-    } catch (e) {
+      final res = await SearchService.searchHashtag(widget.hashtag);
+
+      if (!mounted) return;
+
+      _posts = res
+          .map<Post>((e) => Post.fromJson(e))
+          .toList();
+    } catch (_) {
+      if (!mounted) return;
+      _posts = [];
+    } finally {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
@@ -56,7 +56,9 @@ class _HashtagScreenState extends State<HashtagScreen> {
         ),
       ),
       body: _loading
-          ? const Loading()
+          ? const Center(
+              child: AppLoading(fullscreen: false),
+            )
           : _posts.isEmpty
               ? const EmptyState(
                   icon: Icons.tag,
