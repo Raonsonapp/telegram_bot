@@ -1,6 +1,6 @@
 /// lib/services/user_service.dart
 /// =====================================================
-/// USER SERVICE – FINAL v5
+/// USER SERVICE – FINAL v5 (FIXED)
 /// Handles:
 /// - Get user profile
 /// - Edit profile
@@ -19,9 +19,13 @@ class UserService {
 
   static Future<User> getProfile(String username) async {
     final res = await HttpService.get(
-      '${Api.userProfile}/$username',
+      Api.userProfile(username),
       auth: true,
     );
+
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid profile response');
+    }
 
     return User.fromJson(res);
   }
@@ -40,10 +44,14 @@ class UserService {
       body: {
         'username': username,
         if (bio != null) 'bio': bio,
-        if (avatarUrl != null) 'avatar': avatarUrl,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
       },
       auth: true,
     );
+
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid edit profile response');
+    }
 
     return User.fromJson(res);
   }
@@ -54,8 +62,8 @@ class UserService {
 
   static Future<void> follow(String username) async {
     await HttpService.post(
-      '${Api.follow}/$username',
-      body: {},
+      Api.followUser(username),
+      body: const {},
       auth: true,
     );
   }
@@ -65,9 +73,8 @@ class UserService {
   // =====================================================
 
   static Future<void> unfollow(String username) async {
-    await HttpService.post(
-      '${Api.unfollow}/$username',
-      body: {},
+    await HttpService.delete(
+      Api.unfollowUser(username),
       auth: true,
     );
   }
@@ -78,12 +85,17 @@ class UserService {
 
   static Future<List<User>> getFollowers(String username) async {
     final res = await HttpService.get(
-      '${Api.followers}/$username',
+      Api.followers(username),
       auth: true,
     );
 
-    return (res as List)
-        .map((e) => User.fromJson(e))
+    if (res is! List) {
+      return [];
+    }
+
+    return res
+        .whereType<Map<String, dynamic>>()
+        .map(User.fromJson)
         .toList();
   }
 
@@ -93,12 +105,17 @@ class UserService {
 
   static Future<List<User>> getFollowing(String username) async {
     final res = await HttpService.get(
-      '${Api.following}/$username',
+      Api.following(username),
       auth: true,
     );
 
-    return (res as List)
-        .map((e) => User.fromJson(e))
+    if (res is! List) {
+      return [];
+    }
+
+    return res
+        .whereType<Map<String, dynamic>>()
+        .map(User.fromJson)
         .toList();
   }
 }
