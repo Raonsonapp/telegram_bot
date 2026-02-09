@@ -1,112 +1,84 @@
 /// lib/services/follow_service.dart
-/// Raonson v5 – Follow System
-/// FULL backend-connected service
-/// Build-safe, no missing methods
+/// =====================================================
+/// FOLLOW SERVICE – FINAL v5 (FIXED)
+/// Handles:
+/// - Follow / Unfollow
+/// - Followers / Following
+/// - Is following
+/// =====================================================
 
 import '../core/api.dart';
 import '../core/http_service.dart';
-import '../core/session.dart';
+import '../models/user.dart';
 
 class FollowService {
-  // ==============================
+  // =====================================================
   // FOLLOW USER
-  // ==============================
+  // =====================================================
   /// POST /follow/{username}
-  static Future<void> followUser(String username) async {
-    final token = await Session.getToken();
-    if (token == null) {
-      throw Exception('User not logged in');
-    }
-
+  static Future<void> follow(String username) async {
     await HttpService.post(
-      '${Api.follow}/$username',
-      {},
+      Api.followUser(username),
+      body: const {},
       auth: true,
     );
   }
 
-  // ==============================
+  // =====================================================
   // UNFOLLOW USER
-  // ==============================
-  /// POST /unfollow/{username}
-  static Future<void> unfollowUser(String username) async {
-    final token = await Session.getToken();
-    if (token == null) {
-      throw Exception('User not logged in');
-    }
-
-    await HttpService.post(
-      '${Api.unfollow}/$username',
-      {},
+  // =====================================================
+  /// DELETE /follow/{username}
+  static Future<void> unfollow(String username) async {
+    await HttpService.delete(
+      Api.unfollowUser(username),
       auth: true,
     );
   }
 
-  // ==============================
+  // =====================================================
   // GET FOLLOWERS
-  // ==============================
-  /// GET /followers/{username}
-  static Future<List<dynamic>> getFollowers(String username) async {
+  // =====================================================
+  /// GET /follow/{username}/followers
+  static Future<List<User>> getFollowers(String username) async {
     final res = await HttpService.get(
-      '${Api.followers}/$username',
+      Api.followers(username),
       auth: true,
     );
 
-    if (res is List) {
-      return res;
-    }
-    return [];
+    return (res as List)
+        .map((e) => User.fromJson(e))
+        .toList();
   }
 
-  // ==============================
+  // =====================================================
   // GET FOLLOWING
-  // ==============================
-  /// GET /following/{username}
-  static Future<List<dynamic>> getFollowing(String username) async {
+  // =====================================================
+  /// GET /follow/{username}/following
+  static Future<List<User>> getFollowing(String username) async {
     final res = await HttpService.get(
-      '${Api.following}/$username',
+      Api.following(username),
       auth: true,
     );
 
-    if (res is List) {
-      return res;
-    }
-    return [];
+    return (res as List)
+        .map((e) => User.fromJson(e))
+        .toList();
   }
 
-  // ==============================
+  // =====================================================
   // CHECK IS FOLLOWING
-  // ==============================
-  /// GET /follow/is-following/{username}
+  // =====================================================
+  /// GET /follow/{username}/is-following
   static Future<bool> isFollowing(String username) async {
     final res = await HttpService.get(
-      '${Api.follow}/is-following/$username',
+      Api.isFollowing(username),
       auth: true,
     );
 
-    if (res is Map && res['following'] == true) {
+    if (res is Map && res['is_following'] == true) {
       return true;
     }
+
     return false;
-  }
-
-  // ==============================
-  // GET FOLLOW COUNTS
-  // ==============================
-  /// GET /follow/counts/{username}
-  static Future<Map<String, int>> getFollowCounts(String username) async {
-    final res = await HttpService.get(
-      '${Api.follow}/counts/$username',
-      auth: true,
-    );
-
-    if (res is Map) {
-      return {
-        'followers': res['followers'] ?? 0,
-        'following': res['following'] ?? 0,
-      };
-    }
-
-    return {'followers': 0, 'following': 0};
   }
 }
