@@ -9,8 +9,7 @@ import '../reels/reels_screen.dart';
 /// - Posts
 /// - Reels
 ///
-/// Used in SearchTabs
-/// Version: v5 FULL
+/// Version: v5 FULL – FIXED & BUILD SAFE
 class SearchGrid extends StatelessWidget {
   final List<Post> items;
   final bool isReels;
@@ -25,6 +24,8 @@ class SearchGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.all(1),
+      shrinkWrap: true,
+      physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         mainAxisSpacing: 1,
@@ -33,10 +34,11 @@ class SearchGrid extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final post = items[index];
+        final bool isVideo = post.isVideo;
 
         return GestureDetector(
           onTap: () {
-            if (isReels || post.isReel) {
+            if (isReels || isVideo) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -50,17 +52,17 @@ class SearchGrid extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Thumbnail
+              // ===== MEDIA =====
               Image.network(
-                post.mediaThumbnail,
+                post.mediaUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: Colors.grey.shade900,
                 ),
               ),
 
-              // Reel icon
-              if (post.isReel)
+              // ===== VIDEO ICON =====
+              if (isVideo)
                 const Positioned(
                   bottom: 6,
                   right: 6,
