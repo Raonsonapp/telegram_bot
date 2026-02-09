@@ -1,89 +1,98 @@
-// lib/services/notification_service.dart
+/// lib/services/notification_service.dart
+/// =====================================================
+/// NOTIFICATION SERVICE – FINAL v5 (FIXED)
+/// Handles:
+/// - Notifications list
+/// - Unread count
+/// - Mark read
+/// - Delete / Clear
+/// =====================================================
 
 import '../core/api.dart';
 import '../core/http_service.dart';
-import '../core/session.dart';
+import '../models/notification.dart';
 
 class NotificationService {
-  // =========================
+  // =====================================================
   // GET ALL NOTIFICATIONS
-  // =========================
-  static Future<List<dynamic>> getNotifications() async {
+  // =====================================================
+  /// GET /notifications
+  static Future<List<AppNotification>> getNotifications() async {
     final res = await HttpService.get(
-      '${Api.baseUrl}/notifications',
+      Api.notifications,
       auth: true,
     );
 
     if (res is List) {
-      return res;
+      return res
+          .map<AppNotification>(
+              (e) => AppNotification.fromJson(e))
+          .toList();
     }
 
     return [];
   }
 
-  // =========================
+  // =====================================================
   // GET UNREAD COUNT
-  // =========================
+  // =====================================================
+  /// GET /notifications/unread-count
   static Future<int> getUnreadCount() async {
     final res = await HttpService.get(
-      '${Api.baseUrl}/notifications/unread-count',
+      Api.notificationsUnreadCount,
       auth: true,
     );
 
-    if (res is Map && res['count'] != null) {
-      return res['count'] as int;
+    if (res is Map && res['count'] is int) {
+      return res['count'];
     }
 
     return 0;
   }
 
-  // =========================
+  // =====================================================
   // MARK ONE NOTIFICATION AS READ
-  // =========================
-  static Future<bool> markAsRead(String notificationId) async {
-    final res = await HttpService.post(
-      '${Api.baseUrl}/notifications/$notificationId/read',
-      {},
+  // =====================================================
+  /// POST /notifications/{id}/read
+  static Future<void> markAsRead(int notificationId) async {
+    await HttpService.post(
+      Api.markNotificationRead(notificationId),
+      body: {},
       auth: true,
     );
-
-    return res != null;
   }
 
-  // =========================
+  // =====================================================
   // MARK ALL AS READ
-  // =========================
-  static Future<bool> markAllAsRead() async {
-    final res = await HttpService.post(
-      '${Api.baseUrl}/notifications/read-all',
-      {},
+  // =====================================================
+  /// POST /notifications/read-all
+  static Future<void> markAllAsRead() async {
+    await HttpService.post(
+      Api.markAllNotificationsRead,
+      body: {},
       auth: true,
     );
-
-    return res != null;
   }
 
-  // =========================
-  // DELETE NOTIFICATION
-  // =========================
-  static Future<bool> deleteNotification(String notificationId) async {
-    final res = await HttpService.delete(
-      '${Api.baseUrl}/notifications/$notificationId',
+  // =====================================================
+  // DELETE ONE NOTIFICATION
+  // =====================================================
+  /// DELETE /notifications/{id}
+  static Future<void> deleteNotification(int notificationId) async {
+    await HttpService.delete(
+      Api.deleteNotification(notificationId),
       auth: true,
     );
-
-    return res != null;
   }
 
-  // =========================
+  // =====================================================
   // CLEAR ALL NOTIFICATIONS
-  // =========================
-  static Future<bool> clearAll() async {
-    final res = await HttpService.delete(
-      '${Api.baseUrl}/notifications/clear',
+  // =====================================================
+  /// DELETE /notifications/clear
+  static Future<void> clearAll() async {
+    await HttpService.delete(
+      Api.clearNotifications,
       auth: true,
     );
-
-    return res != null;
   }
 }
