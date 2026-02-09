@@ -1,15 +1,15 @@
 /// lib/services/comment_service.dart
 /// Comment Service – Raonson v5
-/// Full production-ready implementation
+/// FINAL – compatible with HttpService.post()
 
 import '../core/api.dart';
 import '../core/http_service.dart';
 import '../core/session.dart';
 
 class CommentService {
-  /// ================================
-  /// GET COMMENTS BY POST
-  /// ================================
+  // ================================
+  // GET COMMENTS BY POST
+  // ================================
   /// GET /comments/{postId}
   static Future<List<Map<String, dynamic>>> getComments(
     int postId,
@@ -17,7 +17,7 @@ class CommentService {
     final token = await Session.getToken();
 
     final res = await HttpService.get(
-      '${Api.comments}/$postId',
+      Api.getComments(postId),
       auth: token != null,
     );
 
@@ -28,10 +28,10 @@ class CommentService {
     return [];
   }
 
-  /// ================================
-  /// ADD COMMENT
-  /// ================================
-  /// POST /comments/add/{postId}
+  // ================================
+  // ADD COMMENT
+  // ================================
+  /// POST /comments/{postId}
   static Future<Map<String, dynamic>> addComment({
     required int postId,
     required String text,
@@ -42,8 +42,8 @@ class CommentService {
     }
 
     final res = await HttpService.post(
-      '${Api.addComment}/$postId',
-      {
+      Api.addComment(postId),
+      body: {
         'text': text,
       },
       auth: true,
@@ -52,9 +52,9 @@ class CommentService {
     return Map<String, dynamic>.from(res);
   }
 
-  /// ================================
-  /// DELETE COMMENT
-  /// ================================
+  // ================================
+  // DELETE COMMENT
+  // ================================
   /// DELETE /comments/{commentId}
   static Future<void> deleteComment(int commentId) async {
     final token = await Session.getToken();
@@ -68,9 +68,9 @@ class CommentService {
     );
   }
 
-  /// ================================
-  /// LIKE COMMENT
-  /// ================================
+  // ================================
+  // LIKE COMMENT
+  // ================================
   /// POST /comments/{commentId}/like
   static Future<void> likeComment(int commentId) async {
     final token = await Session.getToken();
@@ -80,14 +80,14 @@ class CommentService {
 
     await HttpService.post(
       '${Api.comments}/$commentId/like',
-      {},
+      body: {},
       auth: true,
     );
   }
 
-  /// ================================
-  /// UNLIKE COMMENT
-  /// ================================
+  // ================================
+  // UNLIKE COMMENT
+  // ================================
   /// POST /comments/{commentId}/unlike
   static Future<void> unlikeComment(int commentId) async {
     final token = await Session.getToken();
@@ -97,7 +97,7 @@ class CommentService {
 
     await HttpService.post(
       '${Api.comments}/$commentId/unlike',
-      {},
+      body: {},
       auth: true,
     );
   }
