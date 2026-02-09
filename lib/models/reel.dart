@@ -1,50 +1,80 @@
+/// lib/models/reel.dart
+/// =====================================================
+/// REEL MODEL – FINAL v5
+/// Used in:
+/// Reels feed, Reel player, Reel actions
+/// =====================================================
+
 import 'user.dart';
 
 class Reel {
+  // ================= IDENTITY =================
   final int id;
+
+  // ================= OWNER =================
   final User user;
 
+  // ================= CONTENT =================
   final String videoUrl;
-  final String caption;
+  final String? caption;
 
+  // ================= STATS =================
   final int likesCount;
   final int commentsCount;
+  final int viewsCount;
+
+  // ================= STATE =================
   final bool isLiked;
   final bool isSaved;
 
+  // ================= TIME =================
   final DateTime createdAt;
+
+  // =====================================================
+  // CONSTRUCTOR
+  // =====================================================
 
   const Reel({
     required this.id,
     required this.user,
     required this.videoUrl,
-    required this.caption,
+    this.caption,
     required this.likesCount,
     required this.commentsCount,
+    required this.viewsCount,
     required this.isLiked,
     required this.isSaved,
     required this.createdAt,
   });
 
-  // ================= FROM JSON =================
+  // =====================================================
+  // FROM JSON (BACKEND → APP)
+  // =====================================================
+
   factory Reel.fromJson(Map<String, dynamic> json) {
     return Reel(
-      id: json['id'] is String
-          ? int.parse(json['id'])
-          : json['id'] ?? 0,
-      user: User.fromJson(json['user'] ?? {}),
-      videoUrl: json['video_url'] ?? '',
-      caption: json['caption'] ?? '',
+      id: json['id'] as int,
+
+      user: User.fromJson(json['user']),
+
+      videoUrl: json['video_url'] as String,
+      caption: json['caption'],
+
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
-      isLiked: json['is_liked'] == true || json['is_liked'] == 1,
-      isSaved: json['is_saved'] == true || json['is_saved'] == 1,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ??
-          DateTime.now(),
+      viewsCount: json['views_count'] ?? 0,
+
+      isLiked: json['is_liked'] ?? false,
+      isSaved: json['is_saved'] ?? false,
+
+      createdAt: DateTime.parse(json['created_at']),
     );
   }
 
-  // ================= TO JSON =================
+  // =====================================================
+  // TO JSON (APP → BACKEND)
+  // =====================================================
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -53,47 +83,36 @@ class Reel {
       'caption': caption,
       'likes_count': likesCount,
       'comments_count': commentsCount,
+      'views_count': viewsCount,
       'is_liked': isLiked,
       'is_saved': isSaved,
       'created_at': createdAt.toIso8601String(),
     };
   }
 
-  // ================= COPY WITH =================
+  // =====================================================
+  // HELPERS
+  // =====================================================
+
   Reel copyWith({
-    int? id,
-    User? user,
-    String? videoUrl,
-    String? caption,
     int? likesCount,
     int? commentsCount,
+    int? viewsCount,
     bool? isLiked,
     bool? isSaved,
-    DateTime? createdAt,
   }) {
     return Reel(
-      id: id ?? this.id,
-      user: user ?? this.user,
-      videoUrl: videoUrl ?? this.videoUrl,
-      caption: caption ?? this.caption,
+      id: id,
+      user: user,
+      videoUrl: videoUrl,
+      caption: caption,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,
+      viewsCount: viewsCount ?? this.viewsCount,
       isLiked: isLiked ?? this.isLiked,
       isSaved: isSaved ?? this.isSaved,
-      createdAt: createdAt ?? this.createdAt,
+      createdAt: createdAt,
     );
-  }
-
-  // ================= HELPERS =================
-  Reel toggleLike() {
-    return copyWith(
-      isLiked: !isLiked,
-      likesCount: isLiked ? likesCount - 1 : likesCount + 1,
-    );
-  }
-
-  Reel toggleSave() {
-    return copyWith(isSaved: !isSaved);
   }
 
   @override
