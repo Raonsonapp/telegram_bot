@@ -1,8 +1,7 @@
 /// lib/models/user.dart
 /// =====================================================
-/// USER MODEL – FINAL v5
-/// Used across the whole app:
-/// Auth, Profile, Follow, Feed, Chat
+/// USER MODEL – FINAL v5 (FIXED)
+/// Compatible with UI, Search, Follow, Chat
 /// =====================================================
 
 class User {
@@ -23,7 +22,7 @@ class User {
   final int postsCount;
 
   // ================= RELATION =================
-  final bool isFollowing; // current user → this user
+  final bool isFollowing;
 
   // ================= META =================
   final DateTime createdAt;
@@ -56,11 +55,11 @@ class User {
       id: json['id'] as int,
       username: json['username'] as String,
 
-      email: json['email'],
-      phone: json['phone'],
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
 
-      avatarUrl: json['avatar_url'],
-      bio: json['bio'],
+      avatarUrl: json['avatar_url'] as String?,
+      bio: json['bio'] as String?,
 
       isVerified: json['is_verified'] == true,
 
@@ -96,7 +95,7 @@ class User {
   }
 
   // =====================================================
-  // COPY WITH (STATE UPDATE SAFE)
+  // COPY WITH
   // =====================================================
 
   User copyWith({
@@ -126,14 +125,21 @@ class User {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI HELPERS (IMPORTANT FIXES)
   // =====================================================
 
+  /// UI uses: user.avatar
+  String? get avatar => avatarUrl;
+
+  /// UI safe checks
   bool get hasAvatar =>
-      avatarUrl != null && avatarUrl!.isNotEmpty;
+      avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
   bool get hasBio =>
-      bio != null && bio!.isNotEmpty;
+      bio != null && bio!.trim().isNotEmpty;
+
+  /// Display helpers
+  String get displayName => username;
 
   @override
   String toString() {
