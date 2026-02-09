@@ -31,10 +31,13 @@ class _FeedListState extends State<FeedList> {
   }
 
   Future<void> _loadFeed() async {
-    setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
+
     try {
-      final data = await PostService.getFeedPosts();
-      setState(() => _posts = data);
+      final data = await PostService.getFeed();
+      if (mounted) {
+        setState(() => _posts = data);
+      }
     } catch (_) {
       // handled by empty state
     } finally {
@@ -45,7 +48,7 @@ class _FeedListState extends State<FeedList> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: Loading());
+      return const Center(child: AppLoading());
     }
 
     if (_posts.isEmpty) {
@@ -78,48 +81,25 @@ class _FeedListState extends State<FeedList> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PostHeader(
-          username: post.username,
-          avatarUrl: post.avatar,
-          isVerified: post.isVerified,
-          onMore: () => _openPostMenu(post),
+          username: post.user.username,
+          avatarUrl: post.user.avatarUrl ?? '',
+          isVerified: post.user.isVerified,
+          onMoreTap: () => _openPostMenu(post),
         ),
 
         PostMedia(
           mediaUrl: post.mediaUrl,
+          isVideo: post.isVideo,
         ),
 
         PostActions(
           postId: post.id,
-          liked: post.isLiked,
-          saved: post.isSaved,
+          isLiked: post.isLiked,
+          isSaved: post.isSaved,
           likesCount: post.likesCount,
-          onLike: () async {
-            await PostService.likePost(post.id);
-            _reloadSingle(post.id);
-          },
-          onUnlike: () async {
-            await PostService.unlikePost(post.id);
-            _reloadSingle(post.id);
-          },
-          onSave: () async {
-            await PostService.savePost(post.id);
-            _reloadSingle(post.id);
-          },
-          onUnsave: () async {
-            await PostService.unsavePost(post.id);
-            _reloadSingle(post.id);
-          },
-          onComment: () {
-            Navigator.pushNamed(
-              context,
-              '/comments',
-              arguments: post.id,
-            );
-          },
-          onShare: () {},
         ),
 
-        _caption(post),
+        if (post.hasCaption) _caption(post),
 
         const SizedBox(height: 14),
       ],
@@ -127,8 +107,6 @@ class _FeedListState extends State<FeedList> {
   }
 
   Widget _caption(Post post) {
-    if (post.caption.isEmpty) return const SizedBox.shrink();
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: RichText(
@@ -136,7 +114,7 @@ class _FeedListState extends State<FeedList> {
           style: const TextStyle(color: Colors.white),
           children: [
             TextSpan(
-              text: '${post.username} ',
+              text: '${post.user.username} ',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             TextSpan(text: post.caption),
@@ -147,18 +125,6 @@ class _FeedListState extends State<FeedList> {
   }
 
   // ================= HELPERS =================
-
-  void _reloadSingle(int postId) async {
-    try {
-      final updated = await PostService.getPostById(postId);
-      final index = _posts.indexWhere((p) => p.id == postId);
-      if (index != -1 && mounted) {
-        setState(() {
-          _posts[index] = updated;
-        });
-      }
-    } catch (_) {}
-  }
 
   void _openPostMenu(Post post) {
     showModalBottomSheet(
@@ -184,14 +150,14 @@ class _FeedListState extends State<FeedList> {
                   );
                 },
               ),
-              if (post.username == widget.me)
+              if (post.user.username == widget.me)
                 _sheetItem(
                   icon: Icons.delete_outline,
                   label: 'Delete',
                   danger: true,
                   onTap: () async {
                     Navigator.pop(context);
-                    await PostService.deletePost(post.id);
+                    await PostService.delete(post.id);
                     _loadFeed();
                   },
                 ),
