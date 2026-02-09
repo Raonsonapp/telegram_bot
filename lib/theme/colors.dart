@@ -1,50 +1,90 @@
 import 'package:flutter/material.dart';
 
+/// Central color system for Raonson App
+/// Version: v5 (Full Social Network)
+
 class AppColors {
   AppColors._();
 
+  // ================= BRAND =================
+  static const Color primary = Color(0xFF1877F2); // Instagram blue
+  static const Color secondary = Color(0xFF1DA1F2);
+  static const Color accent = Color(0xFF00C853); // green verified
+
   // ================= BACKGROUND =================
-  static const Color background = Color(0xFF0F1424); // асосӣ (dark blue/black)
-  static const Color surface = Color(0xFF151A2E); // card, sheet
-  static const Color divider = Color(0xFF262B40);
+  static const Color backgroundLight = Color(0xFFFFFFFF);
+  static const Color backgroundDark = Color(0xFF0F1424);
+
+  static const Color surfaceLight = Color(0xFFF5F5F5);
+  static const Color surfaceDark = Color(0xFF1C2238);
 
   // ================= TEXT =================
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color(0xFFB0B3C6);
-  static const Color textMuted = Color(0xFF7A7F9A);
+  static const Color textPrimaryLight = Color(0xFF000000);
+  static const Color textSecondaryLight = Color(0xFF6B7280);
 
-  // ================= BRAND =================
-  static const Color primary = Color(0xFF3B82F6); // blue accent
-  static const Color primarySoft = Color(0xFF1E3A8A);
+  static const Color textPrimaryDark = Color(0xFFFFFFFF);
+  static const Color textSecondaryDark = Color(0xFF9CA3AF);
 
-  // ================= VERIFIED =================
-  static const Color verified = Color(0xFF22C55E); // сабз (галочка)
-
-  // ================= ACTIONS =================
-  static const Color like = Color(0xFFE11D48); // heart
-  static const Color comment = Color(0xFF60A5FA);
-  static const Color share = Color(0xFF93C5FD);
-  static const Color save = Color(0xFFFACC15);
-
-  // ================= STATUS =================
-  static const Color success = Color(0xFF22C55E);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-
-  // ================= INPUT =================
-  static const Color inputBackground = Color(0xFF1A1F36);
-  static const Color inputBorder = Color(0xFF2F365F);
-  static const Color inputFocused = primary;
+  static const Color textHint = Color(0xFF9E9E9E);
 
   // ================= ICONS =================
-  static const Color iconPrimary = Colors.white;
-  static const Color iconSecondary = Color(0xFF9CA3AF);
-  static const Color iconDisabled = Color(0xFF4B5563);
+  static const Color iconLight = Color(0xFF000000);
+  static const Color iconDark = Color(0xFFFFFFFF);
+  static const Color iconMuted = Color(0xFF9CA3AF);
+
+  // ================= BUTTONS =================
+  static const Color buttonPrimary = primary;
+  static const Color buttonDisabled = Color(0xFFBDBDBD);
+  static const Color buttonTextLight = Colors.white;
+  static const Color buttonTextDark = Colors.white;
+
+  // ================= INPUT =================
+  static const Color inputBackgroundLight = Color(0xFFF0F2F5);
+  static const Color inputBackgroundDark = Color(0xFF20263D);
+  static const Color inputBorder = Color(0xFFE5E7EB);
+  static const Color inputFocused = primary;
+
+  // ================= DIVIDER =================
+  static const Color dividerLight = Color(0xFFE5E7EB);
+  static const Color dividerDark = Color(0xFF2A2F45);
+
+  // ================= STATES =================
+  static const Color success = Color(0xFF00C853);
+  static const Color error = Color(0xFFD32F2F);
+  static const Color warning = Color(0xFFFFA000);
+  static const Color info = Color(0xFF0288D1);
+
+  // ================= POST / REEL =================
+  static const Color like = Color(0xFFE53935);
+  static const Color save = Color(0xFF1877F2);
+  static const Color comment = Color(0xFF9CA3AF);
+  static const Color share = Color(0xFF9CA3AF);
+
+  // ================= CHAT =================
+  static const Color chatBubbleMe = Color(0xFF1877F2);
+  static const Color chatBubbleOther = Color(0xFFE5E7EB);
+
+  static const Color chatTextMe = Colors.white;
+  static const Color chatTextOther = Color(0xFF111827);
 
   // ================= STORY =================
-  static const Color storyBorder = Color(0xFF3B82F6);
-  static const Color storyViewed = Color(0xFF4B5563);
+  static const List<Color> storyGradient = [
+    Color(0xFF9B2282),
+    Color(0xFFEE2A7B),
+    Color(0xFFF99D3A),
+  ];
 
-  // ================= OVERLAY =================
-  static const Color overlayDark = Colors.black54;
+  // ================= OVERLAYS =================
+  static const Color overlayDark = Color(0x99000000);
+  static const Color overlayLight = Color(0x66FFFFFF);
+
+  // ================= NAVIGATION =================
+  static const Color bottomNavBackgroundLight = Colors.white;
+  static const Color bottomNavBackgroundDark = Color(0xFF0F1424);
+
+  static const Color bottomNavActive = Color(0xFF000000);
+  static const Color bottomNavInactive = Color(0xFF9CA3AF);
+
+  // ================= SHADOW =================
+  static const Color shadow = Color(0x1A000000);
 }
