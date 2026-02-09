@@ -1,17 +1,15 @@
 // lib/widgets/post_media.dart
+// =====================================================
+// POST MEDIA – FINAL v5
+// Image & Video (Instagram-style, build-safe)
+// =====================================================
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 class PostMedia extends StatefulWidget {
-  /// URL-и медиа (акс ё видео)
   final String mediaUrl;
-
-  /// Навъи медиа
-  /// true = video, false = image
   final bool isVideo;
-
-  /// Оё видео autoPlay шавад
   final bool autoPlay;
 
   const PostMedia({
@@ -28,6 +26,7 @@ class PostMedia extends StatefulWidget {
 class _PostMediaState extends State<PostMedia> {
   VideoPlayerController? _controller;
   bool _initialized = false;
+  bool _muted = true;
 
   @override
   void initState() {
@@ -36,15 +35,15 @@ class _PostMediaState extends State<PostMedia> {
     if (widget.isVideo) {
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.mediaUrl),
-      )..initialize().then((_) {
+      )
+        ..setLooping(true)
+        ..setVolume(0)
+        ..initialize().then((_) {
           if (!mounted) return;
-          setState(() {
-            _initialized = true;
-          });
+          setState(() => _initialized = true);
 
           if (widget.autoPlay) {
             _controller!.play();
-            _controller!.setLooping(true);
           }
         });
     }
@@ -52,19 +51,19 @@ class _PostMediaState extends State<PostMedia> {
 
   @override
   void dispose() {
+    _controller?.pause();
     _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isVideo) {
-      return _buildVideo();
-    }
-    return _buildImage();
+    return widget.isVideo ? _buildVideo() : _buildImage();
   }
 
-  // ================= IMAGE =================
+  // =====================================================
+  // IMAGE
+  // =====================================================
   Widget _buildImage() {
     return AspectRatio(
       aspectRatio: 1,
@@ -72,36 +71,51 @@ class _PostMediaState extends State<PostMedia> {
         widget.mediaUrl,
         width: double.infinity,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, progress) {
+        loadingBuilder: (_, child, progress) {
           if (progress == null) return child;
-          return const Center(child: CircularProgressIndicator());
-        },
-        errorBuilder: (_, __, ___) {
           return const Center(
-            child: Icon(Icons.broken_image, size: 40),
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           );
         },
+        errorBuilder: (_, __, ___) => const Center(
+          child: Icon(Icons.broken_image, size: 40),
+        ),
       ),
     );
   }
 
-  // ================= VIDEO =================
+  // =====================================================
+  // VIDEO
+  // =====================================================
   Widget _buildVideo() {
     if (_controller == null || !_initialized) {
       return const AspectRatio(
         aspectRatio: 9 / 16,
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       );
     }
 
+    final isPlaying = _controller!.value.isPlaying;
+
     return GestureDetector(
       onTap: () {
-        if (_controller!.value.isPlaying) {
-          _controller!.pause();
-        } else {
-          _controller!.play();
-        }
-        setState(() {});
+        setState(() {
+          if (isPlaying) {
+            _controller!.pause();
+          } else {
+            _controller!.play();
+          }
+        });
       },
       child: Stack(
         alignment: Alignment.center,
@@ -111,12 +125,39 @@ class _PostMediaState extends State<PostMedia> {
             child: VideoPlayer(_controller!),
           ),
 
-          if (!_controller!.value.isPlaying)
+          // ▶ Play icon
+          if (!isPlaying)
             const Icon(
               Icons.play_circle_fill,
               size: 64,
               color: Colors.white70,
             ),
+
+          // 🔊 Mute button
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _muted = !_muted;
+                  _controller!.setVolume(_muted ? 0 : 1);
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  _muted ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
