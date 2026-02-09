@@ -1,40 +1,109 @@
+/// lib/main.dart
+/// Raonson v5 — Full Social Network App
+/// Single entry point, fully wired to all layers
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/session.dart';
+import 'core/socket_service.dart';
+
+import 'navigation/app_router.dart';
 import 'navigation/bottom_nav.dart';
+
 import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart';
+
 import 'theme/app_theme.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock orientation (Instagram-like)
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
+  // Init local session (token, user, flags)
   await Session.init();
+
+  // Init socket (safe even if server offline)
+  await SocketService.init();
+
   runApp(const RaonsonApp());
 }
 
-class RaonsonApp extends StatelessWidget {
+class RaonsonApp extends StatefulWidget {
   const RaonsonApp({super.key});
+
+  @override
+  State<RaonsonApp> createState() => _RaonsonAppState();
+}
+
+class _RaonsonAppState extends State<RaonsonApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SocketService.dispose();
+    super.dispose();
+  }
+
+  /// Handle app lifecycle (background / foreground)
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      SocketService.reconnect();
+    } else if (state == AppLifecycleState.paused) {
+      SocketService.disconnect();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Raonson',
       debugShowCheckedModeBanner: false,
+
+      // THEMES
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: _Root(), // ❗ НЕ const
+
+      // ROUTING
+      onGenerateRoute: AppRouter.generate,
+      home: const _Root(),
+
+      // GLOBAL ERROR UI (failsafe)
+      builder: (context, child) {
+        ErrorWidget.builder = (details) {
+          return Scaffold(
+            body: Center(
+              child: Text(
+                'Raonson error:\n${details.exception}',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        };
+        return child!;
+      },
     );
   }
 }
 
 ///
-/// ROOT — қарор мекунад:
-/// 1) Агар login шуда бошад → Home (BottomNav)
-/// 2) Агар не → Login
+/// ROOT DECIDER
+/// - logged in  → BottomNav (Home / Reels / Search / Chat / Profile)
+/// - not logged → Login
 ///
 class _Root extends StatefulWidget {
-  _Root({super.key}); // ❗ НЕ const
+  const _Root();
 
   @override
   State<_Root> createState() => _RootState();
@@ -47,16 +116,25 @@ class _RootState extends State<_Root> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    _resolveAuth();
   }
 
-  Future<void> _checkAuth() async {
-    final ok = await Session.isLoggedIn();
-    if (!mounted) return;
-    setState(() {
-      _loggedIn = ok;
-      _loading = false;
-    });
+  Future<void> _resolveAuth() async {
+    try {
+      final ok = await Session.isLoggedIn();
+      if (!mounted) return;
+
+      setState(() {
+        _loggedIn = ok;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loggedIn = false;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -72,13 +150,8 @@ class _RootState extends State<_Root> {
     }
 
     return LoginScreen(
-      onRegisterTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const RegisterScreen()),
-        );
-      },
-      onLoginSuccess: () {
-        setState(() => _loggedIn = true);
+      onLoginSuccess: () async {
+        await _resolveAuth();
       },
     );
   }
