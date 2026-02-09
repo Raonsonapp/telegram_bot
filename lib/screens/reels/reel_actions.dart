@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
+
 import '../../core/session.dart';
 import '../../services/reel_service.dart';
-import '../comments/comments_screen.dart';
+import '../../widgets/verified_badge.dart';
 
+/// Reels Actions Widget
+/// Like • Comment • Share • Save
+/// Version: v5 FULL
 class ReelActions extends StatefulWidget {
   final int reelId;
-  final int likes;
+  final String username;
+  final bool isVerified;
+  final int likesCount;
+  final int commentsCount;
   final bool isLiked;
   final bool isSaved;
+  final VoidCallback onCommentTap;
 
   const ReelActions({
     super.key,
     required this.reelId,
-    required this.likes,
+    required this.username,
+    required this.isVerified,
+    required this.likesCount,
+    required this.commentsCount,
     required this.isLiked,
     required this.isSaved,
+    required this.onCommentTap,
   });
 
   @override
@@ -24,126 +36,154 @@ class ReelActions extends StatefulWidget {
 class _ReelActionsState extends State<ReelActions> {
   late bool _liked;
   late bool _saved;
-  late int _likesCount;
-  String _me = '';
+  late int _likes;
+  bool _loadingLike = false;
+  bool _loadingSave = false;
 
   @override
   void initState() {
     super.initState();
     _liked = widget.isLiked;
     _saved = widget.isSaved;
-    _likesCount = widget.likes;
-    _loadUser();
+    _likes = widget.likesCount;
   }
 
-  Future<void> _loadUser() async {
-    final u = await Session.username() ?? '';
-    setState(() => _me = u);
-  }
-
-  // ================= LIKE =================
+  // =====================================================
+  // ACTIONS
+  // =====================================================
   Future<void> _toggleLike() async {
-    if (_liked) {
-      await ReelService.unlike(widget.reelId);
-      setState(() {
-        _liked = false;
-        _likesCount--;
-      });
-    } else {
-      await ReelService.like(widget.reelId);
-      setState(() {
-        _liked = true;
-        _likesCount++;
-      });
+    if (_loadingLike) return;
+    _loadingLike = true;
+
+    try {
+      if (_liked) {
+        await ReelService.unlike(widget.reelId);
+        setState(() {
+          _liked = false;
+          _likes--;
+        });
+      } else {
+        await ReelService.like(widget.reelId);
+        setState(() {
+          _liked = true;
+          _likes++;
+        });
+      }
+    } finally {
+      _loadingLike = false;
     }
   }
 
-  // ================= SAVE =================
   Future<void> _toggleSave() async {
-    if (_saved) {
-      await ReelService.unsave(widget.reelId);
-      setState(() => _saved = false);
-    } else {
-      await ReelService.save(widget.reelId);
-      setState(() => _saved = true);
+    if (_loadingSave) return;
+    _loadingSave = true;
+
+    try {
+      if (_saved) {
+        await ReelService.unsave(widget.reelId);
+        setState(() => _saved = false);
+      } else {
+        await ReelService.save(widget.reelId);
+        setState(() => _saved = true);
+      }
+    } finally {
+      _loadingSave = false;
     }
   }
 
-  // ================= COMMENT =================
-  void _openComments() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CommentsScreen(postId: widget.reelId),
-      ),
-    );
-  }
-
-  // ================= SHARE =================
   void _share() {
+    // backend / native share later
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Link copied'),
-        duration: Duration(seconds: 1),
-      ),
+      const SnackBar(content: Text('Share coming soon')),
     );
   }
 
+  // =====================================================
+  // UI
+  // =====================================================
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        _icon(
+        _iconButton(
           icon: _liked ? Icons.favorite : Icons.favorite_border,
           color: _liked ? Colors.red : Colors.white,
-          label: _likesCount.toString(),
           onTap: _toggleLike,
+          label: _likes.toString(),
         ),
-        const SizedBox(height: 16),
-        _icon(
+        const SizedBox(height: 18),
+        _iconButton(
           icon: Icons.mode_comment_outlined,
-          label: 'Comment',
-          onTap: _openComments,
+          onTap: widget.onCommentTap,
+          label: widget.commentsCount.toString(),
         ),
-        const SizedBox(height: 16),
-        _icon(
-          icon: _saved ? Icons.bookmark : Icons.bookmark_border,
-          label: 'Save',
-          onTap: _toggleSave,
-        ),
-        const SizedBox(height: 16),
-        _icon(
+        const SizedBox(height: 18),
+        _iconButton(
           icon: Icons.send,
-          label: 'Share',
           onTap: _share,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
+        _iconButton(
+          icon: _saved ? Icons.bookmark : Icons.bookmark_border,
+          onTap: _toggleSave,
+        ),
+        const SizedBox(height: 26),
+        _userInfo(),
       ],
     );
   }
 
-  Widget _icon({
+  Widget _iconButton({
     required IconData icon,
-    required String label,
     required VoidCallback onTap,
+    String? label,
     Color color = Colors.white,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Icon(icon, size: 32, color: color),
+        ),
+        if (label != null) ...[
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
         ],
-      ),
+      ],
+    );
+  }
+
+  Widget _userInfo() {
+    return Column(
+      children: [
+        const CircleAvatar(
+          radius: 18,
+          backgroundColor: Colors.white12,
+          child: Icon(Icons.person, color: Colors.white),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.username,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+            if (widget.isVerified) ...[
+              const SizedBox(width: 4),
+              const VerifiedBadge(size: 12),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }
