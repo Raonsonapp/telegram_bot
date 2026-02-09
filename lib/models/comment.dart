@@ -1,10 +1,10 @@
 /// lib/models/comment.dart
 /// =====================================================
-/// COMMENT MODEL – FINAL v5 (FIXED & SAFE)
+/// COMMENT MODEL – FINAL v5.1 (BUILD SAFE)
 /// Used for:
 /// - Post comments
 /// - Reel comments
-/// - Replies (nested comments)
+/// - Replies (nested)
 /// =====================================================
 
 import 'user.dart';
@@ -17,14 +17,14 @@ class Comment {
   final User user;
 
   // ================= TARGET =================
-  final int targetId; // postId or reelId
+  final int targetId; // postId | reelId
   final String targetType; // 'post' | 'reel'
 
   // ================= CONTENT =================
   final String text;
 
   // ================= REPLY =================
-  final int? parentId; // null = main comment
+  final int? parentId;
   final List<Comment> replies;
 
   // ================= STATS =================
@@ -32,11 +32,7 @@ class Comment {
   final bool isLiked;
 
   // ================= TIME =================
-  final DateTime createdAt;
-
-  // =====================================================
-  // CONSTRUCTOR
-  // =====================================================
+  final DateTime? createdAt;
 
   const Comment({
     required this.id,
@@ -48,21 +44,20 @@ class Comment {
     this.replies = const [],
     required this.likesCount,
     required this.isLiked,
-    required this.createdAt,
+    this.createdAt,
   });
 
   // =====================================================
-  // FROM JSON (BACKEND → APP)
+  // FROM JSON
   // =====================================================
-
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
       id: json['id'] as int,
 
       user: json['user'] != null
           ? User.fromJson(json['user'])
-          : const User(
-              id: 0,
+          : User(
+              id: -1,
               username: 'unknown',
               isVerified: false,
               followersCount: 0,
@@ -72,12 +67,16 @@ class Comment {
               createdAt: DateTime.fromMillisecondsSinceEpoch(0),
             ),
 
-      targetId: json['target_id'] as int,
+      targetId: (json['target_id'] as int?) ??
+          (json['post_id'] as int?) ??
+          (json['reel_id'] as int?) ??
+          0,
+
       targetType: (json['target_type'] as String?) ?? 'post',
 
-      text: json['text'] ?? '',
+      text: (json['text'] as String?) ?? '',
 
-      parentId: json['parent_id'],
+      parentId: json['parent_id'] as int?,
 
       replies: json['replies'] is List
           ? List<Comment>.from(
@@ -87,16 +86,17 @@ class Comment {
           : const [],
 
       likesCount: json['likes_count'] ?? 0,
-      isLiked: json['is_liked'] ?? false,
+      isLiked: json['is_liked'] == true,
 
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
     );
   }
 
   // =====================================================
-  // TO JSON (APP → BACKEND)
+  // TO JSON
   // =====================================================
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -107,14 +107,13 @@ class Comment {
       'parent_id': parentId,
       'likes_count': likesCount,
       'is_liked': isLiked,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 
   // =====================================================
-  // 🔧 UI HELPERS (IMPORTANT)
+  // 🔧 UI HELPERS
   // =====================================================
-
   bool get isReply => parentId != null;
   bool get hasReplies => replies.isNotEmpty;
 
@@ -125,9 +124,8 @@ class Comment {
   bool get isReel => targetType == 'reel';
 
   // =====================================================
-  // COPY WITH (STATE SAFE)
+  // COPY WITH
   // =====================================================
-
   Comment copyWith({
     int? likesCount,
     bool? isLiked,
