@@ -1,4 +1,9 @@
 // lib/navigation/bottom_nav.dart
+// =====================================================
+// BOTTOM NAVIGATION – FINAL v5
+// Instagram-like behavior
+// State-safe, build-safe
+// =====================================================
 
 import 'package:flutter/material.dart';
 
@@ -18,19 +23,13 @@ class BottomNav extends StatefulWidget {
 class _BottomNavState extends State<BottomNav> {
   int _index = 0;
 
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = const [
-      HomeScreen(),
-      SearchScreen(),
-      ReelsScreen(),
-      ChatListScreen(),
-      ProfileScreen(),
-    ];
-  }
+  final List<Widget> _pages = const [
+    HomeScreen(key: PageStorageKey('home')),
+    SearchScreen(key: PageStorageKey('search')),
+    ReelsScreen(key: PageStorageKey('reels')),
+    ChatListScreen(key: PageStorageKey('chat')),
+    ProfileScreen(key: PageStorageKey('profile')),
+  ];
 
   void _onTap(int i) {
     if (i == _index) return;
