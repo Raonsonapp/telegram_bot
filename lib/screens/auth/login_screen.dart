@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../core/session.dart';
+
 import '../../services/auth_service.dart';
-import '../../navigation/bottom_nav.dart';
-import '../../theme/colors.dart';
+import '../../widgets/loading.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final VoidCallback? onLoginSuccess;
+
+  const LoginScreen({
+    super.key,
+    this.onLoginSuccess,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -13,14 +18,21 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _identityCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+
+  final TextEditingController _usernameCtrl = TextEditingController();
+  final TextEditingController _passwordCtrl = TextEditingController();
 
   bool _loading = false;
-  bool _obscure = true;
   String? _error;
 
-  Future<void> _login() async {
+  @override
+  void dispose() {
+    _usernameCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -29,198 +41,44 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final res = await AuthService.login(
-        identity: _identityCtrl.text.trim(),
+      await AuthService.login(
+        username: _usernameCtrl.text.trim(),
         password: _passwordCtrl.text,
       );
 
-      await Session.saveToken(res['token']);
-      await Session.saveUser(res['user']);
-
       if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const BottomNav()),
-        (_) => false,
-      );
+      widget.onLoginSuccess?.call();
     } catch (e) {
       setState(() {
-        _error = e.toString().replaceAll('Exception:', '').trim();
+        _error = e.toString().replaceFirst('Exception:', '').trim();
       });
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _identityCtrl.dispose();
-    _passwordCtrl.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 40),
-
-                // LOGO
-                const Text(
-                  'Raonson',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // ERROR
+                _logo(),
+                const SizedBox(height: 32),
+                _form(),
                 if (_error != null) ...[
-                  Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  _errorText(),
                 ],
-
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      // USERNAME / EMAIL
-                      TextFormField(
-                        controller: _identityCtrl,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration(
-                          hint: 'Username or email',
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Enter username or email';
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      // PASSWORD
-                      TextFormField(
-                        controller: _passwordCtrl,
-                        obscureText: _obscure,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration(
-                          hint: 'Password',
-                          suffix: IconButton(
-                            icon: Icon(
-                              _obscure
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: AppColors.textSecondary,
-                            ),
-                            onPressed: () {
-                              setState(() => _obscure = !_obscure);
-                            },
-                          ),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.length < 6) {
-                            return 'Password too short';
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 22),
-
-                      // LOGIN BUTTON
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: ElevatedButton(
-                          onPressed: _loading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          child: _loading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Log in',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                // FORGOT PASSWORD
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Forgot password?',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // REGISTER LINK
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Don't have an account?",
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/register');
-                      },
-                      child: const Text(
-                        'Sign up',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 20),
+                _loginButton(),
+                const SizedBox(height: 24),
+                _registerLink(),
               ],
             ),
           ),
@@ -229,21 +87,118 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textSecondary),
-      filled: true,
-      fillColor: AppColors.surface,
-      suffixIcon: suffix,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide.none,
+  // ================= UI PARTS =================
+
+  Widget _logo() {
+    return Column(
+      children: const [
+        Text(
+          'Raonson',
+          style: TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 1.2,
+          ),
+        ),
+        SizedBox(height: 6),
+        Text(
+          'Sign in to continue',
+          style: TextStyle(color: Colors.white54),
+        ),
+      ],
+    );
+  }
+
+  Widget _form() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          _input(
+            controller: _usernameCtrl,
+            hint: 'Username or email',
+            validator: (v) =>
+                v == null || v.isEmpty ? 'Enter username or email' : null,
+          ),
+          const SizedBox(height: 12),
+          _input(
+            controller: _passwordCtrl,
+            hint: 'Password',
+            obscure: true,
+            validator: (v) =>
+                v == null || v.length < 6 ? 'Password too short' : null,
+          ),
+        ],
       ),
-      errorStyle: const TextStyle(fontSize: 11),
+    );
+  }
+
+  Widget _input({
+    required TextEditingController controller,
+    required String hint,
+    bool obscure = false,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      validator: validator,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white38),
+        filled: true,
+        fillColor: const Color(0xFF121212),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _loginButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton(
+        onPressed: _loading ? null : _submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blueAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: _loading
+            ? const Loading(color: Colors.white)
+            : const Text(
+                'Log In',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
+  }
+
+  Widget _registerLink() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+        );
+      },
+      child: const Text(
+        "Don't have an account? Sign up",
+        style: TextStyle(color: Colors.white70),
+      ),
+    );
+  }
+
+  Widget _errorText() {
+    return Text(
+      _error!,
+      style: const TextStyle(color: Colors.redAccent),
+      textAlign: TextAlign.center,
     );
   }
 }
