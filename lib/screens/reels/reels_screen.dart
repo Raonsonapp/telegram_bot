@@ -32,11 +32,19 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
   Future<void> _loadReels() async {
     try {
-      final data = await ReelService.getReels();
+      final data = await ReelService.getFeed();
+
+      // clear old controllers
+      for (final c in _controllers) {
+        c.dispose();
+      }
+      _controllers.clear();
+
       _reels = data;
 
       for (final r in _reels) {
-        final c = VideoPlayerController.networkUrl(Uri.parse(r.videoUrl));
+        final c =
+            VideoPlayerController.networkUrl(Uri.parse(r.videoUrl));
         await c.initialize();
         c.setLooping(true);
         _controllers.add(c);
@@ -46,9 +54,9 @@ class _ReelsScreenState extends State<ReelsScreen> {
         _controllers.first.play();
       }
 
-      setState(() => _loading = false);
-    } catch (e) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -74,7 +82,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: Loading()),
+        body: Center(child: AppLoading()),
       );
     }
 
@@ -160,23 +168,28 @@ class _ReelsScreenState extends State<ReelsScreen> {
       children: [
         Row(
           children: [
-            Avatar(url: reel.userAvatar, size: 36),
+            Avatar(
+              imageUrl: reel.user.avatarUrl,
+              size: 36,
+            ),
             const SizedBox(width: 8),
             Text(
-              reel.username,
+              reel.user.username,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (reel.isVerified) const SizedBox(width: 4),
-            if (reel.isVerified) const VerifiedBadge(),
+            if (reel.user.isVerified) ...[
+              const SizedBox(width: 4),
+              const VerifiedBadge(),
+            ],
           ],
         ),
-        if (reel.caption.isNotEmpty) ...[
+        if (reel.caption != null && reel.caption!.isNotEmpty) ...[
           const SizedBox(height: 6),
           Text(
-            reel.caption,
+            reel.caption!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white),
