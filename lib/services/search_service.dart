@@ -1,4 +1,8 @@
 // lib/services/search_service.dart
+// =====================================================
+// SEARCH SERVICE – FIXED v5
+// Fully compatible with Api.dart
+// =====================================================
 
 import '../core/api.dart';
 import '../core/http_service.dart';
@@ -6,16 +10,11 @@ import '../core/http_service.dart';
 class SearchService {
   // =========================
   // GLOBAL SEARCH
-  // q = keyword
   // =========================
+  // GET /search?q=keyword
   static Future<Map<String, dynamic>> search(String query) async {
     if (query.trim().isEmpty) {
-      return {
-        'users': [],
-        'posts': [],
-        'reels': [],
-        'hashtags': [],
-      };
+      return _emptyResult();
     }
 
     final res = await HttpService.get(
@@ -32,86 +31,65 @@ class SearchService {
       };
     }
 
+    return _emptyResult();
+  }
+
+  // =========================
+  // SEARCH USERS
+  // =========================
+  // GET /search/users?q=
+  static Future<List<dynamic>> searchUsers(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    final res = await HttpService.get(
+      Api.searchUsers(Uri.encodeComponent(query)),
+      auth: true,
+    );
+
+    return res is List ? res : [];
+  }
+
+  // =========================
+  // SEARCH POSTS
+  // =========================
+  // GET /search/posts?q=
+  static Future<List<dynamic>> searchPosts(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    final res = await HttpService.get(
+      Api.searchPosts(Uri.encodeComponent(query)),
+      auth: true,
+    );
+
+    return res is List ? res : [];
+  }
+
+  // =========================
+  // SEARCH HASHTAGS
+  // =========================
+  // GET /search/hashtags?q=
+  static Future<List<dynamic>> searchHashtags(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    final clean = query.replaceAll('#', '');
+
+    final res = await HttpService.get(
+      Api.searchHashtags(Uri.encodeComponent(clean)),
+      auth: true,
+    );
+
+    return res is List ? res : [];
+  }
+
+  // =========================
+  // INTERNAL
+  // =========================
+  static Map<String, dynamic> _emptyResult() {
     return {
       'users': [],
       'posts': [],
       'reels': [],
       'hashtags': [],
     };
-  }
-
-  // =========================
-  // SEARCH USERS ONLY
-  // =========================
-  static Future<List<dynamic>> searchUsers(String query) async {
-    if (query.trim().isEmpty) return [];
-
-    final res = await HttpService.get(
-      '${Api.search}/users?q=${Uri.encodeComponent(query)}',
-      auth: true,
-    );
-
-    if (res is List) return res;
-    return [];
-  }
-
-  // =========================
-  // SEARCH POSTS ONLY
-  // =========================
-  static Future<List<dynamic>> searchPosts(String query) async {
-    if (query.trim().isEmpty) return [];
-
-    final res = await HttpService.get(
-      '${Api.search}/posts?q=${Uri.encodeComponent(query)}',
-      auth: true,
-    );
-
-    if (res is List) return res;
-    return [];
-  }
-
-  // =========================
-  // SEARCH REELS ONLY
-  // =========================
-  static Future<List<dynamic>> searchReels(String query) async {
-    if (query.trim().isEmpty) return [];
-
-    final res = await HttpService.get(
-      '${Api.search}/reels?q=${Uri.encodeComponent(query)}',
-      auth: true,
-    );
-
-    if (res is List) return res;
-    return [];
-  }
-
-  // =========================
-  // SEARCH BY HASHTAG
-  // =========================
-  static Future<List<dynamic>> searchHashtag(String hashtag) async {
-    if (hashtag.trim().isEmpty) return [];
-
-    final tag = hashtag.replaceAll('#', '');
-
-    final res = await HttpService.get(
-      '${Api.search}/hashtag/$tag',
-      auth: true,
-    );
-
-    if (res is List) return res;
-    return [];
-  }
-
-  // =========================
-  // TRENDING SEARCH (EXPLORE)
-  // =========================
-  static Future<List<dynamic>> getTrending() async {
-    final res = await HttpService.get(
-      '${Api.search}/trending',
-      auth: true,
-    );
-
-    if (res is List) return res;
-    return [];
   }
 }
