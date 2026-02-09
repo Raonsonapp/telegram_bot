@@ -1,8 +1,8 @@
 /// lib/models/reel.dart
 /// =====================================================
-/// REEL MODEL – FINAL v5
+/// REEL MODEL – FINAL v5 (FIXED & SAFE)
 /// Used in:
-/// Reels feed, Reel player, Reel actions
+/// Reels feed, Reel player, Reel actions, Search
 /// =====================================================
 
 import 'user.dart';
@@ -55,9 +55,20 @@ class Reel {
     return Reel(
       id: json['id'] as int,
 
-      user: User.fromJson(json['user']),
+      user: json['user'] != null
+          ? User.fromJson(json['user'])
+          : const User(
+              id: 0,
+              username: 'unknown',
+              isVerified: false,
+              followersCount: 0,
+              followingCount: 0,
+              postsCount: 0,
+              isFollowing: false,
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
 
-      videoUrl: json['video_url'] as String,
+      videoUrl: (json['video_url'] as String?) ?? '',
       caption: json['caption'],
 
       likesCount: json['likes_count'] ?? 0,
@@ -91,7 +102,24 @@ class Reel {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI / PLAYER HELPERS (IMPORTANT)
+  // =====================================================
+
+  /// video_player safety
+  bool get hasVideo => videoUrl.trim().isNotEmpty;
+
+  /// Always video (Reels)
+  bool get isVideo => true;
+
+  /// UI shortcuts
+  String get username => user.username;
+  String? get userAvatar => user.avatar;
+
+  /// For grids / preview (future-proof)
+  String? get thumbnail => null;
+
+  // =====================================================
+  // COPY WITH (STATE SAFE)
   // =====================================================
 
   Reel copyWith({
