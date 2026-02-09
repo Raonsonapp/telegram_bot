@@ -1,42 +1,91 @@
 import '../core/api.dart';
 import '../core/http_service.dart';
 
+/// ReelService
+/// --------------------------------------------------
+/// Ҳамаи амалҳои Reels:
+/// - feed
+/// - create
+/// - like / unlike
+/// - save / unsave
+/// - get saved reels
+///
+/// Version: v5 FULL
 class ReelService {
-  // ================= GET REELS =================
-  static Future<List<dynamic>> getReels() async {
-    final res = await HttpService.get(Api.reelsEndpoint);
-    return res is List ? res : [];
+  // =========================
+  // GET REELS FEED
+  // =========================
+  static Future<List<dynamic>> getFeed() async {
+    final res = await HttpService.get(
+      Api.getReels,
+      auth: true,
+    );
+
+    if (res is List) return res;
+    return [];
   }
 
-  // ================= LIKE =================
+  // =========================
+  // CREATE REEL
+  // =========================
+  static Future<void> create({
+    required String videoUrl,
+    String caption = '',
+  }) async {
+    await HttpService.post(
+      Api.createReel,
+      body: {
+        'video_url': videoUrl,
+        'caption': caption,
+      },
+      auth: true,
+    );
+  }
+
+  // =========================
+  // LIKE / UNLIKE
+  // =========================
   static Future<void> like(int reelId) async {
     await HttpService.post(
-      '${Api.reelsEndpoint}/$reelId/like',
-      {},
+      '${Api.likePost}/$reelId',
+      auth: true,
     );
   }
 
-  // ================= UNLIKE =================
   static Future<void> unlike(int reelId) async {
     await HttpService.post(
-      '${Api.reelsEndpoint}/$reelId/unlike',
-      {},
+      '${Api.unlikePost}/$reelId',
+      auth: true,
     );
   }
 
-  // ================= SAVE =================
+  // =========================
+  // SAVE / UNSAVE
+  // =========================
   static Future<void> save(int reelId) async {
     await HttpService.post(
-      '${Api.reelsEndpoint}/$reelId/save',
-      {},
+      '${Api.savePost}/$reelId',
+      auth: true,
     );
   }
 
-  // ================= UNSAVE =================
   static Future<void> unsave(int reelId) async {
     await HttpService.post(
-      '${Api.reelsEndpoint}/$reelId/unsave',
-      {},
+      '${Api.unsavePost}/$reelId',
+      auth: true,
     );
+  }
+
+  // =========================
+  // GET SAVED REELS
+  // =========================
+  static Future<List<dynamic>> getSaved() async {
+    final res = await HttpService.get(
+      '${Api.savePost}/saved',
+      auth: true,
+    );
+
+    if (res is List) return res;
+    return [];
   }
 }
