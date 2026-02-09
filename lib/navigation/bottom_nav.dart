@@ -1,3 +1,5 @@
+// lib/navigation/bottom_nav.dart
+
 import 'package:flutter/material.dart';
 
 import '../screens/home/home_screen.dart';
@@ -14,79 +16,79 @@ class BottomNav extends StatefulWidget {
 }
 
 class _BottomNavState extends State<BottomNav> {
-  int _currentIndex = 0;
+  int _index = 0;
 
-  // ================= SCREENS =================
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    SearchScreen(),
-    ReelsScreen(),
-    ChatListScreen(),
-    ProfileScreen(),
-  ];
+  late final List<Widget> _pages;
 
-  // ================= CHANGE TAB =================
-  void _onTabChanged(int index) {
-    if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
+  @override
+  void initState() {
+    super.initState();
+    _pages = const [
+      HomeScreen(),
+      SearchScreen(),
+      ReelsScreen(),
+      ChatListScreen(),
+      ProfileScreen(),
+    ];
+  }
+
+  void _onTap(int i) {
+    if (i == _index) return;
+    setState(() => _index = i);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: _bottomBar(),
-    );
-  }
-
-  // ================= BOTTOM BAR =================
-  Widget _bottomBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Color(0xFF1E1E1E), width: 0.5),
+    return WillPopScope(
+      onWillPop: () async {
+        if (_index != 0) {
+          setState(() => _index = 0);
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _index,
+          children: _pages,
         ),
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabChanged,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.black,
-        elevation: 0,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            activeIcon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.play_circle_outline),
-            activeIcon: Icon(Icons.play_circle),
-            label: 'Reels',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _index,
+          onTap: _onTap,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Colors.grey,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.search),
+              activeIcon: Icon(Icons.search),
+              label: 'Search',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.play_circle_outline),
+              activeIcon: Icon(Icons.play_circle_fill),
+              label: 'Reels',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline),
+              activeIcon: Icon(Icons.chat_bubble),
+              label: 'Chat',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }
