@@ -9,7 +9,7 @@ import '../../core/session.dart';
 import '../../widgets/avatar.dart';
 import '../../widgets/verified_badge.dart';
 import '../../widgets/empty_state.dart';
-import '../home/post_item.dart';
+import '../home/post_card.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 
@@ -27,7 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isMe = false;
   bool _isFollowing = false;
 
-  late User _user;
+  User? _user;
   List<Post> _posts = [];
 
   @override
@@ -36,42 +36,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _load();
   }
 
+  // ================= LOAD =================
   Future<void> _load() async {
     setState(() => _loading = true);
 
-    final me = await Session.username();
-    final username = widget.username ?? me;
+    try {
+      final me = await Session.getUsername();
+      final username = widget.username ?? me;
 
-    _isMe = username == me;
+      if (username == null) {
+        throw Exception('No username');
+      }
 
-    final user = await UserService.getProfile(username!);
-    final posts = await PostService.getUserPosts(username);
+      _isMe = username == me;
 
-    bool following = false;
-    if (!_isMe) {
-      following = await FollowService.isFollowing(user.id);
+      final user = await UserService.getProfile(username);
+      final posts = await PostService.getByUser(username);
+
+      bool following = false;
+      if (!_isMe) {
+        following = await FollowService.isFollowing(username);
+      }
+
+      setState(() {
+        _user = user;
+        _posts = posts;
+        _isFollowing = following;
+      });
+    } catch (_) {
+      // silent fail
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-
-    setState(() {
-      _user = user;
-      _posts = posts;
-      _isFollowing = following;
-      _loading = false;
-    });
   }
 
+  // ================= FOLLOW =================
   Future<void> _toggleFollow() async {
+    if (_user == null) return;
+
     if (_isFollowing) {
-      await FollowService.unfollow(_user.id);
+      await FollowService.unfollowUser(_user!.username);
     } else {
-      await FollowService.follow(_user.id);
+      await FollowService.followUser(_user!.username);
     }
+
     await _load();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    if (_loading || _user == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
@@ -79,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_user.username),
+        title: Text(_user!.username),
         actions: [
           if (_isMe)
             IconButton(
@@ -92,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
               },
-            )
+            ),
         ],
       ),
       body: RefreshIndicator(
@@ -111,13 +125,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ================= HEADER =================
-
   Widget _header() {
+    final u = _user!;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Avatar(imageUrl: _user.avatar, size: 80),
+          Avatar(imageUrl: u.avatar, size: 80),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -126,20 +140,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   children: [
                     Text(
-                      _user.username,
+                      u.username,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (_user.isVerified) const SizedBox(width: 6),
-                    if (_user.isVerified) const VerifiedBadge(),
+                    if (u.isVerified) const SizedBox(width: 6),
+                    if (u.isVerified) const VerifiedBadge(),
                   ],
                 ),
-                if (_user.bio.isNotEmpty)
+                if (u.bio.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text(_user.bio),
+                    child: Text(u.bio),
                   ),
               ],
             ),
@@ -150,16 +164,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ================= STATS =================
-
   Widget _stats() {
+    final u = _user!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _stat('Posts', _posts.length),
-          _stat('Followers', _user.followersCount),
-          _stat('Following', _user.followingCount),
+          _stat('Followers', u.followersCount),
+          _stat('Following', u.followingCount),
         ],
       ),
     );
@@ -184,8 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ================= ACTION BUTTON =================
-
+  // ================= ACTION =================
   Widget _actionButton() {
     if (_isMe) {
       return Padding(
@@ -195,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => EditProfileScreen(user: _user),
+                builder: (_) => EditProfileScreen(user: _user!),
               ),
             ).then((_) => _load());
           },
@@ -209,15 +222,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: ElevatedButton(
         onPressed: _toggleFollow,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _isFollowing ? Colors.grey.shade300 : null,
+          backgroundColor:
+              _isFollowing ? Colors.grey.shade300 : null,
         ),
         child: Text(_isFollowing ? 'Following' : 'Follow'),
       ),
     );
   }
 
-  // ================= POSTS GRID =================
-
+  // ================= POSTS =================
   Widget _postsGrid() {
     if (_posts.isEmpty) {
       return const Padding(
@@ -229,18 +242,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    return GridView.builder(
+    return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(2),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
-      ),
       itemCount: _posts.length,
       itemBuilder: (_, i) {
-        return PostItem(post: _posts[i]);
+        return PostCard(
+          post: _posts[i],
+          me: _user!.username,
+          onDeleted: _load,
+        );
       },
     );
   }
