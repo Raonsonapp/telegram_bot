@@ -1,6 +1,6 @@
 /// lib/models/message.dart
 /// =====================================================
-/// MESSAGE MODEL – FINAL v5 (FIXED & SAFE)
+/// MESSAGE MODEL – FINAL v5.1 (BUILD SAFE)
 /// Used for:
 /// - Chats
 /// - Direct Messages
@@ -14,27 +14,18 @@ class Message {
   final int id;
 
   // ================= USERS =================
-  /// Sender of message
   final User sender;
-
-  /// Receiver of message
   final User receiver;
 
   // ================= CONTENT =================
   final String text;
-
-  /// Optional media (image / video / voice)
   final String? mediaUrl;
 
   // ================= STATUS =================
   final bool isRead;
 
   // ================= TIME =================
-  final DateTime createdAt;
-
-  // =====================================================
-  // CONSTRUCTOR
-  // =====================================================
+  final DateTime? createdAt;
 
   const Message({
     required this.id,
@@ -43,13 +34,12 @@ class Message {
     required this.text,
     this.mediaUrl,
     required this.isRead,
-    required this.createdAt,
+    this.createdAt,
   });
 
   // =====================================================
   // FROM JSON (BACKEND → APP)
   // =====================================================
-
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
       id: json['id'] as int,
@@ -62,17 +52,23 @@ class Message {
           ? User.fromJson(json['receiver'])
           : _emptyUser(json['receiver_id']),
 
-      text: json['text'] ?? '',
-      mediaUrl: json['media_url'],
-      isRead: json['is_read'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      text: (json['text'] as String?) ?? '',
+
+      mediaUrl: json['media_url'] is String
+          ? json['media_url']
+          : null,
+
+      isRead: json['is_read'] == true,
+
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
     );
   }
 
   // =====================================================
   // TO JSON (APP → BACKEND)
   // =====================================================
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -81,37 +77,30 @@ class Message {
       'text': text,
       'media_url': mediaUrl,
       'is_read': isRead,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 
   // =====================================================
   // 🔧 UI HELPERS (CHAT)
   // =====================================================
+  bool get hasMedia =>
+      mediaUrl != null && mediaUrl!.trim().isNotEmpty;
 
-  /// True if message contains media
-  bool get hasMedia => mediaUrl != null && mediaUrl!.isNotEmpty;
-
-  /// Sender username
   String get senderUsername => sender.username;
-
-  /// Receiver username
   String get receiverUsername => receiver.username;
 
-  /// For chat bubbles
   bool isFromUser(int myUserId) => sender.id == myUserId;
 
-  /// Avatars
   String? get senderAvatar => sender.avatar;
   String? get receiverAvatar => receiver.avatar;
 
   // =====================================================
   // INTERNAL SAFE USER
   // =====================================================
-
   static User _emptyUser(dynamic id) {
     return User(
-      id: id is int ? id : 0,
+      id: id is int ? id : -1,
       username: 'unknown',
       isVerified: false,
       followersCount: 0,
