@@ -1,99 +1,107 @@
+/// lib/services/auth_service.dart
+/// =====================================================
+/// AUTH SERVICE – FINAL v5
+/// Handles:
+/// - Login
+/// - Register
+/// - Logout
+/// - Get current user
+/// =====================================================
+
 import '../core/api.dart';
 import '../core/http_service.dart';
 import '../core/session.dart';
 import '../models/user.dart';
 
 class AuthService {
-  // ================= LOGIN =================
+  // =====================================================
+  // LOGIN
+  // =====================================================
+
   static Future<User> login({
-    required String identifier, // username | email | phone
+    required String emailOrUsername,
     required String password,
   }) async {
-    final res = await HttpService.post(
-      Api.loginEndpoint,
-      {
-        'identifier': identifier,
+    final response = await HttpService.post(
+      Api.login,
+      body: {
+        'login': emailOrUsername,
         'password': password,
       },
+      auth: false,
     );
 
-    if (res == null || res['token'] == null) {
-      throw Exception('Login failed');
+    final token = response['access_token'];
+    final userJson = response['user'];
+
+    if (token == null || userJson == null) {
+      throw Exception('Invalid login response');
     }
 
-    // Save session
-    await Session.saveToken(res['token']);
-    await Session.saveUser(res['user']);
+    await Session.saveToken(token);
 
-    return User.fromJson(res['user']);
+    return User.fromJson(userJson);
   }
 
-  // ================= REGISTER =================
+  // =====================================================
+  // REGISTER
+  // =====================================================
+
   static Future<User> register({
     required String username,
     required String email,
     required String password,
   }) async {
-    final res = await HttpService.post(
-      Api.registerEndpoint,
-      {
+    final response = await HttpService.post(
+      Api.register,
+      body: {
         'username': username,
         'email': email,
         'password': password,
       },
+      auth: false,
     );
 
-    if (res == null || res['token'] == null) {
-      throw Exception('Registration failed');
+    final token = response['access_token'];
+    final userJson = response['user'];
+
+    if (token == null || userJson == null) {
+      throw Exception('Invalid register response');
     }
 
-    // Save session
-    await Session.saveToken(res['token']);
-    await Session.saveUser(res['user']);
+    await Session.saveToken(token);
 
-    return User.fromJson(res['user']);
+    return User.fromJson(userJson);
   }
 
-  // ================= LOGOUT =================
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
   static Future<void> logout() async {
     try {
-      await HttpService.post(Api.logoutEndpoint, {});
-    } catch (_) {
-      // ignore server error on logout
-    }
-
-    await Session.clearSession();
-  }
-
-  // ================= REFRESH TOKEN =================
-  static Future<bool> refreshToken() async {
-    final token = await Session.getToken();
-    if (token == null) return false;
-
-    try {
-      final res = await HttpService.post(
-        Api.refreshTokenEndpoint,
-        {'token': token},
+      await HttpService.post(
+        Api.logout,
+        body: {},
+        auth: true,
       );
-
-      if (res == null || res['token'] == null) return false;
-
-      await Session.saveToken(res['token']);
-      return true;
     } catch (_) {
-      return false;
+      // ignore backend failure
+    } finally {
+      await Session.clear();
     }
   }
 
-  // ================= CURRENT USER =================
-  static Future<User?> getCurrentUser() async {
-    final data = await Session.getUser();
-    if (data == null) return null;
-    return User.fromJson(data);
-  }
+  // =====================================================
+  // CURRENT USER
+  // =====================================================
 
-  // ================= AUTH STATE =================
-  static Future<bool> isLoggedIn() async {
-    return await Session.isLoggedIn();
+  static Future<User> me() async {
+    final response = await HttpService.get(
+      Api.me,
+      auth: true,
+    );
+
+    return User.fromJson(response);
   }
 }
