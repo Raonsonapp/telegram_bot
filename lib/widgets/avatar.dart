@@ -1,4 +1,8 @@
 // lib/widgets/avatar.dart
+// =====================================================
+// AVATAR WIDGET – FINAL v5
+// Reusable, theme-aware, build-safe
+// =====================================================
 
 import 'package:flutter/material.dart';
 
@@ -6,7 +10,7 @@ class Avatar extends StatelessWidget {
   final String? imageUrl;
   final double size;
   final bool hasBorder;
-  final Color borderColor;
+  final Color? borderColor;
   final VoidCallback? onTap;
 
   const Avatar({
@@ -14,45 +18,62 @@ class Avatar extends StatelessWidget {
     required this.imageUrl,
     this.size = 44,
     this.hasBorder = false,
-    this.borderColor = Colors.blue,
+    this.borderColor,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        padding: hasBorder ? const EdgeInsets.all(2) : EdgeInsets.zero,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: hasBorder
-              ? Border.all(color: borderColor, width: 2)
-              : null,
-        ),
-        child: ClipOval(
-          child: imageUrl != null && imageUrl!.isNotEmpty
-              ? Image.network(
-                  imageUrl!,
-                  width: size,
-                  height: size,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder(),
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return _loading();
-                  },
-                )
-              : _placeholder(),
-        ),
+    final effectiveBorderColor =
+        borderColor ?? Theme.of(context).colorScheme.primary;
+
+    final avatar = Container(
+      width: size,
+      height: size,
+      padding: hasBorder ? const EdgeInsets.all(2) : EdgeInsets.zero,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: hasBorder
+            ? Border.all(color: effectiveBorderColor, width: 2)
+            : null,
       ),
+      child: ClipOval(
+        child: _buildImage(),
+      ),
+    );
+
+    if (onTap == null) return avatar;
+
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: avatar,
+    );
+  }
+
+  // =====================================================
+  // IMAGE / PLACEHOLDER
+  // =====================================================
+
+  Widget _buildImage() {
+    if (imageUrl == null || imageUrl!.isEmpty) {
+      return _placeholder();
+    }
+
+    return Image.network(
+      imageUrl!,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _placeholder(),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return _loading();
+      },
     );
   }
 
   Widget _placeholder() {
     return Container(
+      alignment: Alignment.center,
       color: Colors.grey.shade300,
       child: Icon(
         Icons.person,
@@ -64,13 +85,12 @@ class Avatar extends StatelessWidget {
 
   Widget _loading() {
     return Container(
+      alignment: Alignment.center,
       color: Colors.grey.shade200,
-      child: const Center(
-        child: SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+      child: const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
       ),
     );
   }
