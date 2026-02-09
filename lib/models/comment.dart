@@ -1,6 +1,6 @@
 /// lib/models/comment.dart
 /// =====================================================
-/// COMMENT MODEL – FINAL v5
+/// COMMENT MODEL – FINAL v5 (FIXED & SAFE)
 /// Used for:
 /// - Post comments
 /// - Reel comments
@@ -58,18 +58,37 @@ class Comment {
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
       id: json['id'] as int,
-      user: User.fromJson(json['user']),
+
+      user: json['user'] != null
+          ? User.fromJson(json['user'])
+          : const User(
+              id: 0,
+              username: 'unknown',
+              isVerified: false,
+              followersCount: 0,
+              followingCount: 0,
+              postsCount: 0,
+              isFollowing: false,
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+
       targetId: json['target_id'] as int,
-      targetType: json['target_type'] as String,
-      text: json['text'] as String,
+      targetType: (json['target_type'] as String?) ?? 'post',
+
+      text: json['text'] ?? '',
+
       parentId: json['parent_id'],
-      replies: json['replies'] != null
+
+      replies: json['replies'] is List
           ? List<Comment>.from(
-              json['replies'].map((e) => Comment.fromJson(e)),
+              (json['replies'] as List)
+                  .map((e) => Comment.fromJson(e)),
             )
-          : [],
+          : const [],
+
       likesCount: json['likes_count'] ?? 0,
       isLiked: json['is_liked'] ?? false,
+
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -93,7 +112,20 @@ class Comment {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI HELPERS (IMPORTANT)
+  // =====================================================
+
+  bool get isReply => parentId != null;
+  bool get hasReplies => replies.isNotEmpty;
+
+  String get username => user.username;
+  String? get avatar => user.avatar;
+
+  bool get isPost => targetType == 'post';
+  bool get isReel => targetType == 'reel';
+
+  // =====================================================
+  // COPY WITH (STATE SAFE)
   // =====================================================
 
   Comment copyWith({
@@ -115,10 +147,8 @@ class Comment {
     );
   }
 
-  bool get isReply => parentId != null;
-
   @override
   String toString() {
-    return 'Comment(id: $id, user: ${user.username}, text: $text)';
+    return 'Comment(id: $id, user: ${user.username}, replies: ${replies.length})';
   }
 }
