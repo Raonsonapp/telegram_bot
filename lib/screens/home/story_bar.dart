@@ -31,7 +31,7 @@ class _StoryBarState extends State<StoryBar> {
 
   Future<void> _loadStories() async {
     try {
-      final data = await StoryService.getStories();
+      final data = await StoryService.getFeed();
       if (!mounted) return;
       setState(() {
         _stories = data;
@@ -48,7 +48,7 @@ class _StoryBarState extends State<StoryBar> {
     if (_loading) {
       return const SizedBox(
         height: 96,
-        child: Loading(),
+        child: AppLoading(fullscreen: false),
       );
     }
 
@@ -57,7 +57,8 @@ class _StoryBarState extends State<StoryBar> {
         height: 96,
         child: EmptyState(
           icon: Icons.auto_stories,
-          text: 'No stories yet',
+          title: 'No stories yet',
+          subtitle: '',
         ),
       );
     }
@@ -75,17 +76,16 @@ class _StoryBarState extends State<StoryBar> {
   }
 
   Widget _item(Story story) {
-    final isMe = story.username == widget.me;
+    final isMe = story.user.username == widget.me;
 
     return GestureDetector(
       onTap: () => _openStory(story),
       child: Column(
         children: [
           StoryRing(
-            viewed: story.isViewed,
-            isMe: isMe,
+            isViewed: story.isViewed,
             child: Avatar(
-              url: story.avatar,
+              imageUrl: story.user.avatarUrl,
               size: 64,
             ),
           ),
@@ -93,7 +93,7 @@ class _StoryBarState extends State<StoryBar> {
           SizedBox(
             width: 70,
             child: Text(
-              isMe ? 'Your story' : story.username,
+              isMe ? 'Your story' : story.user.username,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
