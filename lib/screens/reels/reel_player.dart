@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../widgets/loading.dart';
+
 class ReelPlayer extends StatefulWidget {
   final String videoUrl;
   final bool autoPlay;
@@ -8,7 +10,7 @@ class ReelPlayer extends StatefulWidget {
   const ReelPlayer({
     super.key,
     required this.videoUrl,
-    this.autoPlay = false,
+    this.autoPlay = true,
   });
 
   @override
@@ -23,30 +25,25 @@ class _ReelPlayerState extends State<ReelPlayer> {
   @override
   void initState() {
     super.initState();
-    _initVideo();
+    _initPlayer();
   }
 
-  Future<void> _initVideo() async {
+  Future<void> _initPlayer() async {
     _controller = VideoPlayerController.networkUrl(
       Uri.parse(widget.videoUrl),
     );
 
-    try {
-      await _controller.initialize();
-      _controller.setLooping(true);
+    await _controller.initialize();
+    _controller.setLooping(true);
 
-      if (widget.autoPlay) {
-        await _controller.play();
-      }
-
-      setState(() {
-        _initialized = true;
-      });
-    } catch (_) {
-      setState(() {
-        _initialized = false;
-      });
+    if (widget.autoPlay) {
+      await _controller.play();
     }
+
+    setState(() {
+      _initialized = true;
+      _showPlayIcon = !_controller.value.isPlaying;
+    });
   }
 
   @override
@@ -70,9 +67,7 @@ class _ReelPlayerState extends State<ReelPlayer> {
   @override
   Widget build(BuildContext context) {
     if (!_initialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const Center(child: Loading());
     }
 
     return GestureDetector(
@@ -80,6 +75,7 @@ class _ReelPlayerState extends State<ReelPlayer> {
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // ===== VIDEO =====
           SizedBox.expand(
             child: FittedBox(
               fit: BoxFit.cover,
@@ -91,20 +87,23 @@ class _ReelPlayerState extends State<ReelPlayer> {
             ),
           ),
 
-          // ===== PLAY ICON (ON PAUSE) =====
-          if (_showPlayIcon)
-            Container(
-              decoration: BoxDecoration(
+          // ===== PLAY ICON =====
+          AnimatedOpacity(
+            opacity: _showPlayIcon ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
                 color: Colors.black54,
-                borderRadius: BorderRadius.circular(50),
               ),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: const Icon(
                 Icons.play_arrow,
-                size: 48,
                 color: Colors.white,
+                size: 56,
               ),
             ),
+          ),
         ],
       ),
     );
