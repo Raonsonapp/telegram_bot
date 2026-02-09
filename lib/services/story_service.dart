@@ -1,6 +1,6 @@
 /// lib/services/story_service.dart
 /// =====================================================
-/// STORY SERVICE – FINAL v5
+/// STORY SERVICE – FINAL v5 (FIXED)
 /// Handles:
 /// - Create story
 /// - Get stories feed
@@ -18,12 +18,17 @@ class StoryService {
 
   static Future<List<Story>> getFeed() async {
     final res = await HttpService.get(
-      Api.getStories,
+      Api.storiesFeed,
       auth: true,
     );
 
-    return (res as List)
-        .map((e) => Story.fromJson(e))
+    if (res is! List) {
+      return [];
+    }
+
+    return res
+        .whereType<Map<String, dynamic>>()
+        .map(Story.fromJson)
         .toList();
   }
 
@@ -42,6 +47,10 @@ class StoryService {
       auth: true,
     );
 
+    if (res is! Map<String, dynamic>) {
+      throw Exception('Invalid create story response');
+    }
+
     return Story.fromJson(res);
   }
 
@@ -51,8 +60,8 @@ class StoryService {
 
   static Future<void> markViewed(int storyId) async {
     await HttpService.post(
-      '${Api.viewStory}/$storyId',
-      body: {},
+      Api.viewStory(storyId),
+      body: const {},
       auth: true,
     );
   }
