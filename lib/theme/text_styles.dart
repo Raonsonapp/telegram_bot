@@ -1,160 +1,147 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
 
+/// Central text styles for Raonson App
+/// Version: v5 (Full Social Network)
+
 class AppTextStyles {
   AppTextStyles._();
 
-  // ================= APP / BRAND =================
+  // ================= HEADERS =================
   static const TextStyle appTitle = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   );
 
-  // ================= HEADINGS =================
-  static const TextStyle h1 = TextStyle(
+  static const TextStyle screenTitle = TextStyle(
     fontSize: 20,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
+    fontWeight: FontWeight.w700,
   );
 
-  static const TextStyle h2 = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle h3 = TextStyle(
+  static const TextStyle sectionTitle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
   );
 
   // ================= BODY =================
+  static const TextStyle bodyLarge = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+  );
+
   static const TextStyle body = TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
+    fontWeight: FontWeight.w400,
     height: 1.4,
   );
 
-  static const TextStyle bodySecondary = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textSecondary,
-    height: 1.4,
+  static const TextStyle bodySmall = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.3,
   );
 
-  // ================= CAPTION / POST =================
-  static const TextStyle captionUsername = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle captionText = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
+  // ================= CAPTIONS =================
+  static const TextStyle caption = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
   );
 
   static const TextStyle captionMuted = TextStyle(
     fontSize: 13,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textMuted,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondaryLight,
   );
 
-  // ================= META =================
-  static const TextStyle meta = TextStyle(
+  // ================= USERNAME =================
+  static const TextStyle username = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle usernameLarge = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+  );
+
+  // ================= STATS =================
+  static const TextStyle statNumber = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+  );
+
+  static const TextStyle statLabel = TextStyle(
     fontSize: 12,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textMuted,
-  );
-
-  static const TextStyle time = TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textMuted,
+    fontWeight: FontWeight.w400,
   );
 
   // ================= BUTTONS =================
   static const TextStyle buttonPrimary = TextStyle(
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: FontWeight.w600,
     color: Colors.white,
   );
 
   static const TextStyle buttonSecondary = TextStyle(
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: AppColors.primary,
-  );
-
-  static const TextStyle buttonDisabled = TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.w500,
-    color: AppColors.iconDisabled,
   );
 
   // ================= INPUT =================
   static const TextStyle input = TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
+    fontWeight: FontWeight.w400,
   );
 
   static const TextStyle inputHint = TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textMuted,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textHint,
   );
 
   // ================= CHAT =================
-  static const TextStyle chatMessageMe = TextStyle(
+  static const TextStyle chatMessage = TextStyle(
     fontSize: 14,
+    fontWeight: FontWeight.w400,
+  );
+
+  static const TextStyle chatTime = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondaryLight,
+  );
+
+  // ================= REELS =================
+  static const TextStyle reelUsername = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
     color: Colors.white,
   );
 
-  static const TextStyle chatMessageOther = TextStyle(
-    fontSize: 14,
-    color: AppColors.textPrimary,
+  static const TextStyle reelCaption = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: Colors.white,
   );
 
-  static const TextStyle chatUsername = TextStyle(
+  // ================= ERRORS / INFO =================
+  static const TextStyle error = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.error,
+  );
+
+  static const TextStyle success = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.success,
+  );
+
+  static const TextStyle link = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
-
-  // ================= PROFILE =================
-  static const TextStyle profileUsername = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle profileBio = TextStyle(
-    fontSize: 14,
-    color: AppColors.textPrimary,
-    height: 1.3,
-  );
-
-  static const TextStyle profileStatNumber = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle profileStatLabel = TextStyle(
-    fontSize: 12,
-    color: AppColors.textSecondary,
-  );
-
-  // ================= VERIFIED =================
-  static const TextStyle verifiedLabel = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    color: AppColors.verified,
+    color: AppColors.primary,
   );
 }
