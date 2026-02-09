@@ -1,20 +1,20 @@
-import 'package:flutter/material.dart';
+// lib/widgets/avatar.dart
 
-import 'verified_badge.dart';
+import 'package:flutter/material.dart';
 
 class Avatar extends StatelessWidget {
   final String? imageUrl;
   final double size;
-  final bool isVerified;
-  final bool isOnline;
+  final bool hasBorder;
+  final Color borderColor;
   final VoidCallback? onTap;
 
   const Avatar({
     super.key,
-    this.imageUrl,
-    this.size = 40,
-    this.isVerified = false,
-    this.isOnline = false,
+    required this.imageUrl,
+    this.size = 44,
+    this.hasBorder = false,
+    this.borderColor = Colors.blue,
     this.onTap,
   });
 
@@ -22,70 +22,54 @@ class Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
+      child: Container(
         width: size,
         height: size,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _avatarImage(),
-            if (isVerified) _verified(),
-            if (isOnline) _onlineDot(),
-          ],
+        padding: hasBorder ? const EdgeInsets.all(2) : EdgeInsets.zero,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: hasBorder
+              ? Border.all(color: borderColor, width: 2)
+              : null,
+        ),
+        child: ClipOval(
+          child: imageUrl != null && imageUrl!.isNotEmpty
+              ? Image.network(
+                  imageUrl!,
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _placeholder(),
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return _loading();
+                  },
+                )
+              : _placeholder(),
         ),
       ),
     );
   }
 
-  // ================= AVATAR IMAGE =================
-  Widget _avatarImage() {
-    return ClipOval(
-      child: Container(
-        width: size,
-        height: size,
-        color: Colors.grey.shade800,
-        child: imageUrl == null || imageUrl!.isEmpty
-            ? Icon(
-                Icons.person,
-                size: size * 0.6,
-                color: Colors.white,
-              )
-            : Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) {
-                  return Icon(
-                    Icons.person,
-                    size: size * 0.6,
-                    color: Colors.white,
-                  );
-                },
-              ),
+  Widget _placeholder() {
+    return Container(
+      color: Colors.grey.shade300,
+      child: Icon(
+        Icons.person,
+        size: size * 0.55,
+        color: Colors.grey.shade600,
       ),
     );
   }
 
-  // ================= VERIFIED BADGE =================
-  Widget _verified() {
-    return Positioned(
-      bottom: -2,
-      right: -2,
-      child: VerifiedBadge(size: size * 0.38),
-    );
-  }
-
-  // ================= ONLINE DOT =================
-  Widget _onlineDot() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      child: Container(
-        width: size * 0.28,
-        height: size * 0.28,
-        decoration: BoxDecoration(
-          color: Colors.green,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 2),
+  Widget _loading() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
     );
