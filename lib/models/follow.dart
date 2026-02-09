@@ -1,6 +1,6 @@
 /// lib/models/follow.dart
 /// =====================================================
-/// FOLLOW MODEL – FINAL v5
+/// FOLLOW MODEL – FINAL v5 (FIXED & SAFE)
 /// Used for:
 /// - Followers list
 /// - Following list
@@ -41,8 +41,15 @@ class Follow {
   factory Follow.fromJson(Map<String, dynamic> json) {
     return Follow(
       id: json['id'] as int,
-      follower: User.fromJson(json['follower']),
-      following: User.fromJson(json['following']),
+
+      follower: json['follower'] != null
+          ? User.fromJson(json['follower'])
+          : _emptyUser(),
+
+      following: json['following'] != null
+          ? User.fromJson(json['following'])
+          : _emptyUser(),
+
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -61,17 +68,38 @@ class Follow {
   }
 
   // =====================================================
-  // HELPERS
+  // 🔧 UI HELPERS
   // =====================================================
 
-  /// Username of follower
+  // follower
   String get followerUsername => follower.username;
+  String? get followerAvatar => follower.avatar;
+  bool get followerVerified => follower.isVerified;
 
-  /// Username of followed user
+  // following
   String get followingUsername => following.username;
+  String? get followingAvatar => following.avatar;
+  bool get followingVerified => following.isVerified;
+
+  // =====================================================
+  // INTERNAL SAFE USER
+  // =====================================================
+
+  static User _emptyUser() {
+    return const User(
+      id: 0,
+      username: 'unknown',
+      isVerified: false,
+      followersCount: 0,
+      followingCount: 0,
+      postsCount: 0,
+      isFollowing: false,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
 
   @override
   String toString() {
-    return 'Follow($followerUsername → $followingUsername)';
+    return 'Follow(${follower.username} → ${following.username})';
   }
 }
