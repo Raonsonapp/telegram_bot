@@ -1,101 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'change_password_controller.dart';
 import 'change_password_state.dart';
 
-class ChangePasswordScreen extends StatefulWidget {
+class ChangePasswordScreen extends StatelessWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<ChangePasswordController>(
+      create: (_) => ChangePasswordController(),
+      child: const _ChangePasswordView(),
+    );
+  }
 }
 
-class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  late final ChangePasswordController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = ChangePasswordController();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() async {
-    final ok = await _controller.submit();
-    if (!mounted) return;
-
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password changed successfully')),
-      );
-      Navigator.of(context).pop();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_controller.state.error ?? 'Change failed')),
-      );
-    }
-  }
+class _ChangePasswordView extends StatelessWidget {
+  const _ChangePasswordView();
 
   @override
   Widget build(BuildContext context) {
+    final c = context.watch<ChangePasswordController>();
+    final s = c.state;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Change password'),
+        title: const Text('Change Password'),
       ),
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (_, __) {
-          final ChangePasswordState state = _controller.state;
-
-          return SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                TextField(
-                  controller: _controller.currentPassword,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Current password',
-                  ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              TextField(
+                obscureText: true,
+                onChanged: c.setCurrentPassword,
+                decoration: InputDecoration(
+                  labelText: 'Current password',
+                  errorText: s.currentError,
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _controller.newPassword,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'New password',
-                  ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                obscureText: true,
+                onChanged: c.setNewPassword,
+                decoration: InputDecoration(
+                  labelText: 'New password',
+                  errorText: s.newError,
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _controller.confirmPassword,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm new password',
-                  ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                obscureText: true,
+                onChanged: c.setConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: 'Confirm new password',
+                  errorText: s.confirmError,
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: state.loading ? null : _submit,
-                    child: state.loading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Update password'),
-                  ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: s.loading ? null : c.submit,
+                  child: s.loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Update password'),
+                ),
+              ),
+              if (s.generalError != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  s.generalError!,
+                  style: const TextStyle(color: Colors.red),
                 ),
               ],
-            ),
-          );
-        },
+              if (s.success) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Password updated successfully',
+                  style: TextStyle(color: Colors.green),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
