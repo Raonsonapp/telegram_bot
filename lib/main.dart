@@ -1,29 +1,38 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'app/app.dart';
 import 'core/session_manager.dart';
+import 'core/token_storage.dart';
 import 'core/network_checker.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize session & network
-  final sessionManager = SessionManager();
-  await sessionManager.init();
+  // ============================
+  // INIT CORE SERVICES
+  // ============================
+  await TokenStorage.init();
+  await SessionManager.init();
+  await NetworkChecker.init();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<SessionManager>.value(
-          value: sessionManager,
-        ),
-        ChangeNotifierProvider(
-          create: (_) => NetworkChecker(),
-        ),
-      ],
-      child: const RaonsonApp(),
-    ),
-  );
+  // ============================
+  // GLOBAL ERROR HANDLER
+  // ============================
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('🔥 Flutter Error: ${details.exception}');
+  };
+
+  runApp(const RaonsonAppRoot());
+}
+
+///
+/// ROOT WIDGET
+///
+class RaonsonAppRoot extends StatelessWidget {
+  const RaonsonAppRoot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const RaonsonApp();
+  }
 }
