@@ -1,58 +1,88 @@
-import 'dart:async';
+// lib/screens/auth/login/login_controller.dart
 
-import '../../auth_service.dart';
-import 'login_state.dart';
+import 'package:flutter/material.dart';
 
-/// =====================================================
-/// LOGIN CONTROLLER – Raonson
-/// -----------------------------------------------------
-/// Handles:
-/// - Login request
-/// - Loading / success / error states
-/// - Token & session handled in AuthService
-/// =====================================================
+import '../../../core/session_manager.dart';
+import '../../../core/error_handler.dart';
+import '../../../core/network_checker.dart';
+import '../../../auth/auth_service.dart';
 
-class LoginController {
-  final _stateController = StreamController<LoginState>.broadcast();
+class LoginController extends ChangeNotifier {
+  LoginController({
+    required AuthService authService,
+    required SessionManager sessionManager,
+    required NetworkChecker networkChecker,
+  })  : _authService = authService,
+        _sessionManager = sessionManager,
+        _networkChecker = networkChecker;
 
-  Stream<LoginState> get state => _stateController.stream;
+  final AuthService _authService;
+  final SessionManager _sessionManager;
+  final NetworkChecker _networkChecker;
 
-  LoginState _current = const LoginState.initial();
+  bool _loading = false;
+  String? _error;
 
-  void _emit(LoginState state) {
-    _current = state;
-    if (!_stateController.isClosed) {
-      _stateController.add(state);
-    }
+  bool get isLoading => _loading;
+  String? get error => _error;
+
+  void _setLoading(bool value) {
+    _loading = value;
+    notifyListeners();
   }
 
-  /// ================= LOGIN =================
-  Future<void> login({
+  void _setError(String? message) {
+    _error = message;
+    notifyListeners();
+  }
+
+  Future<bool> login({
     required String username,
     required String password,
   }) async {
-    if (_current.isLoading) return;
+    _setError(null);
 
-    _emit(const LoginState.loading());
+    final hasInternet = await _networkChecker.hasConnection();
+    if (!hasInternet) {
+      _setError('No internet connection');
+      return false;
+    }
+
+    _setLoading(true);
 
     try {
-      await AuthService.login(
-        username: username,
+      final result = await _authService.login(
+        username: username.trim(),
         password: password,
       );
 
-      _emit(const LoginState.success());
-    } catch (e) {
-      _emit(
-        LoginState.error(
-          e.toString().replaceFirst('Exception:', '').trim(),
-        ),
+      await _sessionManager.saveSession(
+        token: result.token,
+        user: result.user,
       );
+
+      return true;
+    } catch (e, s) {
+      _setError(ErrorHandler.parse(e, s));
+      return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
-  /// ================= DISPOSE =================
-  void dispose() {
-    _stateController.close();
+  Future<void> logout() async {
+    _setLoading(true);
+    try {
+      await _sessionManager.clearSession();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void clearError() {
+    if (_error != null) {
+      _error = null;
+      notifyListeners();
+    }
   }
 }
