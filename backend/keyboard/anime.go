@@ -5,9 +5,9 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/api"
-	"anime-bot/models"
-	"anime-bot/utils"
+	"anime-bot/backend/api"
+	"anime-bot/backend/models"
+	"anime-bot/backend/utils"
 )
 
 // SearchResultsKeyboard рӯйхати натиҷаҳои ҷустуҷӯро ба тугмаҳо табдил медиҳад
