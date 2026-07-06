@@ -3,7 +3,7 @@ package keyboard
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/api"
+	"anime-bot/backend/api"
 )
 
 // MainMenu менюи асосии клавиатура (reply keyboard)-ро месозад мутобиқи забон
