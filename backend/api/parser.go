@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"anime-bot/models"
-	"anime-bot/utils"
+	"anime-bot/backend/models"
+	"anime-bot/backend/utils"
 )
 
 // JikanClient client барои кор бо Jikan API (v4) - манбаи ройгони MyAnimeList
