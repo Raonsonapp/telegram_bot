@@ -6,9 +6,9 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/api"
-	"anime-bot/keyboard"
-	"anime-bot/utils"
+	"anime-bot/backend/api"
+	"anime-bot/backend/keyboard"
+	"anime-bot/backend/utils"
 )
 
 // HandleSearchCommand фармони /search [номи аниме]-ро коркард мекунад
