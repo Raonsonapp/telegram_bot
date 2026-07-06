@@ -5,11 +5,11 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/api"
-	"anime-bot/config"
-	"anime-bot/database"
-	"anime-bot/keyboard"
-	"anime-bot/utils"
+	"anime-bot/backend/api"
+	"anime-bot/backend/config"
+	"anime-bot/backend/database"
+	"anime-bot/backend/keyboard"
+	"anime-bot/backend/utils"
 )
 
 // Deps тамоми вобастагиҳои муштарак барои ҳамаи handler-ҳо
