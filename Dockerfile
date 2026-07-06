@@ -1,18 +1,20 @@
-# ---------- Марҳилаи сохтан (build) ----------
+# ---------- Build ----------
 FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
 RUN apk add --no-cache git
 
-COPY go.mod go.sum* ./
-RUN go mod download
-
+# Copy all project files
 COPY . .
 
+# Generate/update dependencies automatically
+RUN go mod tidy
+
+# Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o anime-bot -ldflags="-s -w" .
 
-# ---------- Марҳилаи иҷро (runtime) ----------
+# ---------- Runtime ----------
 FROM alpine:3.19
 
 RUN apk add --no-cache ca-certificates tzdata
