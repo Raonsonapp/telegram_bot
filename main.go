@@ -7,11 +7,11 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/api"
-	"anime-bot/config"
-	"anime-bot/database"
-	"anime-bot/handlers"
-	"anime-bot/utils"
+	"backend/api"
+	"backend/config"
+	"backend/database"
+	"backend/handlers"
+	"backend/utils"
 )
 
 func main() {
