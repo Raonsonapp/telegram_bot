@@ -68,7 +68,7 @@ func sendAnimeDetail(d *Deps, chatID int64, telegramID int64, lang string, anime
 		utils.LogError("failed to get watch status anime=%d: %v", anime.MalID, err)
 	}
 
-	text := formatAnimeDetail(anime, lang)
+	text := formatAnimeDetail(d, anime, lang)
 	keyb := keyboard.AnimeDetailKeyboard(anime, lang, isFav, status)
 
 	imageURL := anime.Images.JPG.LargeImageURL
@@ -94,7 +94,7 @@ func sendAnimeDetail(d *Deps, chatID int64, telegramID int64, lang string, anime
 }
 
 // formatAnimeDetail матни форматшудаи тафсилоти аниме-ро месозад
-func formatAnimeDetail(anime models.Anime, lang string) string {
+func formatAnimeDetail(d *Deps, anime models.Anime, lang string) string {
 	title := anime.Title
 	if anime.TitleEnglish != "" && anime.TitleEnglish != anime.Title {
 		title = fmt.Sprintf("%s (%s)", anime.Title, anime.TitleEnglish)
@@ -108,6 +108,8 @@ func formatAnimeDetail(anime models.Anime, lang string) string {
 	synopsis := utils.Truncate(strings.TrimSpace(anime.Synopsis), 500)
 	if synopsis == "" {
 		synopsis = "N/A"
+	} else {
+		synopsis = translatedSynopsis(d, anime.MalID, synopsis, lang)
 	}
 
 	return fmt.Sprintf(
@@ -121,6 +123,20 @@ func formatAnimeDetail(anime models.Anime, lang string) string {
 		api.GetMessage(lang, "genres_label"), utils.JoinGenres(genreNames),
 		utils.EscapeMarkdown(synopsis),
 	)
+}
+
+// translatedSynopsis тавсифро ба забони корбар тарҷума мекунад ва натиҷаро кэш мекунад,
+// то барои як аниме дар як забон танҳо як бор ба хидмати тарҷума мурочиат шавад
+func translatedSynopsis(d *Deps, animeID int, text string, lang string) string {
+	cacheKey := fmt.Sprintf("synopsis:%d:%s", animeID, lang)
+	if cached, ok := d.Cache.Get(cacheKey); ok {
+		if s, valid := cached.(string); valid {
+			return s
+		}
+	}
+	translated := utils.Truncate(d.Translator.Translate(text, lang), 500)
+	d.Cache.Set(cacheKey, translated)
+	return translated
 }
 
 // HandleRandomAnime фармони /random ва тугмаи "🎲 Random Anime"-ро коркард мекунад

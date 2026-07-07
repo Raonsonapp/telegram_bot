@@ -62,4 +62,9 @@ var EnglishMessages = map[string]string{
 	"profile_watching_title":  "▶️ Here's what you're watching:",
 	"profile_recent_empty":    "😔 You haven't viewed anything yet.",
 	"profile_recent_title":    "🕒 Here's what you viewed recently:",
+
+	"btn_find_dub":      "🎬 Find Dub",
+	"dub_searching":     "🎬 Searching Aparat for a dubbed version...",
+	"dub_no_results":    "😔 Couldn't find a dub for this anime on Aparat. Maybe try a different title?",
+	"dub_results_title": "🎬 Found these on Aparat:",
 }

@@ -281,6 +281,60 @@ func (c *AniListClient) GetTopAnime(limit int) ([]models.Anime, error) {
 	return convertMediaList(parsed.Page.Media), nil
 }
 
+// GetAnimeEpisodes рӯйхати эпизодҳоро аз AniList мегирад (fallback вақте Jikan кор намекунад).
+// AniList саҳифабандии Jikan-монандро надорад — барои ҳамин танҳо барои page=1 маълумот
+// медиҳад; агар "streamingEpisodes" холӣ бошад, аз рӯи шумораи умумии эпизодҳо рӯйхати
+// оддӣ (бе унвон) месозад, то ҳадди ақал шумораи қисмҳо ба корбар маълум шавад
+func (c *AniListClient) GetAnimeEpisodes(malID int, page int) ([]models.Episode, bool, error) {
+	if page > 1 {
+		return nil, false, nil
+	}
+
+	gql := `query ($idMal: Int) {
+		Media(idMal: $idMal, type: ANIME) {
+			episodes
+			streamingEpisodes { title }
+		}
+	}`
+	data, err := c.query(gql, map[string]interface{}{"idMal": malID})
+	if err != nil {
+		return nil, false, fmt.Errorf("anilist episodes failed: %w", err)
+	}
+
+	var parsed struct {
+		Media struct {
+			Episodes          int `json:"episodes"`
+			StreamingEpisodes []struct {
+				Title string `json:"title"`
+			} `json:"streamingEpisodes"`
+		} `json:"Media"`
+	}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return nil, false, fmt.Errorf("failed to parse anilist episodes response: %w", err)
+	}
+
+	if len(parsed.Media.StreamingEpisodes) > 0 {
+		episodes := make([]models.Episode, 0, len(parsed.Media.StreamingEpisodes))
+		for i, se := range parsed.Media.StreamingEpisodes {
+			episodes = append(episodes, models.Episode{MalID: i + 1, Title: se.Title})
+		}
+		return episodes, false, nil
+	}
+
+	total := parsed.Media.Episodes
+	if total <= 0 {
+		return nil, false, nil
+	}
+	if total > 100 {
+		total = 100
+	}
+	episodes := make([]models.Episode, 0, total)
+	for i := 1; i <= total; i++ {
+		episodes = append(episodes, models.Episode{MalID: i})
+	}
+	return episodes, false, nil
+}
+
 // SearchByGenres аниме-ҳоро мутобиқи номи жанр(ҳо) аз AniList меёбад
 func (c *AniListClient) SearchByGenres(genreNames []string, limit int) ([]models.Anime, error) {
 	if limit <= 0 {

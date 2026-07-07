@@ -38,10 +38,15 @@ func (p *AnimeProvider) GetAnimeByID(id int) (*models.Anime, error) {
 	return p.AniList.GetAnimeByID(id)
 }
 
-// GetAnimeEpisodes рӯйхати эпизодҳоро аз Jikan мегирад (AniList барои ин маълумоти
-// боэътимод намедиҳад, барои ҳамин fallback надорад)
+// GetAnimeEpisodes рӯйхати эпизодҳоро аз Jikan мегирад, дар сурати хато — аз AniList
+// (бо маҳдудияти рӯшан: AniList танҳо барои саҳифаи якум маълумот медиҳад)
 func (p *AnimeProvider) GetAnimeEpisodes(id int, page int) ([]models.Episode, bool, error) {
-	return p.Jikan.GetAnimeEpisodes(id, page)
+	episodes, hasNext, err := p.Jikan.GetAnimeEpisodes(id, page)
+	if err == nil {
+		return episodes, hasNext, nil
+	}
+	utils.LogError("jikan episodes failed, falling back to anilist: %v", err)
+	return p.AniList.GetAnimeEpisodes(id, page)
 }
 
 // GetRandomAnime анимеи тасодуфиро аз Jikan мегирад, дар сурати хато — аз AniList

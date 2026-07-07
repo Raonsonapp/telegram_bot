@@ -50,6 +50,10 @@ func AnimeDetailKeyboard(anime models.Anime, lang string, isFavorite bool, statu
 				api.GetMessage(lang, "btn_episodes"),
 				fmt.Sprintf("episodes:%d:1", anime.MalID),
 			),
+			tgbotapi.NewInlineKeyboardButtonData(
+				api.GetMessage(lang, "btn_find_dub"),
+				fmt.Sprintf("dub:%d", anime.MalID),
+			),
 		},
 		{
 			tgbotapi.NewInlineKeyboardButtonData(favLabel, fmt.Sprintf("fav:%d", anime.MalID)),

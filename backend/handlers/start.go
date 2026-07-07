@@ -14,11 +14,13 @@ import (
 
 // Deps тамоми вобастагиҳои муштарак барои ҳамаи handler-ҳо
 type Deps struct {
-	Bot    *tgbotapi.BotAPI
-	DB     *database.DB
-	Jikan  *api.AnimeProvider
-	Cache  *utils.Cache
-	Config *config.Config
+	Bot        *tgbotapi.BotAPI
+	DB         *database.DB
+	Jikan      *api.AnimeProvider
+	Aparat     *api.AparatClient
+	Translator *utils.Translator
+	Cache      *utils.Cache
+	Config     *config.Config
 }
 
 // PendingSearch нигоҳ медорад кадом корбарон мунтазири фиристодани матни ҷустуҷӯ ҳастанд

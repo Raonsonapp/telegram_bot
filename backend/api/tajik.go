@@ -65,6 +65,11 @@ var TajikMessages = map[string]string{
 	"profile_watching_title":  "▶️ Ин чизҳоро дар ҳоли тамошо гуфта будӣ:",
 	"profile_recent_empty":    "😔 Ҳанӯз чизе надидаӣ.",
 	"profile_recent_title":    "🕒 Он чизе, ки ба наздикӣ дидаӣ:",
+
+	"btn_find_dub":      "🎬 Дубляж ёфт кун",
+	"dub_searching":     "🎬 Дар Aparat дубляжи тоҷикӣ/форсӣ меҷӯям...",
+	"dub_no_results":    "😔 Мутаассифона, дар Aparat ягон дубляж барои ин аниме ёфта натавонистам. Шояд бо номи дигараш кӯшиш кунӣ?",
+	"dub_results_title": "🎬 Ана, инҳоро дар Aparat ёфтам:",
 }
 
 // GetMessage паёми маҳаллисозишударо аз рӯи забон ва калид бармегардонад.

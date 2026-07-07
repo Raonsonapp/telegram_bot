@@ -46,14 +46,18 @@ func main() {
 	jikanClient := api.NewJikanClient(cfg.JikanBaseURL)
 	anilistClient := api.NewAniListClient()
 	animeProvider := api.NewAnimeProvider(jikanClient, anilistClient)
+	aparatClient := api.NewAparatClient()
+	translator := utils.NewTranslator()
 	cache := utils.NewCache(10 * time.Minute)
 
 	deps := &handlers.Deps{
-		Bot:    bot,
-		DB:     db,
-		Jikan:  animeProvider,
-		Cache:  cache,
-		Config: cfg,
+		Bot:        bot,
+		DB:         db,
+		Jikan:      animeProvider,
+		Aparat:     aparatClient,
+		Translator: translator,
+		Cache:      cache,
+		Config:     cfg,
 	}
 
 	updateConfig := tgbotapi.NewUpdate(0)
@@ -197,6 +201,8 @@ func routeCallback(d *handlers.Deps, cb *tgbotapi.CallbackQuery) {
 		handlers.HandleSettingsCallback(d, cb)
 	case strings.HasPrefix(data, "fav:"):
 		handlers.HandleFavoriteCallback(d, cb)
+	case strings.HasPrefix(data, "dub:"):
+		handlers.HandleDubCallback(d, cb)
 	case strings.HasPrefix(data, "watch:"):
 		handlers.HandleWatchStatusCallback(d, cb)
 	case strings.HasPrefix(data, "profile:"):

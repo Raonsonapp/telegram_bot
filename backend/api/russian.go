@@ -62,4 +62,9 @@ var RussianMessages = map[string]string{
 	"profile_watching_title":  "▶️ Вот что ты сейчас смотришь:",
 	"profile_recent_empty":    "😔 Ты ещё ничего не смотрел.",
 	"profile_recent_title":    "🕒 Вот что ты недавно смотрел:",
+
+	"btn_find_dub":      "🎬 Найти озвучку",
+	"dub_searching":     "🎬 Ищу на Aparat озвученную версию...",
+	"dub_no_results":    "😔 Не удалось найти озвучку этого аниме на Aparat. Попробуй другое название?",
+	"dub_results_title": "🎬 Вот что нашлось на Aparat:",
 }
