@@ -26,14 +26,37 @@ func SearchResultsKeyboard(results []models.Anime) tgbotapi.InlineKeyboardMarkup
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
-// AnimeDetailKeyboard тугмаҳои зери маълумоти яктои аниме
-func AnimeDetailKeyboard(anime models.Anime, lang string) tgbotapi.InlineKeyboardMarkup {
+// AnimeDetailKeyboard тугмаҳои зери маълумоти яктои аниме.
+// isFavorite ва status ҳолати ҷории корбарро нисбат ба ин аниме нишон медиҳанд,
+// то тугмаҳо мутобиқан тағйир ёбанд (масалан "Илова кун" ё "Хориҷ кун")
+func AnimeDetailKeyboard(anime models.Anime, lang string, isFavorite bool, status models.WatchStatus) tgbotapi.InlineKeyboardMarkup {
+	favLabel := api.GetMessage(lang, "btn_add_favorite")
+	if isFavorite {
+		favLabel = api.GetMessage(lang, "btn_remove_favorite")
+	}
+
+	watchingLabel := api.GetMessage(lang, "btn_mark_watching")
+	if status == models.StatusWatching {
+		watchingLabel = api.GetMessage(lang, "btn_watching_active")
+	}
+	completedLabel := api.GetMessage(lang, "btn_mark_completed")
+	if status == models.StatusCompleted {
+		completedLabel = api.GetMessage(lang, "btn_completed_active")
+	}
+
 	rows := [][]tgbotapi.InlineKeyboardButton{
 		{
 			tgbotapi.NewInlineKeyboardButtonData(
 				api.GetMessage(lang, "btn_episodes"),
 				fmt.Sprintf("episodes:%d:1", anime.MalID),
 			),
+		},
+		{
+			tgbotapi.NewInlineKeyboardButtonData(favLabel, fmt.Sprintf("fav:%d", anime.MalID)),
+		},
+		{
+			tgbotapi.NewInlineKeyboardButtonData(watchingLabel, fmt.Sprintf("watch:%d:watching", anime.MalID)),
+			tgbotapi.NewInlineKeyboardButtonData(completedLabel, fmt.Sprintf("watch:%d:completed", anime.MalID)),
 		},
 		{
 			tgbotapi.NewInlineKeyboardButtonURL(api.GetMessage(lang, "btn_open_mal"), anime.URL),

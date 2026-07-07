@@ -33,7 +33,7 @@ func HandleAnimeCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
-	sendAnimeDetail(d, chatID, lang, *anime)
+	sendAnimeDetail(d, chatID, cb.From.ID, lang, *anime)
 }
 
 // fetchAnimeCached аввал cache-ро месанҷад, баъд аз Jikan мегирад
@@ -55,9 +55,21 @@ func fetchAnimeCached(d *Deps, id int) *models.Anime {
 }
 
 // sendAnimeDetail паёми пурраи тафсилоти аниме-ро мефиристад
-func sendAnimeDetail(d *Deps, chatID int64, lang string, anime models.Anime) {
+func sendAnimeDetail(d *Deps, chatID int64, telegramID int64, lang string, anime models.Anime) {
+	if err := d.DB.LogRecentlyViewed(telegramID, anime); err != nil {
+		utils.LogError("failed to log recently viewed anime=%d: %v", anime.MalID, err)
+	}
+	isFav, err := d.DB.IsFavorite(telegramID, anime.MalID)
+	if err != nil {
+		utils.LogError("failed to check favorite status anime=%d: %v", anime.MalID, err)
+	}
+	status, err := d.DB.GetWatchStatus(telegramID, anime.MalID)
+	if err != nil {
+		utils.LogError("failed to get watch status anime=%d: %v", anime.MalID, err)
+	}
+
 	text := formatAnimeDetail(anime, lang)
-	keyb := keyboard.AnimeDetailKeyboard(anime, lang)
+	keyb := keyboard.AnimeDetailKeyboard(anime, lang, isFav, status)
 
 	imageURL := anime.Images.JPG.LargeImageURL
 	if imageURL == "" {
@@ -124,7 +136,7 @@ func HandleRandomAnime(d *Deps, msg *tgbotapi.Message) {
 		return
 	}
 	d.Cache.Set(fmt.Sprintf("anime:%d", anime.MalID), *anime)
-	sendAnimeDetail(d, msg.Chat.ID, lang, *anime)
+	sendAnimeDetail(d, msg.Chat.ID, msg.From.ID, lang, *anime)
 }
 
 // HandleTopAnime фармони /top ва тугмаи "🏆 Top Anime"-ро коркард мекунад

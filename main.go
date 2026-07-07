@@ -126,6 +126,8 @@ func routeCommand(d *handlers.Deps, msg *tgbotapi.Message) {
 		handlers.HandleTopAnime(d, msg)
 	case "settings":
 		handlers.HandleSettings(d, msg)
+	case "profile":
+		handlers.HandleProfileButton(d, msg)
 	case "help":
 		handlers.HandleHelp(d, msg)
 	default:
@@ -159,6 +161,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_settings"):
 			handlers.HandleSettings(d, msg)
 			return
+		case buttonLabel(lang, "btn_profile"):
+			handlers.HandleProfileButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_help"):
 			handlers.HandleHelp(d, msg)
 			return
@@ -188,6 +193,12 @@ func routeCallback(d *handlers.Deps, cb *tgbotapi.CallbackQuery) {
 		handlers.HandleEpisodesCallback(d, cb)
 	case strings.HasPrefix(data, "settings:"):
 		handlers.HandleSettingsCallback(d, cb)
+	case strings.HasPrefix(data, "fav:"):
+		handlers.HandleFavoriteCallback(d, cb)
+	case strings.HasPrefix(data, "watch:"):
+		handlers.HandleWatchStatusCallback(d, cb)
+	case strings.HasPrefix(data, "profile:"):
+		handlers.HandleProfileCallback(d, cb)
 	case data == "back:menu":
 		handlers.HandleBackToMenu(d, cb)
 	default:
