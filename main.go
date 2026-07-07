@@ -209,6 +209,8 @@ func routeCommand(d *handlers.Deps, msg *tgbotapi.Message) {
 		handlers.HandleSettings(d, msg)
 	case "profile":
 		handlers.HandleProfileButton(d, msg)
+	case "myid":
+		handlers.HandleMyID(d, msg)
 	case "help":
 		handlers.HandleHelp(d, msg)
 	default:

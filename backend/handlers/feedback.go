@@ -43,7 +43,7 @@ func HandleFeedbackText(d *Deps, msg *tgbotapi.Message) {
 
 	if d.Config.AdminChatID == 0 {
 		utils.LogError("feedback received but ADMIN_CHAT_ID is not configured")
-		sendText(d, chatID, api.GetMessage(lang, "error_generic"))
+		sendText(d, chatID, api.GetMessage(lang, "feedback_admin_not_configured"))
 		return
 	}
 
@@ -92,4 +92,16 @@ func HandleAdminReply(d *Deps, msg *tgbotapi.Message) bool {
 
 	sendText(d, msg.Chat.ID, "✅ Ҷавоб фиристода шуд.")
 	return true
+}
+
+// HandleMyID фармони /myid-ро коркард мекунад — ID-и ададии Telegram-и
+// корбарро мегардонад, то онро ҳамчун ADMIN_CHAT_ID дар Render гузорад
+func HandleMyID(d *Deps, msg *tgbotapi.Message) {
+	text := fmt.Sprintf(
+		"🆔 ID-и Telegram-и ту: `%d`\n\nАгар мехоҳӣ худат админи бот шавӣ (то паёмҳои \"💬 Бо админ гап зан\"-ро гирӣ), ин рақамро дар Render → Environment Variables ҳамчун `ADMIN_CHAT_ID` илова кун.",
+		msg.From.ID,
+	)
+	message := tgbotapi.NewMessage(msg.Chat.ID, text)
+	message.ParseMode = tgbotapi.ModeMarkdown
+	d.Bot.Send(message)
 }

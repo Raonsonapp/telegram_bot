@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -124,38 +125,125 @@ func HandleSeasonDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	minEp := (seasonNum-1)*seasonSize + 1
 	maxEp := seasonNum * seasonSize
 
-	searchingMsg := tgbotapi.NewMessage(chatID, api.GetMessage(lang, "dub_searching"))
+	searchingMsg := tgbotapi.NewMessage(chatID, api.GetMessage(lang, "dub_season_searching"))
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
-	// Барои фасл бо тартиб ёфтани ҳар 25 қисм, ба захираи хеле бештари номзад
-	// ниёз аст, назар ба ҷустуҷӯи оддӣ — Aparat/Dailymotion сеҳмияи маҳдуд
-	// надоранд, барои ҳамин аз онҳо бисёртар мегирем; YouTube (сеҳмияи маҳдуд
-	// дорад) миёна мемонад
-	raw := fetchRawDubResultsWithLimits(d, anime.Title, dubSearchLimits{Aparat: 40, Dailymotion: 40, YouTube: 10, MaxRaw: 90}, animeID)
-	ordered := api.FilterBySeasonRange(raw, func(r rawDubResult) string { return r.Title }, anime.Title, minEp, maxEp)
+	// Ба ҷои як ҷустуҷӯи умумӣ (ки танҳо натиҷаҳои болои рейтинги худи Aparat/
+	// Dailymotion-ро мебинад ва аксар вақт бисёр қисмҳоро гум мекунад), ҳар
+	// қисми фаслро АЛОҲИДА меҷӯем — ин сустар аст, вале имконияти ёфтани
+	// ҳамаи 25 қисмро хеле зиёд мекунад
+	results := searchSeasonPerEpisode(d, anime.Title, minEp, maxEp, animeID)
 
-	if len(ordered) == 0 {
-		// Ягон видеои бо рақами қисм тайъиншуда дар ин доира ёфт нашуд —
-		// ба ҷои натиҷаи холӣ, натиҷаҳои умумии (бе тартиб) нишон медиҳем
-		edit := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "dub_season_fallback"))
-		d.Bot.Send(edit)
-		sendDubResults(d, chatID, 0, lang, prefixResults(raw))
-		return
+	if len(results) == 0 {
+		// Ҳатто ҷустуҷӯи алоҳида чизе наёфт — ба ҷустуҷӯи умумии эҳтиётӣ мегузарем
+		raw := fetchRawDubResultsWithLimits(d, anime.Title, dubSearchLimits{Aparat: 40, Dailymotion: 40, YouTube: 10, MaxRaw: 90}, animeID)
+		ordered := api.FilterBySeasonRange(raw, func(r rawDubResult) string { return r.Title }, anime.Title, minEp, maxEp)
+		if len(ordered) == 0 {
+			edit := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "dub_season_fallback"))
+			d.Bot.Send(edit)
+			sendDubResults(d, chatID, 0, lang, prefixResults(raw))
+			return
+		}
+		for _, r := range ordered {
+			ep, _ := api.ExtractEpisodeNumber(r.Title)
+			results = append(results, dubResult{
+				Title: fmt.Sprintf("📺 #%d — %s: %s", ep, r.Source, r.Title),
+				URL:   r.URL,
+			})
+		}
 	}
 
-	if len(ordered) > seasonSize {
-		ordered = ordered[:seasonSize]
-	}
+	totalInSeason := maxEp - minEp + 1
+	summary := fmt.Sprintf(api.GetMessage(lang, "dub_season_found_count"), len(results), totalInSeason)
+	edit := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, summary)
+	d.Bot.Send(edit)
 
-	results := make([]dubResult, 0, len(ordered))
-	for _, r := range ordered {
-		ep, _ := api.ExtractEpisodeNumber(r.Title)
+	for _, r := range results {
+		message := tgbotapi.NewMessage(chatID, fmt.Sprintf("%s\n%s", r.Title, r.URL))
+		d.Bot.Send(message)
+	}
+}
+
+// episodeHit як видеои ёфтшуда барои рақами қисми мушаххас
+type episodeHit struct {
+	source string
+	title  string
+	url    string
+}
+
+// searchSeasonPerEpisode барои ҳар рақами қисм дар доираи [minEp, maxEp]
+// ҷустуҷӯи ҷудогона мекунад (масалан "Naruto قسمت 5"), на як ҷустуҷӯи
+// умумии "Naruto". Ин муҳим аст, зеро ҷустуҷӯи умумӣ танҳо натиҷаҳои болои
+// рейтинги худи платформаро медиҳад, ки метавонанд бисёр қисмҳоро дар бар
+// нагиранд. Aparat ва Dailymotion ҳамзамон (дар ду goroutine) санҷида
+// мешаванд, то вақти умумӣ кӯтоҳтар шавад; YouTube (сеҳмияи маҳдуд дорад)
+// дар ин ҷустуҷӯи серхарҷ иштирок намекунад
+func searchSeasonPerEpisode(d *Deps, animeTitle string, minEp int, maxEp int, animeID int) []dubResult {
+	aparatHits := make(map[int]episodeHit)
+	dailymotionHits := make(map[int]episodeHit)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		for ep := minEp; ep <= maxEp; ep++ {
+			query := fmt.Sprintf("%s قسمت %d", animeTitle, ep)
+			videos, err := d.Aparat.SearchVideos(query, 3)
+			if err != nil {
+				utils.LogError("aparat per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
+				continue
+			}
+			for _, v := range videos {
+				if api.IsFranchiseMismatch(animeTitle, v.Title) {
+					continue
+				}
+				if foundEp, ok := api.ExtractEpisodeNumber(v.Title); ok && foundEp == ep {
+					aparatHits[ep] = episodeHit{source: "Aparat", title: v.Title, url: v.URL()}
+					break
+				}
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for ep := minEp; ep <= maxEp; ep++ {
+			query := fmt.Sprintf("%s episode %d", animeTitle, ep)
+			videos, err := d.Dailymotion.SearchVideos(query, 3)
+			if err != nil {
+				utils.LogError("dailymotion per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
+				continue
+			}
+			for _, v := range videos {
+				if api.IsFranchiseMismatch(animeTitle, v.Title) {
+					continue
+				}
+				if foundEp, ok := api.ExtractEpisodeNumber(v.Title); ok && foundEp == ep {
+					dailymotionHits[ep] = episodeHit{source: "Dailymotion", title: v.Title, url: v.URL}
+					break
+				}
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	results := make([]dubResult, 0, maxEp-minEp+1)
+	for ep := minEp; ep <= maxEp; ep++ {
+		hit, ok := aparatHits[ep]
+		if !ok {
+			hit, ok = dailymotionHits[ep]
+		}
+		if !ok {
+			continue
+		}
 		results = append(results, dubResult{
-			Title: fmt.Sprintf("📺 #%d — %s: %s", ep, r.Source, r.Title),
-			URL:   r.URL,
+			Title: fmt.Sprintf("📺 #%d — %s: %s", ep, hit.source, hit.title),
+			URL:   hit.url,
 		})
 	}
-	sendDubResults(d, chatID, sentMsg.MessageID, lang, results)
+	return results
 }
 
 // sendDubResults натиҷаҳоро нишон медиҳад. Пайвандҳо ҳамчун паёми оддии матнӣ
