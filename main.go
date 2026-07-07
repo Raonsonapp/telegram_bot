@@ -243,6 +243,10 @@ func routeCallback(d *handlers.Deps, cb *tgbotapi.CallbackQuery) {
 		handlers.HandleAnimeCallback(d, cb)
 	case strings.HasPrefix(data, "episodes:"):
 		handlers.HandleEpisodesCallback(d, cb)
+	case strings.HasPrefix(data, "seasons:"):
+		handlers.HandleSeasonMenuCallback(d, cb)
+	case strings.HasPrefix(data, "season:"):
+		handlers.HandleSeasonEpisodesCallback(d, cb)
 	case strings.HasPrefix(data, "settings:"):
 		handlers.HandleSettingsCallback(d, cb)
 	case strings.HasPrefix(data, "fav:"):

@@ -12,7 +12,119 @@ import (
 	"anime-bot/backend/utils"
 )
 
-// HandleEpisodesCallback callback-и "episodes:<animeID>:<page>"-ро коркард мекунад
+// seasonSize шумораи қисмҳо дар як "фасл"-и намоишӣ. MAL/Jikan фасли воқеӣ
+// надорад — ин танҳо тақсимоти намоишӣ аст, то рӯйхати анимеҳои дуруши
+// (масалан 220 қисм) осонтар кушода шавад
+const seasonSize = 25
+
+// episodesPerJikanPage шумораи қисмҳо дар як саҳифаи Jikan (собит аз рӯи API)
+const episodesPerJikanPage = 100
+
+// HandleSeasonMenuCallback callback-и "seasons:<animeID>"-ро коркард мекунад —
+// рӯйхати фаслҳоро (ҳар фасл seasonSize қисм) нишон медиҳад
+func HandleSeasonMenuCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
+	id, ok := utils.ParseCallbackID(cb.Data, "seasons:")
+	if !ok {
+		return
+	}
+
+	callback := tgbotapi.NewCallback(cb.ID, "")
+	d.Bot.Request(callback)
+
+	lang := getUserLang(d, cb.From.ID)
+	chatID := cb.Message.Chat.ID
+
+	anime := fetchAnimeCached(d, id)
+	if anime == nil || anime.Episodes <= 0 {
+		sendText(d, chatID, api.GetMessage(lang, "anime_not_found"))
+		return
+	}
+
+	totalSeasons := (anime.Episodes + seasonSize - 1) / seasonSize
+	text := fmt.Sprintf(api.GetMessage(lang, "choose_season"), utils.EscapeMarkdown(anime.Title))
+
+	message := tgbotapi.NewMessage(chatID, text)
+	message.ParseMode = tgbotapi.ModeMarkdown
+	message.ReplyMarkup = keyboard.SeasonMenuKeyboard(id, anime.Episodes, totalSeasons, lang)
+	d.Bot.Send(message)
+}
+
+// HandleSeasonEpisodesCallback callback-и "season:<animeID>:<seasonNum>"-ро
+// коркард мекунад — ҳамаи қисмҳои он фаслро якҷоя нишон медиҳад
+func HandleSeasonEpisodesCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
+	parts := strings.Split(cb.Data, ":")
+	if len(parts) != 3 {
+		return
+	}
+	animeID := atoi(parts[1])
+	seasonNum := atoi(parts[2])
+	if animeID == 0 || seasonNum <= 0 {
+		return
+	}
+
+	callback := tgbotapi.NewCallback(cb.ID, "")
+	d.Bot.Request(callback)
+
+	lang := getUserLang(d, cb.From.ID)
+	chatID := cb.Message.Chat.ID
+
+	anime := fetchAnimeCached(d, animeID)
+	animeTitle := "Anime"
+	totalEpisodes := 0
+	if anime != nil {
+		animeTitle = anime.Title
+		totalEpisodes = anime.Episodes
+	}
+
+	cacheKey := fmt.Sprintf("season:%d:%d", animeID, seasonNum)
+	var episodesText string
+	if cached, ok := d.Cache.Get(cacheKey); ok {
+		if text, valid := cached.(string); valid {
+			episodesText = text
+		}
+	}
+
+	if episodesText == "" {
+		seasonsPerJikanPage := episodesPerJikanPage / seasonSize
+		jikanPage := ((seasonNum - 1) / seasonsPerJikanPage) + 1
+		localIndex := (seasonNum - 1) % seasonsPerJikanPage
+
+		episodes, _, err := d.Jikan.GetAnimeEpisodes(animeID, jikanPage)
+		if err != nil {
+			utils.LogError("failed to get episodes for anime=%d season=%d: %v", animeID, seasonNum, err)
+			sendText(d, chatID, api.GetMessage(lang, "error_generic"))
+			return
+		}
+
+		start := localIndex * seasonSize
+		end := start + seasonSize
+		if start > len(episodes) {
+			start = len(episodes)
+		}
+		if end > len(episodes) {
+			end = len(episodes)
+		}
+		episodesText = formatEpisodesList(episodes[start:end], lang)
+		d.Cache.Set(cacheKey, episodesText)
+	}
+
+	totalSeasons := 1
+	if totalEpisodes > 0 {
+		totalSeasons = (totalEpisodes + seasonSize - 1) / seasonSize
+	}
+
+	title := fmt.Sprintf(api.GetMessage(lang, "season_title"), seasonNum, utils.EscapeMarkdown(animeTitle))
+	fullText := title + "\n\n" + episodesText
+
+	message := tgbotapi.NewMessage(chatID, fullText)
+	message.ParseMode = tgbotapi.ModeMarkdown
+	message.ReplyMarkup = keyboard.SeasonEpisodesKeyboard(animeID, seasonNum, totalSeasons, lang)
+	d.Bot.Send(message)
+}
+
+// HandleEpisodesCallback callback-и "episodes:<animeID>:<page>"-ро коркард мекунад.
+// Ин роҳи кӯҳна барои анимеҳое истифода мешавад, ки ба фасл тақсим намешаванд
+// (масалан камтар аз seasonSize қисм ё шумораи қисмҳояшон маълум нест)
 func HandleEpisodesCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	// data формат: episodes:123:1
 	parts := strings.Split(cb.Data, ":")

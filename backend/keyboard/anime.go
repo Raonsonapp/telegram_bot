@@ -44,11 +44,18 @@ func AnimeDetailKeyboard(anime models.Anime, lang string, isFavorite bool, statu
 		completedLabel = api.GetMessage(lang, "btn_completed_active")
 	}
 
+	// Барои анимеи дуруш (зиёда аз 25 қисм) ба ҷои рӯйхати дароз, аввал менюи
+	// фаслҳо (ҳар фасл 25 қисм) нишон дода мешавад — ин кушодани қисмҳоро осон мекунад
+	episodesCallback := fmt.Sprintf("episodes:%d:1", anime.MalID)
+	if anime.Episodes > 25 {
+		episodesCallback = fmt.Sprintf("seasons:%d", anime.MalID)
+	}
+
 	rows := [][]tgbotapi.InlineKeyboardButton{
 		{
 			tgbotapi.NewInlineKeyboardButtonData(
 				api.GetMessage(lang, "btn_episodes"),
-				fmt.Sprintf("episodes:%d:1", anime.MalID),
+				episodesCallback,
 			),
 			tgbotapi.NewInlineKeyboardButtonData(
 				api.GetMessage(lang, "btn_find_dub"),
@@ -90,5 +97,58 @@ func EpisodesKeyboard(animeID int, page int, hasNext bool, lang string) tgbotapi
 		tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_back"), fmt.Sprintf("anime:%d", animeID)),
 	))
 
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+// SeasonMenuKeyboard рӯйхати фаслҳоро (ҳар кадом seasonSize қисм) ба тугмаҳо табдил медиҳад
+func SeasonMenuKeyboard(animeID int, totalEpisodes int, totalSeasons int, lang string) tgbotapi.InlineKeyboardMarkup {
+	const seasonSize = 25
+	var rows [][]tgbotapi.InlineKeyboardButton
+	var currentRow []tgbotapi.InlineKeyboardButton
+
+	for s := 1; s <= totalSeasons; s++ {
+		start := (s-1)*seasonSize + 1
+		end := s * seasonSize
+		if end > totalEpisodes {
+			end = totalEpisodes
+		}
+		label := fmt.Sprintf("📁 %d (%d-%d)", s, start, end)
+		currentRow = append(currentRow, tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("season:%d:%d", animeID, s)))
+		if len(currentRow) == 2 {
+			rows = append(rows, currentRow)
+			currentRow = nil
+		}
+	}
+	if len(currentRow) > 0 {
+		rows = append(rows, currentRow)
+	}
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_back"), fmt.Sprintf("anime:%d", animeID)),
+	))
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+// SeasonEpisodesKeyboard тугмаҳои гузариш байни фаслҳо ва бозгашт
+func SeasonEpisodesKeyboard(animeID int, seasonNum int, totalSeasons int, lang string) tgbotapi.InlineKeyboardMarkup {
+	var navRow []tgbotapi.InlineKeyboardButton
+	if seasonNum > 1 {
+		navRow = append(navRow, tgbotapi.NewInlineKeyboardButtonData("⬅️", fmt.Sprintf("season:%d:%d", animeID, seasonNum-1)))
+	}
+	if seasonNum < totalSeasons {
+		navRow = append(navRow, tgbotapi.NewInlineKeyboardButtonData("➡️", fmt.Sprintf("season:%d:%d", animeID, seasonNum+1)))
+	}
+
+	rows := [][]tgbotapi.InlineKeyboardButton{}
+	if len(navRow) > 0 {
+		rows = append(rows, navRow)
+	}
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_all_seasons"), fmt.Sprintf("seasons:%d", animeID)),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_back"), fmt.Sprintf("anime:%d", animeID)),
+		),
+	)
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
