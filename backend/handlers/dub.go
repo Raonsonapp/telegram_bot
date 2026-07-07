@@ -65,7 +65,7 @@ func HandleDubTextQuery(d *Deps, msg *tgbotapi.Message) {
 	searchingMsg := tgbotapi.NewMessage(chatID, api.GetMessage(lang, "dub_searching"))
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
-	raw := fetchRawDubResults(d, searchQuery, 4, 0)
+	raw := fetchRawDubResults(d, searchQuery, 4, 0, lang)
 	results := capResults(prefixResults(raw, lang, searchQuery), 6)
 	results = filterAliveLinks(results)
 	sendDubResults(d, chatID, sentMsg.MessageID, lang, results)
@@ -94,7 +94,7 @@ func HandleDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	searchingMsg := tgbotapi.NewMessage(chatID, api.GetMessage(lang, "dub_searching"))
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
-	raw := fetchRawDubResults(d, anime.Title, 4, id)
+	raw := fetchRawDubResults(d, anime.Title, 4, id, lang)
 	results := capResults(prefixResults(raw, lang, anime.Title), 6)
 	results = filterAliveLinks(results)
 	sendDubResults(d, chatID, sentMsg.MessageID, lang, results)
@@ -141,7 +141,7 @@ func HandleSeasonDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 
 	if len(results) == 0 {
 		// Ҳатто ҷустуҷӯи алоҳида чизе наёфт — ба ҷустуҷӯи умумии эҳтиётӣ мегузарем
-		raw := fetchRawDubResultsWithLimits(d, anime.Title, dubSearchLimits{Aparat: 40, Dailymotion: 40, YouTube: 10, MaxRaw: 90}, animeID)
+		raw := fetchRawDubResultsWithLimits(d, anime.Title, dubSearchLimits{Aparat: 40, Dailymotion: 40, YouTube: 10, MaxRaw: 90}, animeID, lang)
 		ordered := api.FilterBySeasonRange(raw, func(r rawDubResult) string { return r.Title }, anime.Title, minEp, maxEp)
 		if len(ordered) == 0 {
 			edit := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "dub_season_fallback"))
@@ -177,48 +177,65 @@ type episodeHit struct {
 	url    string
 }
 
+// dubBiasTerm калимаи иловагиро бармегардонад, ки ба ҷустуҷӯ мувофиқи забони
+// корбар илова карда мешавад, то видеои дубляжшуда бо ҳамон забон ёфт шавад
+// (на бо забони дигар — масалан корбари русзабон дубляжи форсӣ намехоҳад)
+func dubBiasTerm(lang string) string {
+	switch lang {
+	case "fa":
+		return "دوبله فارسی"
+	case "ru":
+		return "русская озвучка"
+	default:
+		return "english dub"
+	}
+}
+
 // searchSeasonPerEpisode барои ҳар рақами қисм дар доираи [minEp, maxEp]
 // ҷустуҷӯи ҷудогона мекунад (масалан "Naruto قسمت 5"), на як ҷустуҷӯи
 // умумии "Naruto". Ин муҳим аст, зеро ҷустуҷӯи умумӣ танҳо натиҷаҳои болои
 // рейтинги худи платформаро медиҳад, ки метавонанд бисёр қисмҳоро дар бар
-// нагиранд. Aparat ва Dailymotion ҳамзамон (дар ду goroutine) санҷида
-// мешаванд, то вақти умумӣ кӯтоҳтар шавад. YouTube (сеҳмияи маҳдуд дорад)
-// дар ин ҷустуҷӯи серхарҷи аввала иштирок намекунад, вале баъд танҳо барои
-// қисмҳое, ки на Aparat ва на Dailymotion ёфтанд, санҷида мешавад — то
-// ҳарчи бештар қисм пайдо шавад, бе харҷ кардани сеҳмияи YouTube барои
-// қисмҳое, ки аллакай ёфта шудаанд
+// нагиранд. Aparat платформаи форсизабон аст (дубляжи русӣ/англисӣ надорад),
+// барои ҳамин танҳо вақте ки забони корбар "fa" (тоҷикӣ) аст санҷида мешавад.
+// Dailymotion ҳамеша (дар goroutine-и алоҳида) санҷида мешавад; YouTube
+// (сеҳмияи маҳдуд дорад) дар ин ҷустуҷӯи серхарҷи аввала иштирок намекунад,
+// вале баъд танҳо барои қисмҳое, ки то ин ҷо ёфт нашуданд, санҷида мешавад
 func searchSeasonPerEpisode(d *Deps, lang string, animeTitle string, minEp int, maxEp int, animeID int) []dubResult {
 	aparatHits := make(map[int]episodeHit)
 	dailymotionHits := make(map[int]episodeHit)
+	bias := dubBiasTerm(lang)
 
 	var wg sync.WaitGroup
-	wg.Add(2)
 
-	go func() {
-		defer wg.Done()
-		for ep := minEp; ep <= maxEp; ep++ {
-			query := fmt.Sprintf("%s قسمت %d دوبله", animeTitle, ep)
-			videos, err := d.Aparat.SearchVideos(query, 3)
-			if err != nil {
-				utils.LogError("aparat per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
-				continue
-			}
-			for _, v := range videos {
-				if api.IsFranchiseMismatch(animeTitle, v.Title) {
+	if lang == "fa" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for ep := minEp; ep <= maxEp; ep++ {
+				query := fmt.Sprintf("%s قسمت %d دوبله", animeTitle, ep)
+				videos, err := d.Aparat.SearchVideos(query, 3)
+				if err != nil {
+					utils.LogError("aparat per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
 					continue
 				}
-				if foundEp, ok := api.ExtractEpisodeNumber(v.Title); ok && foundEp == ep {
-					aparatHits[ep] = episodeHit{source: "Aparat", title: v.Title, url: v.URL()}
-					break
+				for _, v := range videos {
+					if api.IsFranchiseMismatch(animeTitle, v.Title) {
+						continue
+					}
+					if foundEp, ok := api.ExtractEpisodeNumber(v.Title); ok && foundEp == ep {
+						aparatHits[ep] = episodeHit{source: "Aparat", title: v.Title, url: v.URL()}
+						break
+					}
 				}
 			}
-		}
-	}()
+		}()
+	}
 
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for ep := minEp; ep <= maxEp; ep++ {
-			query := fmt.Sprintf("%s episode %d دوبله فارسی", animeTitle, ep)
+			query := fmt.Sprintf("%s episode %d %s", animeTitle, ep, bias)
 			videos, err := d.Dailymotion.SearchVideos(query, 3)
 			if err != nil {
 				utils.LogError("dailymotion per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
@@ -247,7 +264,7 @@ func searchSeasonPerEpisode(d *Deps, lang string, animeTitle string, minEp int, 
 			if _, ok := dailymotionHits[ep]; ok {
 				continue
 			}
-			query := fmt.Sprintf("%s episode %d دوبله فارسی", animeTitle, ep)
+			query := fmt.Sprintf("%s episode %d %s", animeTitle, ep, bias)
 			videos, err := d.YouTube.SearchVideos(query, 3)
 			if err != nil {
 				utils.LogError("youtube per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
@@ -402,30 +419,36 @@ type dubSearchLimits struct {
 
 // fetchRawDubResults ҳамаи платформаҳои видеоро бо ҳадди пешфарз (мувофиқ ба
 // ҷустуҷӯи оддӣ) мепурсад
-func fetchRawDubResults(d *Deps, title string, perSource int, animeID int) []rawDubResult {
+func fetchRawDubResults(d *Deps, title string, perSource int, animeID int, lang string) []rawDubResult {
 	return fetchRawDubResultsWithLimits(d, title, dubSearchLimits{
 		Aparat: perSource, Dailymotion: perSource, YouTube: perSource, MaxRaw: 30,
-	}, animeID)
+	}, animeID, lang)
 }
 
 // fetchRawDubResultsWithLimits ҳамаи платформаҳои видеоро мепурсад ва
 // натиҷаҳоро якҷоя мекунад (бе пешванди манбаъ). Агар як платформа хато диҳад
-// ё чизе наёбад, платформаҳои дигар ҳамоно санҷида мешаванд
-func fetchRawDubResultsWithLimits(d *Deps, title string, limits dubSearchLimits, animeID int) []rawDubResult {
+// ё чизе наёбад, платформаҳои дигар ҳамоно санҷида мешаванд. Aparat
+// платформаи форсизабон аст — танҳо вақте ки забони корбар "fa" (тоҷикӣ)
+// аст санҷида мешавад, вагарна барои корбарони русу англисзабон вақти беҳуда
+// сарф мешуд (Aparat дубляжи русӣ/англисӣ надорад)
+func fetchRawDubResultsWithLimits(d *Deps, title string, limits dubSearchLimits, animeID int, lang string) []rawDubResult {
 	var raw []rawDubResult
+	bias := dubBiasTerm(lang)
 
-	aparatVideos, err := d.Aparat.SearchVideos(title+" دوبله", limits.Aparat)
-	if err != nil {
-		utils.LogError("aparat search failed for anime=%d: %v", animeID, err)
-	}
-	for _, v := range aparatVideos {
-		if api.IsFranchiseMismatch(title, v.Title) {
-			continue
+	if lang == "fa" {
+		aparatVideos, err := d.Aparat.SearchVideos(title+" دوبله", limits.Aparat)
+		if err != nil {
+			utils.LogError("aparat search failed for anime=%d: %v", animeID, err)
 		}
-		raw = append(raw, rawDubResult{Source: "Aparat", Title: v.Title, URL: v.URL()})
+		for _, v := range aparatVideos {
+			if api.IsFranchiseMismatch(title, v.Title) {
+				continue
+			}
+			raw = append(raw, rawDubResult{Source: "Aparat", Title: v.Title, URL: v.URL()})
+		}
 	}
 
-	dailymotionVideos, err := d.Dailymotion.SearchVideos(title+" دوبله فارسی", limits.Dailymotion)
+	dailymotionVideos, err := d.Dailymotion.SearchVideos(title+" "+bias, limits.Dailymotion)
 	if err != nil {
 		utils.LogError("dailymotion search failed for anime=%d: %v", animeID, err)
 	}
@@ -437,9 +460,9 @@ func fetchRawDubResultsWithLimits(d *Deps, title string, limits dubSearchLimits,
 	}
 
 	if d.YouTube.Enabled() {
-		// Дар YouTube ҷустуҷӯи танҳо номи аниме бисёр натиҷаи расмии бе дубляж
-		// медиҳад — "дубле форсӣ" мушаххас каналҳои дубляжро меёбад
-		youtubeVideos, err := d.YouTube.SearchVideos(title+" دوبله فارسی", limits.YouTube)
+		// Ҷустуҷӯи танҳо номи аниме бисёр натиҷаи расмии бе дубляж медиҳад —
+		// калимаи иловагии мувофиқи забон мушаххас каналҳои дубляжро меёбад
+		youtubeVideos, err := d.YouTube.SearchVideos(title+" "+bias, limits.YouTube)
 		if err != nil {
 			utils.LogError("youtube search failed for anime=%d: %v", animeID, err)
 		}
