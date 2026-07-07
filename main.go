@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -22,8 +23,6 @@ func main() {
 	if cfg.TelegramToken == "" {
 		log.Fatal("TELEGRAM_BOT_TOKEN нест дар муҳити система — лутфан онро дар Render Environment Variables танзим кунед")
 	}
-
-	startHealthServer(cfg.Port)
 
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
 	if err != nil {
@@ -60,9 +59,45 @@ func main() {
 		Config:     cfg,
 	}
 
-	updateConfig := tgbotapi.NewUpdate(0)
-	updateConfig.Timeout = 30
-	updates := bot.GetUpdatesChan(updateConfig)
+	var updates <-chan tgbotapi.Update
+
+	// Render зинаи "zero-downtime deploy" дорад: ҳангоми ҳар деплой нусхаи кӯҳна
+	// ва нав муддате ҳамзамон кор мекунанд. Бо long polling (getUpdates) ин ба
+	// хатои "Conflict: terminated by other getUpdates request" оварда мерасонад,
+	// зеро Telegram танҳо як истеъмолкунандаро иҷозат медиҳад. Webhook ин
+	// мушкилотро пурра бартараф мекунад — Telegram худ ба сервери мо мефиристад,
+	// новобаста аз он ки чанд нусха ҳамзамон кор мекунанд
+	externalURL := strings.TrimSuffix(os.Getenv("RENDER_EXTERNAL_URL"), "/")
+	if externalURL != "" {
+		webhookPath := "/webhook/" + cfg.TelegramToken
+		webhookURL := externalURL + webhookPath
+
+		webhookConfig, err := tgbotapi.NewWebhook(webhookURL)
+		if err != nil {
+			log.Fatalf("Хатогии сохтани webhook: %v", err)
+		}
+		webhookConfig.DropPendingUpdates = true
+
+		if _, err := bot.Request(webhookConfig); err != nil {
+			log.Fatalf("Хатогии танзими webhook: %v", err)
+		}
+		utils.LogInfo("Webhook танзим шуд: %s", webhookURL)
+
+		updatesChan := make(chan tgbotapi.Update, 100)
+		updates = updatesChan
+		startServer(cfg.Port, webhookPath, bot, updatesChan)
+	} else {
+		// Дар муҳити маҳаллӣ (беруна аз Render) webhook надорем — агар қаблан
+		// монда бошад, тоза мекунем, вагарна getUpdates хато медиҳад
+		if _, err := bot.Request(tgbotapi.DeleteWebhookConfig{}); err != nil {
+			utils.LogError("failed to delete webhook: %v", err)
+		}
+		startServer(cfg.Port, "", bot, nil)
+
+		updateConfig := tgbotapi.NewUpdate(0)
+		updateConfig.Timeout = 30
+		updates = bot.GetUpdatesChan(updateConfig)
+	}
 
 	utils.LogInfo("Бот омода аст ва дархостҳоро мегирад...")
 
@@ -71,10 +106,10 @@ func main() {
 	}
 }
 
-// startHealthServer HTTP-серверчаеро дар goroutine оғоз мекунад, то Render
-// Free Web Service health check-ро гузарад. Бе ин, Render портеро кушода
-// намебинад ва деплойро ноком мекунад
-func startHealthServer(port string) {
+// startServer HTTP-серверро дар goroutine оғоз мекунад: "/" ва "/health" барои
+// Render health check, ва агар webhookPath холӣ набошад — суроғаи қабули
+// webhook-и Telegram низ дар ҳамин сервер (бо ҳамин порт) кушода мешавад
+func startServer(port string, webhookPath string, bot *tgbotapi.BotAPI, updates chan tgbotapi.Update) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Anime Bot Running"))
@@ -83,9 +118,18 @@ func startHealthServer(port string) {
 		w.Write([]byte("OK"))
 	})
 
+	if webhookPath != "" {
+		mux.HandleFunc(webhookPath, func(w http.ResponseWriter, r *http.Request) {
+			webhookUpdates := bot.ListenForWebhookRespReqFormat(w, r)
+			for update := range webhookUpdates {
+				updates <- update
+			}
+		})
+	}
+
 	go func() {
 		addr := ":" + port
-		utils.LogInfo("HTTP-сервер дар порти %s оғоз шуд (барои Render health check)", port)
+		utils.LogInfo("HTTP-сервер дар порти %s оғоз шуд (барои Render health check ва webhook)", port)
 		if err := http.ListenAndServe(addr, mux); err != nil {
 			utils.LogError("Хатогии HTTP-сервер: %v", err)
 		}
