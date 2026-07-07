@@ -44,12 +44,14 @@ func main() {
 	utils.LogInfo("Пойгоҳи додаҳо омода аст: %s", cfg.DBPath)
 
 	jikanClient := api.NewJikanClient(cfg.JikanBaseURL)
+	anilistClient := api.NewAniListClient()
+	animeProvider := api.NewAnimeProvider(jikanClient, anilistClient)
 	cache := utils.NewCache(10 * time.Minute)
 
 	deps := &handlers.Deps{
 		Bot:    bot,
 		DB:     db,
-		Jikan:  jikanClient,
+		Jikan:  animeProvider,
 		Cache:  cache,
 		Config: cfg,
 	}

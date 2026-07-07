@@ -16,7 +16,7 @@ import (
 type Deps struct {
 	Bot    *tgbotapi.BotAPI
 	DB     *database.DB
-	Jikan  *api.JikanClient
+	Jikan  *api.AnimeProvider
 	Cache  *utils.Cache
 	Config *config.Config
 }
