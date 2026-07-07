@@ -180,6 +180,14 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 		return
 	}
 
+	// /myid ҳамеша бе манъ кор мекунад — вагарна ҳеҷ кас (ҳатто соҳиби бот)
+	// наметавонад ID-и худро гирад, зеро барои гузаштан аз gate-и обуна маҳз
+	// ҳамин ID лозим аст (мушкили "мурғ ва тухм")
+	if msg.IsCommand() && msg.Command() == "myid" {
+		handlers.HandleMyID(d, msg)
+		return
+	}
+
 	if msg.Chat.ID != d.Config.AdminChatID {
 		if !handlers.EnsureSubscribed(d, msg.From.ID, msg.Chat.ID) {
 			return

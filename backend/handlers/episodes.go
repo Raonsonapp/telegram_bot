@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -197,18 +198,36 @@ func formatEpisodesList(episodes []models.Episode, lang string) string {
 
 	var b strings.Builder
 	for _, ep := range episodes {
-		line := fmt.Sprintf("• #%d %s", ep.MalID, ep.Title)
-		if ep.Aired != "" {
-			line += fmt.Sprintf(" (%s)", ep.Aired)
+		line := fmt.Sprintf(api.GetMessage(lang, "episode_line_label"), ep.MalID)
+		if ep.Title != "" {
+			line += ": " + ep.Title
+		}
+		if date := formatAiredDate(ep.Aired); date != "" {
+			line += fmt.Sprintf(" (%s)", date)
 		}
 		if ep.Filler {
-			line += " [filler]"
+			line += " " + api.GetMessage(lang, "episode_filler_tag")
 		}
 		if ep.Recap {
-			line += " [recap]"
+			line += " " + api.GetMessage(lang, "episode_recap_tag")
 		}
+		b.WriteString("• ")
 		b.WriteString(utils.EscapeMarkdown(line))
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// formatAiredDate санаи хоми ISO 8601-и Jikan (масалан "2002-10-03T00:00:00+00:00")-ро
+// ба формати сода ва хонотаро "02.01.2006" табдил медиҳад. Агар парс нашавад,
+// сатри холӣ бармегардонад (беҳтар аз нишон додани матни хоми техникӣ)
+func formatAiredDate(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	t, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return ""
+	}
+	return t.Format("02.01.2006")
 }
