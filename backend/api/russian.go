@@ -67,6 +67,8 @@ var RussianMessages = map[string]string{
 	"profile_recent_title":    "🕒 Вот что ты недавно смотрел:",
 
 	"btn_find_dub":      "🎬 Найти озвучку",
+	"btn_dub_menu":      "🎬 Найти озвучку",
+	"ask_dub_query":     "🎬 Напиши название аниме, я поищу озвучку на YouTube, Aparat и Dailymotion:",
 	"dub_searching":     "🎬 Ищу на Aparat озвученную версию...",
 	"dub_no_results":    "😔 Не удалось найти озвучку этого аниме на Aparat. Попробуй другое название?",
 	"dub_results_title": "🎬 Вот что нашлось на Aparat:",

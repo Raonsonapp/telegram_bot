@@ -67,6 +67,8 @@ var EnglishMessages = map[string]string{
 	"profile_recent_title":    "🕒 Here's what you viewed recently:",
 
 	"btn_find_dub":      "🎬 Find Dub",
+	"btn_dub_menu":      "🎬 Find Dub",
+	"ask_dub_query":     "🎬 Type the anime name, I'll search YouTube, Aparat and Dailymotion for a dubbed version:",
 	"dub_searching":     "🎬 Searching Aparat for a dubbed version...",
 	"dub_no_results":    "😔 Couldn't find a dub for this anime on Aparat. Maybe try a different title?",
 	"dub_results_title": "🎬 Found these on Aparat:",

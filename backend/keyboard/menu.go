@@ -11,17 +11,18 @@ func MainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_search")),
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_dub_menu")),
+		),
+		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_random")),
-		),
-		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_mood")),
+		),
+		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_top")),
-		),
-		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_profile")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_help")),
 		),
 	)

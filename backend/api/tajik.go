@@ -70,6 +70,8 @@ var TajikMessages = map[string]string{
 	"profile_recent_title":    "🕒 Он чизе, ки ба наздикӣ дидаӣ:",
 
 	"btn_find_dub":      "🎬 Дубляж ёфт кун",
+	"btn_dub_menu":      "🎬 Дубляж ёфт кун",
+	"ask_dub_query":     "🎬 Хуб, номи анимеро бинавис, ман дар YouTube, Aparat ва Dailymotion дубляжашро меҷӯям:",
 	"dub_searching":     "🎬 Дар Aparat дубляжи тоҷикӣ/форсӣ меҷӯям...",
 	"dub_no_results":    "😔 Мутаассифона, дар Aparat ягон дубляж барои ин аниме ёфта натавонистам. Шояд бо номи дигараш кӯшиш кунӣ?",
 	"dub_results_title": "🎬 Ана, инҳоро дар Aparat ёфтам:",

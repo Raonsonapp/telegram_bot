@@ -214,6 +214,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_mood"):
 			handlers.HandleMoodButton(d, msg)
 			return
+		case buttonLabel(lang, "btn_dub_menu"):
+			handlers.HandleDubMenuButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_top"):
 			handlers.HandleTopAnime(d, msg)
 			return
@@ -233,6 +236,13 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 	// онро ҳамчун тавсифи кайфият коркард мекунем, на ҳамчун номи аниме
 	if handlers.PendingMood[msg.From.ID] {
 		handlers.HandleMoodText(d, msg)
+		return
+	}
+
+	// Агар корбар пас аз пахши "🎬 Дубляж ёфт кун" (менюи асосӣ) матн фиристода
+	// бошад, онро ҳамчун номи анимеи ҷустуҷӯшаванда барои дубляж коркард мекунем
+	if handlers.PendingDub[msg.From.ID] {
+		handlers.HandleDubTextQuery(d, msg)
 		return
 	}
 
