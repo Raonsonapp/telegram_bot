@@ -60,17 +60,20 @@ func (t *Translator) translate(text string, langpair string) string {
 	endpoint := fmt.Sprintf("https://api.mymemory.translated.net/get?q=%s&langpair=%s", url.QueryEscape(text), langpair)
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
+		LogError("translate: failed to build request (langpair=%s): %v", langpair, err)
 		return text
 	}
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := t.client.Do(req)
 	if err != nil {
+		LogError("translate: request failed (langpair=%s): %v", langpair, err)
 		return text
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		LogError("translate: unexpected status %d (langpair=%s)", resp.StatusCode, langpair)
 		return text
 	}
 
@@ -81,14 +84,17 @@ func (t *Translator) translate(text string, langpair string) string {
 		ResponseStatus int `json:"responseStatus"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		LogError("translate: failed to decode response (langpair=%s): %v", langpair, err)
 		return text
 	}
 	if result.ResponseStatus != http.StatusOK {
+		LogError("translate: mymemory responseStatus=%d (langpair=%s)", result.ResponseStatus, langpair)
 		return text
 	}
 
 	translated := strings.TrimSpace(result.ResponseData.TranslatedText)
 	if translated == "" || strings.Contains(strings.ToUpper(translated), "MYMEMORY WARNING") {
+		LogError("translate: mymemory returned empty/warning result (langpair=%s): %q", langpair, translated)
 		return text
 	}
 	return translated

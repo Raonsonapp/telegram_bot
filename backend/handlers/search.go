@@ -8,6 +8,7 @@ import (
 
 	"anime-bot/backend/api"
 	"anime-bot/backend/keyboard"
+	"anime-bot/backend/models"
 	"anime-bot/backend/utils"
 )
 
@@ -50,19 +51,7 @@ func PerformSearch(d *Deps, chatID int64, telegramID int64, query string) {
 	searchingMsg := tgbotapi.NewMessage(chatID, fmt.Sprintf(api.GetMessage(lang, "searching"), query))
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
-	// Jikan/AniList танҳо бо номи англисӣ/лотинии аниме ҷустуҷӯ мекунанд — агар
-	// корбар бо алифбои кириллӣ (тоҷикӣ/русӣ) навишта бошад, аввал ба англисӣ
-	// тарҷума мекунем, вагарна ҳеҷ натиҷа намеёбад
-	apiQuery := query
-	if utils.ContainsCyrillic(query) {
-		if translated := d.Translator.TranslateToEnglish(query, lang); translated != "" && translated != query {
-			apiQuery = translated
-		}
-	}
-
-	cacheKey := "search:" + strings.ToLower(apiQuery)
-
-	animeResults, err := d.Jikan.SearchAnime(apiQuery, 6)
+	animeResults, usedQuery, err := searchWithCyrillicFallback(d, query, lang)
 	if err != nil {
 		utils.LogError("search failed for query=%q: %v", query, err)
 		editErr := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "error_generic"))
@@ -77,6 +66,7 @@ func PerformSearch(d *Deps, chatID int64, telegramID int64, query string) {
 		return
 	}
 
+	cacheKey := "search:" + strings.ToLower(usedQuery)
 	d.Cache.Set(cacheKey, animeResults)
 	for _, a := range animeResults {
 		d.Cache.Set(fmt.Sprintf("anime:%d", a.MalID), a)
@@ -85,4 +75,44 @@ func PerformSearch(d *Deps, chatID int64, telegramID int64, query string) {
 	text := fmt.Sprintf(api.GetMessage(lang, "search_results"), query)
 	edit := tgbotapi.NewEditMessageTextAndMarkup(chatID, sentMsg.MessageID, text, keyboard.SearchResultsKeyboard(animeResults))
 	d.Bot.Send(edit)
+}
+
+// searchWithCyrillicFallback Jikan/AniList танҳо бо номи англисӣ/лотинии аниме
+// ҷустуҷӯ мекунанд. Агар матн кириллӣ (тоҷикӣ/русӣ) бошад, паси ҳам якчанд роҳро
+// меозмояд: аввал транслитератсияи фонетикӣ (масалан "Наруто" -> "naruto" — барои
+// номҳои хос ин аз тарҷумаи мошинӣ боэътимодтар аст), баъд тарҷумаи мошинӣ (барои
+// ибораҳои тавсифӣ). Натиҷаи аввалини муваффақро бармегардонад
+func searchWithCyrillicFallback(d *Deps, query string, lang string) ([]models.Anime, string, error) {
+	if !utils.ContainsCyrillic(query) {
+		results, err := d.Jikan.SearchAnime(query, 6)
+		return results, query, err
+	}
+
+	var lastErr error
+
+	transliterated := utils.TransliterateCyrillicToLatin(query)
+	results, err := d.Jikan.SearchAnime(transliterated, 6)
+	if err == nil && len(results) > 0 {
+		return results, transliterated, nil
+	}
+	if err != nil {
+		lastErr = err
+		utils.LogError("transliterated search failed for query=%q (%q): %v", query, transliterated, err)
+	}
+
+	if translated := d.Translator.TranslateToEnglish(query, lang); translated != "" && translated != query {
+		results, err = d.Jikan.SearchAnime(translated, 6)
+		if err == nil && len(results) > 0 {
+			return results, translated, nil
+		}
+		if err != nil {
+			lastErr = err
+			utils.LogError("translated search failed for query=%q (%q): %v", query, translated, err)
+		}
+	}
+
+	if lastErr != nil {
+		return nil, transliterated, lastErr
+	}
+	return nil, transliterated, nil
 }

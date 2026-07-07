@@ -67,5 +67,21 @@ func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, e
 			return videos, nil
 		}
 	}
+
+	// Ҳеҷ калиде бо рӯйхати видео ёфт нашуд — эҳтимол шакли ҷавоби Aparat тағйир
+	// ёфтааст ё натиҷа воқеан холист. Барои ташхис пораи аввали ҷавобро сабт мекунем
+	preview := string(body)
+	if len(preview) > 400 {
+		preview = preview[:400] + "..."
+	}
+	utils.LogError("aparat: no video list found in response for query=%q, keys=%v, body preview: %s", query, mapKeys(raw), preview)
 	return nil, nil
+}
+
+func mapKeys(m map[string]json.RawMessage) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
