@@ -54,27 +54,73 @@ func significantWords(text string) []string {
 	return words
 }
 
+// injectedQueryTerms калимаҳое, ки худи бот ба дархости ҷустуҷӯ илова
+// мекунад (масалан калимаи забони дубляж ё "episode"/"قسمت") — инҳо қисми
+// номи аниме нестанд, барои ҳамин набояд дар санҷиши мутобиқат ҳамчун
+// калимаи "асосии" аниме ҳисоб шаванд. Вагарна масалан калимаи маъмули
+// "dub" метавонад ба видеои комилан бемаънӣ бо тасодуф мувофиқат кунад
+var injectedQueryTerms = map[string]bool{
+	"episode": true, "دوبله": true, "فارسی": true, "قسمت": true,
+	"русская": true, "озвучка": true, "english": true, "dub": true, "dubbed": true,
+}
+
+// isAllDigits месанҷад, ки оё калима танҳо аз рақам иборат аст (рақами
+// қисм, ки ба дархост илова шудааст — на қисми номи аниме)
+func isAllDigits(s string) bool {
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
+}
+
+// coreQueryWords аз матни дархост танҳо калимаҳои асосии номи анимеро
+// мебарорад — рақамҳои қисм ва калимаҳои иловашудаи худи бот (дубляж/забон/
+// "episode") хориҷ карда мешаванд, то санҷиши мутобиқат ба номи воқеии
+// аниме такя кунад, на ба калимаҳои ёрирасон
+func coreQueryWords(query string) []string {
+	var core []string
+	for _, w := range significantWords(query) {
+		if injectedQueryTerms[w] || isAllDigits(w) {
+			continue
+		}
+		core = append(core, w)
+	}
+	if len(core) == 0 {
+		return significantWords(query)
+	}
+	return core
+}
+
 // filterEpisodeCandidates аз рӯйхати натиҷаҳои ҷустуҷӯи видео танҳо онҳоеро
-// мегузаронад, ки (1) унвонашон ба матни ҷустуҷӯ рабт дорад ва (2) дарозиашон
-// ба як қисми аниме монанд аст (агар дарозӣ маълум бошад). Ин ҳам видеоҳои
-// комилан бемаънӣ ва ҳам филмҳо/компиляцияҳоро (на қисмҳои алоҳида) хориҷ мекунад.
-// Агар дарозӣ маълум набошад (durationOf ok=false бармегардонад), санҷиши
-// дарозӣ гузаронда мешавад — беҳтар аст натиҷаи эҳтимолӣ нишон дода шавад,
-// то ҳеҷ натиҷа нишон надодан
+// мегузаронад, ки (1) унвонашон ба номи аниме воқеан рабт дорад ва (2)
+// дарозиашон ба як қисми аниме монанд аст (агар дарозӣ маълум бошад). Ин ҳам
+// видеоҳои комилан бемаънӣ ва ҳам филмҳо/компиляцияҳоро хориҷ мекунад.
+// Барои унвонҳои бисёркалимагӣ (масалан "Sakamoto Days") як калимаи ягона
+// (масалан "days") кофӣ нест — вагарна видеоҳои комилан беробита танҳо аз
+// рӯи як калимаи маъмул мувофиқат мекунанд. Барои ≤2 калима ҳамаашон лозиманд,
+// барои бештар аз он — ақаллан нисфи онҳо (то боло гирдогирд карда шуда)
 func filterEpisodeCandidates[T any](items []T, titleOf func(T) string, durationOf func(T) (seconds int, known bool), query string, limit int) []T {
-	words := significantWords(query)
+	core := coreQueryWords(query)
+	required := len(core)
+	if required > 2 {
+		required = (required + 1) / 2
+	}
+	if required == 0 {
+		required = 1
+	}
 
 	var result []T
 	for _, item := range items {
 		titleLower := strings.ToLower(titleOf(item))
-		matched := false
-		for _, w := range words {
+		count := 0
+		for _, w := range core {
 			if strings.Contains(titleLower, w) {
-				matched = true
-				break
+				count++
 			}
 		}
-		if !matched {
+		if count < required {
 			continue
 		}
 
