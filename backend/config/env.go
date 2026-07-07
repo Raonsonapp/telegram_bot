@@ -54,5 +54,6 @@ func LoadConfig() *Config {
 		DBPath:          getEnv("DB_PATH", "./data/anime.db"),
 		DefaultLanguage: getEnv("DEFAULT_LANGUAGE", "en"),
 		Debug:           getEnv("DEBUG", "false") == "true",
+		Port:            getEnv("PORT", "10000"),
 	}
 }

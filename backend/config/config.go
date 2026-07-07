@@ -7,4 +7,5 @@ type Config struct {
 	DBPath          string
 	DefaultLanguage string
 	Debug           bool
+	Port            string
 }

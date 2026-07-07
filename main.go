@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
@@ -19,8 +20,10 @@ func main() {
 	utils.DebugEnabled = cfg.Debug
 
 	if cfg.TelegramToken == "" {
-		log.Fatal("TELEGRAM_BOT_TOKEN нест дар .env — лутфан онро танзим кунед")
+		log.Fatal("TELEGRAM_BOT_TOKEN нест дар муҳити система — лутфан онро дар Render Environment Variables танзим кунед")
 	}
+
+	startHealthServer(cfg.Port)
 
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
 	if err != nil {
@@ -60,6 +63,27 @@ func main() {
 	for update := range updates {
 		go routeUpdate(deps, update)
 	}
+}
+
+// startHealthServer HTTP-серверчаеро дар goroutine оғоз мекунад, то Render
+// Free Web Service health check-ро гузарад. Бе ин, Render портеро кушода
+// намебинад ва деплойро ноком мекунад
+func startHealthServer(port string) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Anime Bot Running"))
+	})
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK"))
+	})
+
+	go func() {
+		addr := ":" + port
+		utils.LogInfo("HTTP-сервер дар порти %s оғоз шуд (барои Render health check)", port)
+		if err := http.ListenAndServe(addr, mux); err != nil {
+			utils.LogError("Хатогии HTTP-сервер: %v", err)
+		}
+	}()
 }
 
 // routeUpdate ҳар як update-и воридотиро ба handler-и дурусташ равона мекунад
