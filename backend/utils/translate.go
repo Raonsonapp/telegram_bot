@@ -5,9 +5,24 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
+
+// flexibleStatus баъзан MyMemory responseStatus-ро ҳамчун рақам (200) ва
+// баъзан ҳамчун сатр ("200") бармегардонад — ин навъ ҳардуро мегирад
+type flexibleStatus int
+
+func (s *flexibleStatus) UnmarshalJSON(data []byte) error {
+	trimmed := strings.Trim(string(data), `"`)
+	n, err := strconv.Atoi(trimmed)
+	if err != nil {
+		return err
+	}
+	*s = flexibleStatus(n)
+	return nil
+}
 
 // Translator тавсифи анимеро (матни озод) ва дархости ҷустуҷӯи корбарро байни
 // забонҳо тарҷума мекунад. Агар хидмати тарҷума дастнорас бошад, серкор бошад
@@ -81,13 +96,13 @@ func (t *Translator) translate(text string, langpair string) string {
 		ResponseData struct {
 			TranslatedText string `json:"translatedText"`
 		} `json:"responseData"`
-		ResponseStatus int `json:"responseStatus"`
+		ResponseStatus flexibleStatus `json:"responseStatus"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		LogError("translate: failed to decode response (langpair=%s): %v", langpair, err)
 		return text
 	}
-	if result.ResponseStatus != http.StatusOK {
+	if int(result.ResponseStatus) != http.StatusOK {
 		LogError("translate: mymemory responseStatus=%d (langpair=%s)", result.ResponseStatus, langpair)
 		return text
 	}

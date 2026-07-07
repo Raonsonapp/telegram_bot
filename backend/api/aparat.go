@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"anime-bot/backend/utils"
 )
@@ -14,11 +15,9 @@ const aparatBaseURL = "https://www.aparat.com/etc/api"
 
 // AparatVideo як видеои ёфтшуда дар Aparat
 type AparatVideo struct {
-	ID       int    `json:"id"`
 	Title    string `json:"title"`
 	UID      string `json:"uid"`
 	Username string `json:"username"`
-	Duration int    `json:"duration"`
 }
 
 // URL суроғаи тамошои видеоро дар Aparat месозад
@@ -36,7 +35,9 @@ func NewAparatClient() *AparatClient {
 	return &AparatClient{http: utils.NewHTTPClient()}
 }
 
-// SearchVideos дар Aparat бо матни додашуда видео меҷӯяд
+// SearchVideos дар Aparat бо матни додашуда видео меҷӯяд ва танҳо натиҷаҳоеро
+// бармегардонад, ки унвонашон воқеан ба матни ҷустуҷӯ рабт дорад (Aparat
+// баъзан барои унвонҳои номаълум видеои комилан бемаънӣ бармегардонад)
 func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, error) {
 	if perPage <= 0 {
 		perPage = 5
@@ -44,7 +45,7 @@ func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, e
 	// Aparat қиматҳоро ҳамчун қисмҳои роҳ (path segments) мегирад, на параметри
 	// query-и URL — барои ҳамин PathEscape лозим аст, на QueryEscape (вагарна
 	// фазоҳо ба "+" табдил меёбанд, ки дар роҳ маъно надорад)
-	endpoint := fmt.Sprintf("%s/videoBySearch/text/%s/perpage/%d", aparatBaseURL, url.PathEscape(query), perPage)
+	endpoint := fmt.Sprintf("%s/videoBySearch/text/%s/perpage/%d", aparatBaseURL, url.PathEscape(query), perPage*3)
 
 	body, err := c.http.Get(endpoint)
 	if err != nil {
@@ -63,19 +64,62 @@ func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, e
 			continue
 		}
 		var videos []AparatVideo
-		if err := json.Unmarshal(val, &videos); err == nil && len(videos) > 0 {
-			return videos, nil
+		if err := json.Unmarshal(val, &videos); err != nil {
+			utils.LogError("aparat: failed to parse video list under key=%q: %v", key, err)
+			continue
 		}
+		if len(videos) == 0 {
+			continue
+		}
+
+		relevant := filterRelevant(videos, query, perPage)
+		if len(relevant) > 0 {
+			return relevant, nil
+		}
+		utils.LogError("aparat: found %d videos for query=%q but none matched the title closely enough", len(videos), query)
+		return nil, nil
 	}
 
-	// Ҳеҷ калиде бо рӯйхати видео ёфт нашуд — эҳтимол шакли ҷавоби Aparat тағйир
-	// ёфтааст ё натиҷа воқеан холист. Барои ташхис пораи аввали ҷавобро сабт мекунем
 	preview := string(body)
 	if len(preview) > 400 {
 		preview = preview[:400] + "..."
 	}
 	utils.LogError("aparat: no video list found in response for query=%q, keys=%v, body preview: %s", query, mapKeys(raw), preview)
 	return nil, nil
+}
+
+// filterRelevant видеоҳоеро мегузаронад, ки унвонашон ҳадди ақал як калимаи
+// боаҳамияти матни ҷустуҷӯро дар бар мегирад — ин пеши роҳи нишон додани
+// видеоҳои тасодуфан аз рӯи Aparat-и худ баргардондашударо мегирад
+func filterRelevant(videos []AparatVideo, query string, limit int) []AparatVideo {
+	words := significantWords(query)
+
+	var result []AparatVideo
+	for _, v := range videos {
+		titleLower := strings.ToLower(v.Title)
+		for _, w := range words {
+			if strings.Contains(titleLower, w) {
+				result = append(result, v)
+				break
+			}
+		}
+		if len(result) >= limit {
+			break
+		}
+	}
+	return result
+}
+
+// significantWords калимаҳои ≥3-ҳарфаи матнро (бе ҳарф хурд) бармегардонад,
+// то калимаҳои хеле кӯтоҳ (масалан "the", "of") монандии бардурӯғ надиҳанд
+func significantWords(text string) []string {
+	var words []string
+	for _, w := range strings.Fields(strings.ToLower(text)) {
+		if len(w) >= 3 {
+			words = append(words, w)
+		}
+	}
+	return words
 }
 
 func mapKeys(m map[string]json.RawMessage) []string {
