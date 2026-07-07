@@ -154,7 +154,16 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 	}()
 
 	if update.CallbackQuery != nil {
-		routeCallback(d, update.CallbackQuery)
+		cb := update.CallbackQuery
+		if cb.Data == "checksub" {
+			handlers.HandleCheckSubscriptionCallback(d, cb)
+			return
+		}
+		if subscribed, _ := handlers.CheckSubscription(d, cb.From.ID); !subscribed {
+			handlers.HandleBlockedCallback(d, cb)
+			return
+		}
+		routeCallback(d, cb)
 		return
 	}
 
@@ -163,6 +172,10 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 	}
 
 	msg := update.Message
+
+	if !handlers.EnsureSubscribed(d, msg.From.ID, msg.Chat.ID) {
+		return
+	}
 
 	if msg.IsCommand() {
 		routeCommand(d, msg)
@@ -262,6 +275,8 @@ func routeCallback(d *handlers.Deps, cb *tgbotapi.CallbackQuery) {
 		handlers.HandleEpisodesCallback(d, cb)
 	case strings.HasPrefix(data, "seasons:"):
 		handlers.HandleSeasonMenuCallback(d, cb)
+	case strings.HasPrefix(data, "seasondub:"):
+		handlers.HandleSeasonDubCallback(d, cb)
 	case strings.HasPrefix(data, "season:"):
 		handlers.HandleSeasonEpisodesCallback(d, cb)
 	case strings.HasPrefix(data, "settings:"):

@@ -128,7 +128,8 @@ func SeasonMenuKeyboard(animeID int, totalEpisodes int, totalSeasons int, lang s
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
-// SeasonEpisodesKeyboard тугмаҳои гузариш байни фаслҳо ва бозгашт
+// SeasonEpisodesKeyboard тугмаҳои гузариш байни фаслҳо, ҷустуҷӯи дубляж
+// барои ҳамин фасл, ва бозгашт
 func SeasonEpisodesKeyboard(animeID int, seasonNum int, totalSeasons int, lang string) tgbotapi.InlineKeyboardMarkup {
 	var navRow []tgbotapi.InlineKeyboardButton
 	if seasonNum > 1 {
@@ -143,6 +144,9 @@ func SeasonEpisodesKeyboard(animeID int, seasonNum int, totalSeasons int, lang s
 		rows = append(rows, navRow)
 	}
 	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_find_dub_season"), fmt.Sprintf("seasondub:%d:%d", animeID, seasonNum)),
+		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_all_seasons"), fmt.Sprintf("seasons:%d", animeID)),
 		),

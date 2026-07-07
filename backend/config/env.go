@@ -44,17 +44,53 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+// defaultRequiredChannels спонсорҳое, ки соҳиби бот дархост кардааст — корбар
+// бояд ба ин каналҳо обуна бошад, то бот кор кунад. Тавассути REQUIRED_CHANNELS
+// (бо вергул ҷудошуда) дар Render метавон инро бе тағйири код иваз кард
+var defaultRequiredChannels = []string{
+	"tajikshop1",
+	"tajiktop",
+	"afsonaishab",
+	"NARUTO_DOUBLE_FARSI",
+	"ANIME_TJK_1",
+}
+
+// parseRequiredChannels номи каналҳоро аз рӯи вергул ҷудо мекунад ва ба
+// шакли "@username" меорад
+func parseRequiredChannels(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		channels := make([]string, len(defaultRequiredChannels))
+		for i, c := range defaultRequiredChannels {
+			channels[i] = "@" + c
+		}
+		return channels
+	}
+
+	var channels []string
+	for _, part := range strings.Split(raw, ",") {
+		name := strings.TrimSpace(part)
+		name = strings.TrimPrefix(name, "https://t.me/")
+		name = strings.TrimPrefix(name, "@")
+		if name == "" {
+			continue
+		}
+		channels = append(channels, "@"+name)
+	}
+	return channels
+}
+
 // LoadConfig .env-ро мехонад ва объекти Config-ро бармегардонад
 func LoadConfig() *Config {
 	loadDotEnv(".env")
 
 	return &Config{
-		TelegramToken:   getEnv("TELEGRAM_BOT_TOKEN", ""),
-		JikanBaseURL:    getEnv("JIKAN_BASE_URL", "https://api.jikan.moe/v4"),
-		DBPath:          getEnv("DB_PATH", "./data/anime.db"),
-		DefaultLanguage: getEnv("DEFAULT_LANGUAGE", "en"),
-		Debug:           getEnv("DEBUG", "false") == "true",
-		Port:            getEnv("PORT", "10000"),
-		YouTubeAPIKey:   getEnv("YOUTUBE_API_KEY", ""),
+		TelegramToken:    getEnv("TELEGRAM_BOT_TOKEN", ""),
+		JikanBaseURL:     getEnv("JIKAN_BASE_URL", "https://api.jikan.moe/v4"),
+		DBPath:           getEnv("DB_PATH", "./data/anime.db"),
+		DefaultLanguage:  getEnv("DEFAULT_LANGUAGE", "en"),
+		Debug:            getEnv("DEBUG", "false") == "true",
+		Port:             getEnv("PORT", "10000"),
+		YouTubeAPIKey:    getEnv("YOUTUBE_API_KEY", ""),
+		RequiredChannels: parseRequiredChannels(getEnv("REQUIRED_CHANNELS", "")),
 	}
 }
