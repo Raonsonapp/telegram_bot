@@ -84,6 +84,7 @@ var EnglishMessages = map[string]string{
 	"dub_season_fallback":           "😔 Couldn't find dubs matching this season's exact episode order. Here's what I found, it might be in there:",
 	"dub_season_searching":          "🎬 Searching for each episode of this season individually — this can take up to a minute, hang on...",
 	"dub_season_found_count":        "🎬 Found %d out of %d episodes:",
+	"btn_check_filimo":              "🎬 Check on Filimo",
 	"btn_feedback":                  "💬 Contact Admin",
 	"ask_feedback":                  "💬 I'm listening — write your question, complaint, suggestion, or feedback about the bot. I'll send it straight to the admin:",
 	"feedback_sent":                 "✅ Sent! The admin will see it and may reply here.",

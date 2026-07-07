@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -68,7 +69,7 @@ func HandleDubTextQuery(d *Deps, msg *tgbotapi.Message) {
 	raw := fetchRawDubResults(d, searchQuery, 4, 0, lang)
 	results := capResults(prefixResults(raw, lang, searchQuery), 6)
 	results = filterAliveLinks(results)
-	sendDubResults(d, chatID, sentMsg.MessageID, lang, results)
+	sendDubResults(d, chatID, sentMsg.MessageID, lang, results, searchQuery)
 }
 
 // HandleDubCallback callback-и "dub:<animeID>"-ро коркард мекунад — дар якчанд
@@ -97,7 +98,7 @@ func HandleDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	raw := fetchRawDubResults(d, anime.Title, 4, id, lang)
 	results := capResults(prefixResults(raw, lang, anime.Title), 6)
 	results = filterAliveLinks(results)
-	sendDubResults(d, chatID, sentMsg.MessageID, lang, results)
+	sendDubResults(d, chatID, sentMsg.MessageID, lang, results, anime.Title)
 }
 
 // HandleSeasonDubCallback callback-и "seasondub:<animeID>:<seasonNum>"-ро
@@ -146,7 +147,7 @@ func HandleSeasonDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 		if len(ordered) == 0 {
 			edit := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "dub_season_fallback"))
 			d.Bot.Send(edit)
-			sendDubResults(d, chatID, 0, lang, filterAliveLinks(prefixResults(raw, lang, anime.Title)))
+			sendDubResults(d, chatID, 0, lang, filterAliveLinks(prefixResults(raw, lang, anime.Title)), anime.Title)
 			return
 		}
 		for _, r := range ordered {
@@ -158,6 +159,11 @@ func HandleSeasonDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	}
 
 	results = filterAliveLinks(results)
+
+	if len(results) == 0 {
+		sendDubResults(d, chatID, sentMsg.MessageID, lang, results, anime.Title)
+		return
+	}
 
 	totalInSeason := maxEp - minEp + 1
 	summary := fmt.Sprintf(api.GetMessage(lang, "dub_season_found_count"), len(results), totalInSeason)
@@ -302,19 +308,46 @@ func searchSeasonPerEpisode(d *Deps, lang string, animeTitle string, minEp int, 
 	return results
 }
 
+// filimoSuggestionKeyboard тугмаи "Санҷидан дар Filimo"-ро месозад, ки ба
+// саҳифаи миёнарави худи мо мебарад (на бевосита ба Filimo, то матни тоҷикӣ
+// пеш аз он нишон дода шавад). Агар PublicBaseURL танзим нашуда бошад (масалан
+// дар рушди маҳаллӣ), nil бармегардонад — тугма нишон дода намешавад
+func filimoSuggestionKeyboard(d *Deps, lang string, animeTitle string) *tgbotapi.InlineKeyboardMarkup {
+	if d.Config.PublicBaseURL == "" {
+		return nil
+	}
+	link := d.Config.PublicBaseURL + "/filimo?title=" + url.QueryEscape(animeTitle)
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonURL(api.GetMessage(lang, "btn_check_filimo"), link)),
+	)
+	return &keyboard
+}
+
 // sendDubResults натиҷаҳоро нишон медиҳад. Пайвандҳо ҳамчун паёми оддии матнӣ
 // (на тугмаи inline) фиристода мешаванд — Telegram худаш барои чунин пайвандҳо
 // (алалхусус YouTube) видеои дарунсохти тамошошавандаро дар дохили чат нишон
 // медиҳад, корбар аз Telegram берун намебарояд.
 // Агар searchingMsgID=0 бошад (масалан вақте баъд аз паёми fallback фиристода
-// мешавад), паёми "ҷустуҷӯ дар ҳол..." тағйир дода намешавад, танҳо натиҷаҳо илова мешаванд
-func sendDubResults(d *Deps, chatID int64, searchingMsgID int, lang string, results []dubResult) {
+// мешавад), паёми "ҷустуҷӯ дар ҳол..." тағйир дода намешавад, танҳо натиҷаҳо илова мешаванд.
+// refTitle барои сохтани тугмаи пешниҳоди Filimo дар ҳолати натиҷаи холӣ лозим аст
+func sendDubResults(d *Deps, chatID int64, searchingMsgID int, lang string, results []dubResult, refTitle string) {
 	if len(results) == 0 {
+		noResultsText := api.GetMessage(lang, "dub_no_results")
+		keyboard := filimoSuggestionKeyboard(d, lang, refTitle)
 		if searchingMsgID != 0 {
-			edit := tgbotapi.NewEditMessageText(chatID, searchingMsgID, api.GetMessage(lang, "dub_no_results"))
-			d.Bot.Send(edit)
+			if keyboard != nil {
+				edit := tgbotapi.NewEditMessageTextAndMarkup(chatID, searchingMsgID, noResultsText, *keyboard)
+				d.Bot.Send(edit)
+			} else {
+				edit := tgbotapi.NewEditMessageText(chatID, searchingMsgID, noResultsText)
+				d.Bot.Send(edit)
+			}
 		} else {
-			sendText(d, chatID, api.GetMessage(lang, "dub_no_results"))
+			message := tgbotapi.NewMessage(chatID, noResultsText)
+			if keyboard != nil {
+				message.ReplyMarkup = *keyboard
+			}
+			d.Bot.Send(message)
 		}
 		return
 	}

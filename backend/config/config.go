@@ -11,4 +11,5 @@ type Config struct {
 	YouTubeAPIKey    string
 	RequiredChannels []string
 	AdminChatID      int64
+	PublicBaseURL    string
 }

@@ -109,5 +109,6 @@ func LoadConfig() *Config {
 		YouTubeAPIKey:    getEnv("YOUTUBE_API_KEY", ""),
 		RequiredChannels: parseRequiredChannels(getEnv("REQUIRED_CHANNELS", "")),
 		AdminChatID:      parseAdminChatID(getEnv("ADMIN_CHAT_ID", "")),
+		PublicBaseURL:    strings.TrimSuffix(getEnv("RENDER_EXTERNAL_URL", ""), "/"),
 	}
 }

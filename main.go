@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"os"
@@ -126,6 +128,7 @@ func startServer(port string, webhookPath string, bot *tgbotapi.BotAPI, updates 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
+	mux.HandleFunc("/filimo", filimoLandingHandler)
 
 	if webhookPath != "" {
 		mux.HandleFunc(webhookPath, func(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +146,36 @@ func startServer(port string, webhookPath string, bot *tgbotapi.BotAPI, updates 
 			utils.LogError("Хатогии HTTP-сервер: %v", err)
 		}
 	}()
+}
+
+// filimoLandingHandler саҳифаи хурди ба забони тоҷикӣ месозад, ки корбарро ба
+// Filimo (агар обунаи шахсӣ дошта бошад) равона мекунад. Мо худамон видеоро
+// намегирем — ин танҳо саҳифаи миёнарав бо матни тоҷикӣ аст, то таҷрибаи
+// корбар аз дохили Telegram (браузери дарунсохт) оғоз шавад
+func filimoLandingHandler(w http.ResponseWriter, r *http.Request) {
+	title := strings.TrimSpace(r.URL.Query().Get("title"))
+	heading := "Ҷустуҷӯ дар Filimo"
+	if title != "" {
+		heading = fmt.Sprintf("Ҷустуҷӯи \"%s\" дар Filimo", html.EscapeString(title))
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, `<!DOCTYPE html>
+<html lang="tg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filimo</title>
+<style>
+body{font-family:sans-serif;background:#111;color:#eee;text-align:center;padding:2rem 1rem}
+h1{font-size:1.3rem;margin-bottom:1rem}
+p{color:#aaa;line-height:1.5}
+a.btn{display:inline-block;margin-top:1.5rem;padding:0.9rem 1.8rem;background:#e5322d;color:#fff;
+text-decoration:none;border-radius:8px;font-weight:bold}
+</style></head>
+<body>
+<h1>%s</h1>
+<p>Filimo хизматрасонии пулакии эронист. Агар ту (ё дӯстат) обунаи он дошта бошӣ,
+метавонӣ анимеро дар он ҷо ҷустуҷӯ карда тамошо кунӣ.</p>
+<a class="btn" href="https://www.filimo.com" target="_blank">Кушодани Filimo</a>
+</body></html>`, heading)
 }
 
 // routeUpdate ҳар як update-и воридотиро ба handler-и дурусташ равона мекунад
