@@ -11,7 +11,7 @@ type UserSettings struct {
 var SupportedLanguages = map[string]string{
 	"en": "English 🇬🇧",
 	"ru": "Русский 🇷🇺",
-	"fa": "فارسی 🇮🇷",
+	"fa": "Тоҷикӣ 🇹🇯",
 }
 
 // DefaultSettings танзимоти пешфарз барои корбари нав

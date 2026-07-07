@@ -14,7 +14,7 @@ func LanguageKeyboard() tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("Русский 🇷🇺", "lang:ru"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("فارسی 🇮🇷", "lang:fa"),
+			tgbotapi.NewInlineKeyboardButtonData("Тоҷикӣ 🇹🇯", "lang:fa"),
 		),
 	)
 }

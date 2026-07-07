@@ -150,6 +150,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_random"):
 			handlers.HandleRandomAnime(d, msg)
 			return
+		case buttonLabel(lang, "btn_mood"):
+			handlers.HandleMoodButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_top"):
 			handlers.HandleTopAnime(d, msg)
 			return
@@ -162,8 +165,14 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		}
 	}
 
-	// Агар корбар дар ҳолати "мунтазири ҷустуҷӯ" бошад ё на, ба ҳар ҳол
-	// матни фиристодашударо ҳамчун дархости ҷустуҷӯи аниме мешуморем
+	// Агар корбар пас аз пахши "🎭 Аз рӯи кайфият пешниҳод кун" матн фиристода бошад,
+	// онро ҳамчун тавсифи кайфият коркард мекунем, на ҳамчун номи аниме
+	if handlers.PendingMood[msg.From.ID] {
+		handlers.HandleMoodText(d, msg)
+		return
+	}
+
+	// Дар ҳолати дигар, матни фиристодашударо ҳамчун дархости ҷустуҷӯи аниме мешуморем
 	handlers.HandlePlainTextSearch(d, msg)
 }
 

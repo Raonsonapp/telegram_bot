@@ -14,10 +14,11 @@ func MainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_random")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_mood")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_top")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_help")),
 		),
 	)

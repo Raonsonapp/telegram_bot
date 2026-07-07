@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 
 	"anime-bot/backend/models"
 	"anime-bot/backend/utils"
@@ -93,6 +95,31 @@ func (j *JikanClient) GetRandomAnime() (*models.Anime, error) {
 		return nil, fmt.Errorf("failed to parse random anime response: %w", err)
 	}
 	return &result.Data, nil
+}
+
+// SearchByGenres аниме-ҳоро мутобиқи жанр(ҳо)-и додашуда меёбад — барои
+// пешниҳод аз рӯи кайфияти корбар истифода мешавад
+func (j *JikanClient) SearchByGenres(genreIDs []int, limit int) ([]models.Anime, error) {
+	if limit <= 0 {
+		limit = 15
+	}
+	ids := make([]string, len(genreIDs))
+	for i, id := range genreIDs {
+		ids[i] = strconv.Itoa(id)
+	}
+	endpoint := fmt.Sprintf("%s/anime?genres=%s&order_by=score&sort=desc&limit=%d&sfw=true",
+		j.BaseURL, strings.Join(ids, ","), limit)
+
+	body, err := j.http.Get(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("genre search request failed: %w", err)
+	}
+
+	var result models.JikanSearchResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse genre search response: %w", err)
+	}
+	return result.Data, nil
 }
 
 // GetTopAnime рӯйхати беҳтарин аниме-ҳоро мегирад

@@ -36,13 +36,22 @@ func (h *HTTPClient) throttle() {
 	h.lastRequest = time.Now()
 }
 
-// Get дархости GET-ро месозад ва то 3 маротиба такрор мекунад агар хато рух диҳад
+// Get дархости GET-ро месозад ва то 4 маротиба такрор мекунад агар хато рух диҳад
 func (h *HTTPClient) Get(url string) ([]byte, error) {
 	var lastErr error
-	for attempt := 1; attempt <= 3; attempt++ {
+	for attempt := 1; attempt <= 4; attempt++ {
 		h.throttle()
 
-		resp, err := h.client.Get(url)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build request: %w", err)
+		}
+		// Баъзе провайдерҳо (масалан Cloudflare дар пеши Jikan) дархостҳои
+		// бе User-Agent-и муайянро дар вақти сербории сервер рад мекунанд
+		req.Header.Set("User-Agent", "anime-bot/1.0 (+https://github.com)")
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := h.client.Do(req)
 		if err != nil {
 			lastErr = err
 			time.Sleep(time.Duration(attempt) * 500 * time.Millisecond)
