@@ -25,6 +25,9 @@ func MainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_help")),
 		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_feedback")),
+		),
 	)
 }
 

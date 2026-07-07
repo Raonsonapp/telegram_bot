@@ -14,9 +14,16 @@ import (
 // на қисми дурусти дархостшуда
 var franchiseMarkers = []string{"boruto", "shippuden", "shippuuden", "movie", "the last", "ova", "special"}
 
-// episodeNumberPattern рақами қисмро аз унвон мебарорад: "قسمت 12", "episode 12",
-// "ep 12" ё "#12"
-var episodeNumberPattern = regexp.MustCompile(`(?i)(?:قسمت|episode|ep)\s*(\d+)|#(\d+)`)
+// structuredEpisodePattern рақами қисмро аз шаклҳои возеҳ мебарорад: "قسمت 12",
+// "episode 12", "ep 12", "ep.12", "e12" ё "#12". \b пеш аз калимаҳои лотинӣ
+// лозим аст, вагарна ҳарфи танҳои "e" метавонад ба охири калимаҳои маъмулӣ
+// (масалан "Movie 2014" -> "...moviE 2014") ба хатогӣ мувофиқат кунад
+var structuredEpisodePattern = regexp.MustCompile(`(?i)قسمت\s*[#:.\-]?\s*(\d{1,4})|\b(?:episode|ep\.?|e)\s*[#:.\-]?\s*(\d{1,4})\b|#(\d{1,4})`)
+
+// trailingNumberPattern вақте ки унвон бе калимаи "قسمت"/"episode" аст, вале
+// бо рақами танҳо дар охираш тамом мешавад (услуби маъмули фансаб-гурӯҳҳо,
+// масалан "Anime Name - 05" ё "Anime Name 05")
+var trailingNumberPattern = regexp.MustCompile(`(?:^|[\s\-_\[(])(\d{1,3})[\s\-_\])]*$`)
 
 // persianDigits ҳарф ба ҳарфи рақамҳои форсӣ/арабӣ ба рақами лотинӣ
 var persianDigits = map[rune]rune{
@@ -36,21 +43,28 @@ func normalizeDigits(s string) string {
 	return b.String()
 }
 
-// ExtractEpisodeNumber рақами қисмро аз унвони видео мебарорад (агар мавҷуд бошад)
+// ExtractEpisodeNumber рақами қисмро аз унвони видео мебарорад (агар мавҷуд бошад).
+// Аввал шаклҳои возеҳ ("قسمت 5", "episode 5") месанҷад; агар ёфт нашавад,
+// ба рақами танҳо дар охири унвон (услуби фансаб) мегузарад
 func ExtractEpisodeNumber(title string) (int, bool) {
-	normalized := normalizeDigits(title)
-	match := episodeNumberPattern.FindStringSubmatch(normalized)
-	if match == nil {
-		return 0, false
-	}
-	for _, group := range match[1:] {
-		if group != "" {
-			n, err := strconv.Atoi(group)
-			if err == nil {
-				return n, true
+	normalized := strings.TrimSpace(normalizeDigits(title))
+
+	if match := structuredEpisodePattern.FindStringSubmatch(normalized); match != nil {
+		for _, group := range match[1:] {
+			if group != "" {
+				if n, err := strconv.Atoi(group); err == nil {
+					return n, true
+				}
 			}
 		}
 	}
+
+	if match := trailingNumberPattern.FindStringSubmatch(normalized); match != nil {
+		if n, err := strconv.Atoi(match[1]); err == nil {
+			return n, true
+		}
+	}
+
 	return 0, false
 }
 

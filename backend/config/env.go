@@ -3,6 +3,7 @@ package config
 import (
 	"bufio"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -79,6 +80,21 @@ func parseRequiredChannels(raw string) []string {
 	return channels
 }
 
+// parseAdminChatID ID-и Telegram-и админро аз сатр мегирад. Агар холӣ ё
+// нодуруст бошад, 0 бармегардонад — дар ин ҳолат хусусияти "гуфтугӯ бо
+// админ" ғайрифаъол мемонад, на ин ки боти пурраро вайрон кунад
+func parseAdminChatID(raw string) int64 {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0
+	}
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return id
+}
+
 // LoadConfig .env-ро мехонад ва объекти Config-ро бармегардонад
 func LoadConfig() *Config {
 	loadDotEnv(".env")
@@ -92,5 +108,6 @@ func LoadConfig() *Config {
 		Port:             getEnv("PORT", "10000"),
 		YouTubeAPIKey:    getEnv("YOUTUBE_API_KEY", ""),
 		RequiredChannels: parseRequiredChannels(getEnv("REQUIRED_CHANNELS", "")),
+		AdminChatID:      parseAdminChatID(getEnv("ADMIN_CHAT_ID", "")),
 	}
 }

@@ -10,4 +10,5 @@ type Config struct {
 	Port             string
 	YouTubeAPIKey    string
 	RequiredChannels []string
+	AdminChatID      int64
 }

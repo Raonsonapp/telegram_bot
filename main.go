@@ -173,8 +173,17 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 
 	msg := update.Message
 
-	if !handlers.EnsureSubscribed(d, msg.From.ID, msg.Chat.ID) {
+	// Агар ин ҷавоби админ ба паёми фиристодашудаи корбар бошад, онро ба
+	// корбар мефиристем ва аз коркарди минбаъда мегузарем (админ аз обунаи
+	// ҳатмӣ низ озод аст)
+	if handlers.HandleAdminReply(d, msg) {
 		return
+	}
+
+	if msg.Chat.ID != d.Config.AdminChatID {
+		if !handlers.EnsureSubscribed(d, msg.From.ID, msg.Chat.ID) {
+			return
+		}
 	}
 
 	if msg.IsCommand() {
@@ -239,6 +248,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_profile"):
 			handlers.HandleProfileButton(d, msg)
 			return
+		case buttonLabel(lang, "btn_feedback"):
+			handlers.HandleFeedbackButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_help"):
 			handlers.HandleHelp(d, msg)
 			return
@@ -256,6 +268,13 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 	// бошад, онро ҳамчун номи анимеи ҷустуҷӯшаванда барои дубляж коркард мекунем
 	if handlers.PendingDub[msg.From.ID] {
 		handlers.HandleDubTextQuery(d, msg)
+		return
+	}
+
+	// Агар корбар пас аз пахши "💬 Бо админ гап зан" матн фиристода бошад,
+	// онро ба админ мефиристем
+	if handlers.PendingFeedback[msg.From.ID] {
+		handlers.HandleFeedbackText(d, msg)
 		return
 	}
 

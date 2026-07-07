@@ -127,7 +127,11 @@ func HandleSeasonDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	searchingMsg := tgbotapi.NewMessage(chatID, api.GetMessage(lang, "dub_searching"))
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
-	raw := fetchRawDubResults(d, anime.Title, 15, animeID)
+	// Барои фасл бо тартиб ёфтани ҳар 25 қисм, ба захираи хеле бештари номзад
+	// ниёз аст, назар ба ҷустуҷӯи оддӣ — Aparat/Dailymotion сеҳмияи маҳдуд
+	// надоранд, барои ҳамин аз онҳо бисёртар мегирем; YouTube (сеҳмияи маҳдуд
+	// дорад) миёна мемонад
+	raw := fetchRawDubResultsWithLimits(d, anime.Title, dubSearchLimits{Aparat: 40, Dailymotion: 40, YouTube: 10, MaxRaw: 90}, animeID)
 	ordered := api.FilterBySeasonRange(raw, func(r rawDubResult) string { return r.Title }, anime.Title, minEp, maxEp)
 
 	if len(ordered) == 0 {
@@ -199,13 +203,29 @@ func prefixResults(raw []rawDubResult) []dubResult {
 	return results
 }
 
-// fetchRawDubResults ҳамаи платформаҳои видеоро мепурсад ва натиҷаҳоро якҷоя
-// мекунад (бе пешванди манбаъ). Агар як платформа хато диҳад ё чизе наёбад,
-// платформаҳои дигар ҳамоно санҷида мешаванд
+// dubSearchLimits шумораи натиҷаҳое, ки аз ҳар платформа дархост карда мешавад
+type dubSearchLimits struct {
+	Aparat      int
+	Dailymotion int
+	YouTube     int
+	MaxRaw      int
+}
+
+// fetchRawDubResults ҳамаи платформаҳои видеоро бо ҳадди пешфарз (мувофиқ ба
+// ҷустуҷӯи оддӣ) мепурсад
 func fetchRawDubResults(d *Deps, title string, perSource int, animeID int) []rawDubResult {
+	return fetchRawDubResultsWithLimits(d, title, dubSearchLimits{
+		Aparat: perSource, Dailymotion: perSource, YouTube: perSource, MaxRaw: 30,
+	}, animeID)
+}
+
+// fetchRawDubResultsWithLimits ҳамаи платформаҳои видеоро мепурсад ва
+// натиҷаҳоро якҷоя мекунад (бе пешванди манбаъ). Агар як платформа хато диҳад
+// ё чизе наёбад, платформаҳои дигар ҳамоно санҷида мешаванд
+func fetchRawDubResultsWithLimits(d *Deps, title string, limits dubSearchLimits, animeID int) []rawDubResult {
 	var raw []rawDubResult
 
-	aparatVideos, err := d.Aparat.SearchVideos(title, perSource)
+	aparatVideos, err := d.Aparat.SearchVideos(title, limits.Aparat)
 	if err != nil {
 		utils.LogError("aparat search failed for anime=%d: %v", animeID, err)
 	}
@@ -213,7 +233,7 @@ func fetchRawDubResults(d *Deps, title string, perSource int, animeID int) []raw
 		raw = append(raw, rawDubResult{Source: "Aparat", Title: v.Title, URL: v.URL()})
 	}
 
-	dailymotionVideos, err := d.Dailymotion.SearchVideos(title, perSource)
+	dailymotionVideos, err := d.Dailymotion.SearchVideos(title, limits.Dailymotion)
 	if err != nil {
 		utils.LogError("dailymotion search failed for anime=%d: %v", animeID, err)
 	}
@@ -224,7 +244,7 @@ func fetchRawDubResults(d *Deps, title string, perSource int, animeID int) []raw
 	if d.YouTube.Enabled() {
 		// Дар YouTube ҷустуҷӯи танҳо номи аниме бисёр натиҷаи расмии бе дубляж
 		// медиҳад — "дубле форсӣ" мушаххас каналҳои дубляжро меёбад
-		youtubeVideos, err := d.YouTube.SearchVideos(title+" دوبله فارسی", perSource)
+		youtubeVideos, err := d.YouTube.SearchVideos(title+" دوبله فارسی", limits.YouTube)
 		if err != nil {
 			utils.LogError("youtube search failed for anime=%d: %v", animeID, err)
 		}
@@ -233,9 +253,8 @@ func fetchRawDubResults(d *Deps, title string, perSource int, animeID int) []raw
 		}
 	}
 
-	const maxRaw = 30
-	if len(raw) > maxRaw {
-		raw = raw[:maxRaw]
+	if limits.MaxRaw > 0 && len(raw) > limits.MaxRaw {
+		raw = raw[:limits.MaxRaw]
 	}
 	return raw
 }

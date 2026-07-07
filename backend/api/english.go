@@ -79,4 +79,8 @@ var EnglishMessages = map[string]string{
 	"dub_results_title":   "🎬 Found these on Aparat:",
 	"btn_find_dub_season": "🎬 Dub for this Season",
 	"dub_season_fallback": "😔 Couldn't find dubs matching this season's exact episode order. Here's what I found, it might be in there:",
+	"btn_feedback":        "💬 Contact Admin",
+	"ask_feedback":        "💬 I'm listening — write your question, complaint, suggestion, or feedback about the bot. I'll send it straight to the admin:",
+	"feedback_sent":       "✅ Sent! The admin will see it and may reply here.",
+	"admin_reply_prefix":  "💬 Admin's reply:",
 }
