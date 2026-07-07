@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"anime-bot/backend/utils"
 )
@@ -72,7 +71,7 @@ func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, e
 			continue
 		}
 
-		relevant := filterRelevant(videos, query, perPage)
+		relevant := filterByRelevance(videos, func(v AparatVideo) string { return v.Title }, query, perPage)
 		if len(relevant) > 0 {
 			return relevant, nil
 		}
@@ -86,40 +85,6 @@ func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, e
 	}
 	utils.LogError("aparat: no video list found in response for query=%q, keys=%v, body preview: %s", query, mapKeys(raw), preview)
 	return nil, nil
-}
-
-// filterRelevant видеоҳоеро мегузаронад, ки унвонашон ҳадди ақал як калимаи
-// боаҳамияти матни ҷустуҷӯро дар бар мегирад — ин пеши роҳи нишон додани
-// видеоҳои тасодуфан аз рӯи Aparat-и худ баргардондашударо мегирад
-func filterRelevant(videos []AparatVideo, query string, limit int) []AparatVideo {
-	words := significantWords(query)
-
-	var result []AparatVideo
-	for _, v := range videos {
-		titleLower := strings.ToLower(v.Title)
-		for _, w := range words {
-			if strings.Contains(titleLower, w) {
-				result = append(result, v)
-				break
-			}
-		}
-		if len(result) >= limit {
-			break
-		}
-	}
-	return result
-}
-
-// significantWords калимаҳои ≥3-ҳарфаи матнро (бе ҳарф хурд) бармегардонад,
-// то калимаҳои хеле кӯтоҳ (масалан "the", "of") монандии бардурӯғ надиҳанд
-func significantWords(text string) []string {
-	var words []string
-	for _, w := range strings.Fields(strings.ToLower(text)) {
-		if len(w) >= 3 {
-			words = append(words, w)
-		}
-	}
-	return words
 }
 
 func mapKeys(m map[string]json.RawMessage) []string {

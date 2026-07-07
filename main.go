@@ -46,17 +46,19 @@ func main() {
 	anilistClient := api.NewAniListClient()
 	animeProvider := api.NewAnimeProvider(jikanClient, anilistClient)
 	aparatClient := api.NewAparatClient()
+	dailymotionClient := api.NewDailymotionClient()
 	translator := utils.NewTranslator()
 	cache := utils.NewCache(10 * time.Minute)
 
 	deps := &handlers.Deps{
-		Bot:        bot,
-		DB:         db,
-		Jikan:      animeProvider,
-		Aparat:     aparatClient,
-		Translator: translator,
-		Cache:      cache,
-		Config:     cfg,
+		Bot:         bot,
+		DB:          db,
+		Jikan:       animeProvider,
+		Aparat:      aparatClient,
+		Dailymotion: dailymotionClient,
+		Translator:  translator,
+		Cache:       cache,
+		Config:      cfg,
 	}
 
 	var updates <-chan tgbotapi.Update
