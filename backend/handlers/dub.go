@@ -182,8 +182,11 @@ type episodeHit struct {
 // умумии "Naruto". Ин муҳим аст, зеро ҷустуҷӯи умумӣ танҳо натиҷаҳои болои
 // рейтинги худи платформаро медиҳад, ки метавонанд бисёр қисмҳоро дар бар
 // нагиранд. Aparat ва Dailymotion ҳамзамон (дар ду goroutine) санҷида
-// мешаванд, то вақти умумӣ кӯтоҳтар шавад; YouTube (сеҳмияи маҳдуд дорад)
-// дар ин ҷустуҷӯи серхарҷ иштирок намекунад
+// мешаванд, то вақти умумӣ кӯтоҳтар шавад. YouTube (сеҳмияи маҳдуд дорад)
+// дар ин ҷустуҷӯи серхарҷи аввала иштирок намекунад, вале баъд танҳо барои
+// қисмҳое, ки на Aparat ва на Dailymotion ёфтанд, санҷида мешавад — то
+// ҳарчи бештар қисм пайдо шавад, бе харҷ кардани сеҳмияи YouTube барои
+// қисмҳое, ки аллакай ёфта шудаанд
 func searchSeasonPerEpisode(d *Deps, lang string, animeTitle string, minEp int, maxEp int, animeID int) []dubResult {
 	aparatHits := make(map[int]episodeHit)
 	dailymotionHits := make(map[int]episodeHit)
@@ -235,11 +238,41 @@ func searchSeasonPerEpisode(d *Deps, lang string, animeTitle string, minEp int, 
 
 	wg.Wait()
 
+	youtubeHits := make(map[int]episodeHit)
+	if d.YouTube.Enabled() {
+		for ep := minEp; ep <= maxEp; ep++ {
+			if _, ok := aparatHits[ep]; ok {
+				continue
+			}
+			if _, ok := dailymotionHits[ep]; ok {
+				continue
+			}
+			query := fmt.Sprintf("%s episode %d دوبله فارسی", animeTitle, ep)
+			videos, err := d.YouTube.SearchVideos(query, 3)
+			if err != nil {
+				utils.LogError("youtube per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
+				continue
+			}
+			for _, v := range videos {
+				if api.IsFranchiseMismatch(animeTitle, v.Title) {
+					continue
+				}
+				if foundEp, ok := api.ExtractEpisodeNumber(v.Title); ok && foundEp == ep {
+					youtubeHits[ep] = episodeHit{source: "YouTube", title: v.Title, url: v.URL}
+					break
+				}
+			}
+		}
+	}
+
 	results := make([]dubResult, 0, maxEp-minEp+1)
 	for ep := minEp; ep <= maxEp; ep++ {
 		hit, ok := aparatHits[ep]
 		if !ok {
 			hit, ok = dailymotionHits[ep]
+		}
+		if !ok {
+			hit, ok = youtubeHits[ep]
 		}
 		if !ok {
 			continue
