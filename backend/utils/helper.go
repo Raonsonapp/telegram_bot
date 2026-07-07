@@ -61,3 +61,15 @@ func JoinGenres(genres []string) string {
 	}
 	return strings.Join(genres, ", ")
 }
+
+// ContainsCyrillic месанҷад, ки оё матн ҳарфҳои кириллӣ (тоҷикӣ/русӣ) дорад.
+// Jikan/AniList танҳо бо номи англисӣ/лотинии аниме ҷустуҷӯ мекунанд, барои
+// ҳамин ин барои муайян кардани лозимии тарҷумаи дархости ҷустуҷӯ истифода мешавад
+func ContainsCyrillic(s string) bool {
+	for _, r := range s {
+		if r >= 0x0400 && r <= 0x04FF {
+			return true
+		}
+	}
+	return false
+}

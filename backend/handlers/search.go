@@ -50,9 +50,19 @@ func PerformSearch(d *Deps, chatID int64, telegramID int64, query string) {
 	searchingMsg := tgbotapi.NewMessage(chatID, fmt.Sprintf(api.GetMessage(lang, "searching"), query))
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
-	cacheKey := "search:" + strings.ToLower(query)
+	// Jikan/AniList танҳо бо номи англисӣ/лотинии аниме ҷустуҷӯ мекунанд — агар
+	// корбар бо алифбои кириллӣ (тоҷикӣ/русӣ) навишта бошад, аввал ба англисӣ
+	// тарҷума мекунем, вагарна ҳеҷ натиҷа намеёбад
+	apiQuery := query
+	if utils.ContainsCyrillic(query) {
+		if translated := d.Translator.TranslateToEnglish(query, lang); translated != "" && translated != query {
+			apiQuery = translated
+		}
+	}
 
-	animeResults, err := d.Jikan.SearchAnime(query, 6)
+	cacheKey := "search:" + strings.ToLower(apiQuery)
+
+	animeResults, err := d.Jikan.SearchAnime(apiQuery, 6)
 	if err != nil {
 		utils.LogError("search failed for query=%q: %v", query, err)
 		editErr := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "error_generic"))

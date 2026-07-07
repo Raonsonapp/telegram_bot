@@ -41,7 +41,10 @@ func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, e
 	if perPage <= 0 {
 		perPage = 5
 	}
-	endpoint := fmt.Sprintf("%s/videoBySearch/text/%s/perpage/%d", aparatBaseURL, url.QueryEscape(query), perPage)
+	// Aparat қиматҳоро ҳамчун қисмҳои роҳ (path segments) мегирад, на параметри
+	// query-и URL — барои ҳамин PathEscape лозим аст, на QueryEscape (вагарна
+	// фазоҳо ба "+" табдил меёбанд, ки дар роҳ маъно надорад)
+	endpoint := fmt.Sprintf("%s/videoBySearch/text/%s/perpage/%d", aparatBaseURL, url.PathEscape(query), perPage)
 
 	body, err := c.http.Get(endpoint)
 	if err != nil {

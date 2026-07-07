@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-// Translator тавсифи анимеро (матни озод) ба забони интихобкардаи корбар тарҷума мекунад.
-// Агар хидмати тарҷума дастнорас бошад, серкор бошад ё хато диҳад, ин НЕСТ хатогӣ
-// ҳисоб мешавад — танҳо матни аслӣ (англисӣ) бе тарҷума бармегардад, то саҳифаи
-// аниме ҳеҷ гоҳ ба сабаби ин хидмати иловагӣ вайрон нашавад
+// Translator тавсифи анимеро (матни озод) ва дархости ҷустуҷӯи корбарро байни
+// забонҳо тарҷума мекунад. Агар хидмати тарҷума дастнорас бошад, серкор бошад
+// ё хато диҳад, ин НЕСТ хатогӣ ҳисоб мешавад — танҳо матни аслӣ бе тарҷума
+// бармегардад, то ҳеҷ гоҳ ба сабаби ин хидмати иловагӣ чизе вайрон нашавад
 type Translator struct {
 	client *http.Client
 }
@@ -31,13 +31,33 @@ var translateLangCodes = map[string]string{
 // Translate матни англисиро ба забони lang тарҷума мекунад (масалан "ru", "fa").
 // Барои забонҳое, ки тарҷума дастгирӣ намешавад (масалан "en"), матни аслиро бармегардонад
 func (t *Translator) Translate(text string, lang string) string {
-	text = strings.TrimSpace(text)
 	target, ok := translateLangCodes[lang]
-	if !ok || text == "" {
+	if !ok {
+		return text
+	}
+	return t.translate(text, "en|"+target)
+}
+
+// TranslateToEnglish матни бо забони lang (масалан "ru" ё "fa") навишташударо ба
+// англисӣ тарҷума мекунад — барои он ки Jikan/AniList танҳо бо номи англисӣ/лотинии
+// аниме ҷустуҷӯ мекунанд, вале корбарони тоҷику рус бо алифбои худашон менависанд
+func (t *Translator) TranslateToEnglish(text string, lang string) string {
+	source, ok := translateLangCodes[lang]
+	if !ok {
+		return text
+	}
+	return t.translate(text, source+"|en")
+}
+
+// translate дархостро ба хидмати MyMemory мефиристад. Дар ҳар гуна хато ё
+// ҷавоби номуайян, матни аслиро бе тағйир бармегардонад
+func (t *Translator) translate(text string, langpair string) string {
+	text = strings.TrimSpace(text)
+	if text == "" {
 		return text
 	}
 
-	endpoint := fmt.Sprintf("https://api.mymemory.translated.net/get?q=%s&langpair=en|%s", url.QueryEscape(text), target)
+	endpoint := fmt.Sprintf("https://api.mymemory.translated.net/get?q=%s&langpair=%s", url.QueryEscape(text), langpair)
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return text
