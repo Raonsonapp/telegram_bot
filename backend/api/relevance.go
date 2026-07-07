@@ -2,6 +2,18 @@ package api
 
 import "strings"
 
+// Дарозии оддии як қисми аниме (бо OP/ED) — видеоҳое, ки берун аз ин доира
+// ҳастанд (филмҳо, реклама, компиляцияи якчанд қисм якҷоя) қисми алоҳида нестанд
+const (
+	minEpisodeSeconds = 15 * 60
+	maxEpisodeSeconds = 35 * 60
+)
+
+// isEpisodeLength месанҷад, ки оё дарозии видео ба дарозии як қисми аниме монанд аст
+func isEpisodeLength(seconds int) bool {
+	return seconds >= minEpisodeSeconds && seconds <= maxEpisodeSeconds
+}
+
 // significantWords калимаҳои ≥3-ҳарфаи матнро (бе ҳарфи хурд) бармегардонад,
 // то калимаҳои хеле кӯтоҳ (масалан "the", "of") монандии бардурӯғ надиҳанд
 func significantWords(text string) []string {
@@ -14,22 +26,35 @@ func significantWords(text string) []string {
 	return words
 }
 
-// filterByRelevance аз рӯйхати натиҷаҳои ҷустуҷӯи видео танҳо онҳоеро мегузаронад,
-// ки унвонашон ҳадди ақал як калимаи боаҳамияти матни ҷустуҷӯро дар бар мегирад —
-// ин пеши роҳи нишон додани видеоҳои комилан бемаъние, ки платформа тасодуфан
-// бармегардонад, мегирад
-func filterByRelevance[T any](items []T, titleOf func(T) string, query string, limit int) []T {
+// filterEpisodeCandidates аз рӯйхати натиҷаҳои ҷустуҷӯи видео танҳо онҳоеро
+// мегузаронад, ки (1) унвонашон ба матни ҷустуҷӯ рабт дорад ва (2) дарозиашон
+// ба як қисми аниме монанд аст (агар дарозӣ маълум бошад). Ин ҳам видеоҳои
+// комилан бемаънӣ ва ҳам филмҳо/компиляцияҳоро (на қисмҳои алоҳида) хориҷ мекунад.
+// Агар дарозӣ маълум набошад (durationOf ok=false бармегардонад), санҷиши
+// дарозӣ гузаронда мешавад — беҳтар аст натиҷаи эҳтимолӣ нишон дода шавад,
+// то ҳеҷ натиҷа нишон надодан
+func filterEpisodeCandidates[T any](items []T, titleOf func(T) string, durationOf func(T) (seconds int, known bool), query string, limit int) []T {
 	words := significantWords(query)
 
 	var result []T
 	for _, item := range items {
 		titleLower := strings.ToLower(titleOf(item))
+		matched := false
 		for _, w := range words {
 			if strings.Contains(titleLower, w) {
-				result = append(result, item)
+				matched = true
 				break
 			}
 		}
+		if !matched {
+			continue
+		}
+
+		if seconds, known := durationOf(item); known && !isEpisodeLength(seconds) {
+			continue
+		}
+
+		result = append(result, item)
 		if len(result) >= limit {
 			break
 		}

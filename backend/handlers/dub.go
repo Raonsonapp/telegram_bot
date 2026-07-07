@@ -46,17 +46,16 @@ func HandleDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
-	var rows [][]tgbotapi.InlineKeyboardButton
-	for _, r := range results {
-		title := utils.Truncate(r.Title, 50)
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL(fmt.Sprintf("▶️ %s", title), r.URL),
-		))
-	}
-	keyb := tgbotapi.NewInlineKeyboardMarkup(rows...)
-
-	edit := tgbotapi.NewEditMessageTextAndMarkup(chatID, sentMsg.MessageID, api.GetMessage(lang, "dub_results_title"), keyb)
+	edit := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "dub_results_title"))
 	d.Bot.Send(edit)
+
+	// Пайвандҳоро ҳамчун паёми оддии матнӣ (на тугмаи inline) мефиристем — Telegram
+	// худаш барои чунин пайвандҳо (алалхусус YouTube) видеои дарунсохти
+	// тамошошавандаро дар дохили чат нишон медиҳад, корбар аз Telegram берун намебарояд
+	for _, r := range results {
+		message := tgbotapi.NewMessage(chatID, fmt.Sprintf("%s\n%s", r.Title, r.URL))
+		d.Bot.Send(message)
+	}
 }
 
 // searchAllDubSources ҳамаи платформаҳои видеоро мепурсад ва натиҷаҳоро якҷоя

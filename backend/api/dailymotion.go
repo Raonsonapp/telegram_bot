@@ -14,8 +14,9 @@ const dailymotionEndpoint = "https://api.dailymotion.com/videos"
 
 // DailymotionVideo як видеои ёфтшуда дар Dailymotion
 type DailymotionVideo struct {
-	Title string `json:"title"`
-	URL   string `json:"url"`
+	Title    string `json:"title"`
+	URL      string `json:"url"`
+	Duration int    `json:"duration"`
 }
 
 // DailymotionClient client барои ҷустуҷӯи видео дар Dailymotion
@@ -35,7 +36,7 @@ func (c *DailymotionClient) SearchVideos(query string, limit int) ([]Dailymotion
 		limit = 5
 	}
 	endpoint := fmt.Sprintf(
-		"%s?search=%s&fields=title,url&limit=%d&sort=relevance",
+		"%s?search=%s&fields=title,url,duration&limit=%d&sort=relevance",
 		dailymotionEndpoint, url.QueryEscape(query), limit*3,
 	)
 
@@ -51,5 +52,10 @@ func (c *DailymotionClient) SearchVideos(query string, limit int) ([]Dailymotion
 		return nil, fmt.Errorf("failed to parse dailymotion response: %w", err)
 	}
 
-	return filterByRelevance(result.List, func(v DailymotionVideo) string { return v.Title }, query, limit), nil
+	return filterEpisodeCandidates(
+		result.List,
+		func(v DailymotionVideo) string { return v.Title },
+		func(v DailymotionVideo) (int, bool) { return v.Duration, v.Duration > 0 },
+		query, limit,
+	), nil
 }

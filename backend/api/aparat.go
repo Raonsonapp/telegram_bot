@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 
 	"anime-bot/backend/utils"
 )
@@ -12,11 +14,30 @@ import (
 // зиёда аз дубляжҳои форсӣ/тоҷикии аниме ҷойгир мешаванд)
 const aparatBaseURL = "https://www.aparat.com/etc/api"
 
+// aparatFlexInt баъзан майдонҳои рақамии Aparat (масалан duration) ҳамчун сатр
+// ва баъзан ҳамчун рақам бармегарданд — ин навъ ҳардуро мегирад
+type aparatFlexInt int
+
+func (n *aparatFlexInt) UnmarshalJSON(data []byte) error {
+	trimmed := strings.Trim(string(data), `"`)
+	if trimmed == "" {
+		*n = 0
+		return nil
+	}
+	v, err := strconv.Atoi(trimmed)
+	if err != nil {
+		return err
+	}
+	*n = aparatFlexInt(v)
+	return nil
+}
+
 // AparatVideo як видеои ёфтшуда дар Aparat
 type AparatVideo struct {
-	Title    string `json:"title"`
-	UID      string `json:"uid"`
-	Username string `json:"username"`
+	Title    string        `json:"title"`
+	UID      string        `json:"uid"`
+	Username string        `json:"username"`
+	Duration aparatFlexInt `json:"duration"`
 }
 
 // URL суроғаи тамошои видеоро дар Aparat месозад
@@ -71,7 +92,12 @@ func (c *AparatClient) SearchVideos(query string, perPage int) ([]AparatVideo, e
 			continue
 		}
 
-		relevant := filterByRelevance(videos, func(v AparatVideo) string { return v.Title }, query, perPage)
+		relevant := filterEpisodeCandidates(
+			videos,
+			func(v AparatVideo) string { return v.Title },
+			func(v AparatVideo) (int, bool) { return int(v.Duration), v.Duration > 0 },
+			query, perPage,
+		)
 		if len(relevant) > 0 {
 			return relevant, nil
 		}
