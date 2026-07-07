@@ -7,12 +7,21 @@ import (
 	"strings"
 )
 
-// franchiseMarkers калимаҳое, ки одатан унвони як қисми алоҳидаи франшизаро
-// (давом, spin-off, филм) нишон медиҳанд. Агар унвони мақсаднок (масалан "Naruto")
-// яке аз инҳоро дар бар нагирад, вале натиҷаи видео дошта бошад, эҳтимол ин
+// franchiseMarkerGroups гурӯҳҳои калимаҳои муодил (лотинӣ + форсӣ), ки одатан
+// унвони як қисми алоҳидаи франшизаро (давом, spin-off, филм) нишон медиҳанд.
+// Агар унвони видео яке аз ин калимаҳоро дошта бошад, вале унвони мақсаднок
+// (масалан "Naruto") ҳеҷ кадоме аз ҳамон гурӯҳро дар бар нагирад, эҳтимол ин
 // натиҷа аз сериали дигари ҳамон франшиза аст (масалан Boruto ё Shippuden),
-// на қисми дурусти дархостшуда
-var franchiseMarkers = []string{"boruto", "shippuden", "shippuuden", "movie", "the last", "ova", "special"}
+// на қисми дурусти дархостшуда. Ҳар гурӯҳ якҷоя санҷида мешавад (на ҳарф ба
+// ҳарф) — вагарна масалан ҷустуҷӯи худи "Naruto Shippuden" (унвонаш бо лотинӣ)
+// нисбат ба натиҷаи форсии "شیپودن" ба хатогӣ ҳамчун беробита ҳисоб мешуд
+var franchiseMarkerGroups = [][]string{
+	{"boruto", "بوروتو"},
+	{"shippuden", "shippuuden", "شیپودن", "شیپوودن"},
+	{"movie", "the last", "فیلم"},
+	{"ova"},
+	{"special"},
+}
 
 // structuredEpisodePattern рақами қисмро аз шаклҳои возеҳ мебарорад: "قسمت 12",
 // "episode 12", "ep 12", "ep.12", "e12" ё "#12". \b пеш аз калимаҳои лотинӣ
@@ -73,8 +82,25 @@ func ExtractEpisodeNumber(title string) (int, bool) {
 func IsFranchiseMismatch(animeTitle string, videoTitle string) bool {
 	animeLower := strings.ToLower(animeTitle)
 	videoLower := strings.ToLower(videoTitle)
-	for _, marker := range franchiseMarkers {
-		if strings.Contains(videoLower, marker) && !strings.Contains(animeLower, marker) {
+	for _, group := range franchiseMarkerGroups {
+		videoHasMarker := false
+		for _, marker := range group {
+			if strings.Contains(videoLower, marker) {
+				videoHasMarker = true
+				break
+			}
+		}
+		if !videoHasMarker {
+			continue
+		}
+		animeHasMarker := false
+		for _, marker := range group {
+			if strings.Contains(animeLower, marker) {
+				animeHasMarker = true
+				break
+			}
+		}
+		if !animeHasMarker {
 			return true
 		}
 	}

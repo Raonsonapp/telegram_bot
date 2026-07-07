@@ -14,6 +14,34 @@ func isEpisodeLength(seconds int) bool {
 	return seconds >= minEpisodeSeconds && seconds <= maxEpisodeSeconds
 }
 
+// subtitleOnlyMarkers калимаҳое, ки нишон медиҳанд видео танҳо зерунвис дорад
+// (на дубляжи пурраи овозӣ). Ба мо танҳо дубляж лозим аст, на зерунвис —
+// агар унвон яке аз инҳоро дошта бошад ва ҳамзамон калимаи дубляжро надошта
+// бошад, ин видео хориҷ карда мешавад
+var subtitleOnlyMarkers = []string{"زیرنویس", "subtitle", "subbed", "softsub", "hardsub"}
+var dubMarkers = []string{"دوبله", "dub", "dubbed"}
+
+// isSubtitleOnly месанҷад, ки оё видео танҳо зерунвис аст (бе дубляж)
+func isSubtitleOnly(title string) bool {
+	lower := strings.ToLower(title)
+	hasSubtitleMarker := false
+	for _, m := range subtitleOnlyMarkers {
+		if strings.Contains(lower, m) {
+			hasSubtitleMarker = true
+			break
+		}
+	}
+	if !hasSubtitleMarker {
+		return false
+	}
+	for _, m := range dubMarkers {
+		if strings.Contains(lower, m) {
+			return false
+		}
+	}
+	return true
+}
+
 // significantWords калимаҳои ≥3-ҳарфаи матнро (бе ҳарфи хурд) бармегардонад,
 // то калимаҳои хеле кӯтоҳ (масалан "the", "of") монандии бардурӯғ надиҳанд
 func significantWords(text string) []string {
@@ -47,6 +75,10 @@ func filterEpisodeCandidates[T any](items []T, titleOf func(T) string, durationO
 			}
 		}
 		if !matched {
+			continue
+		}
+
+		if isSubtitleOnly(titleOf(item)) {
 			continue
 		}
 

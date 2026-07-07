@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -63,7 +66,8 @@ func HandleDubTextQuery(d *Deps, msg *tgbotapi.Message) {
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
 	raw := fetchRawDubResults(d, searchQuery, 4, 0)
-	results := capResults(prefixResults(raw), 6)
+	results := capResults(prefixResults(raw, lang, searchQuery), 6)
+	results = filterAliveLinks(results)
 	sendDubResults(d, chatID, sentMsg.MessageID, lang, results)
 }
 
@@ -91,7 +95,8 @@ func HandleDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	sentMsg, _ := d.Bot.Send(searchingMsg)
 
 	raw := fetchRawDubResults(d, anime.Title, 4, id)
-	results := capResults(prefixResults(raw), 6)
+	results := capResults(prefixResults(raw, lang, anime.Title), 6)
+	results = filterAliveLinks(results)
 	sendDubResults(d, chatID, sentMsg.MessageID, lang, results)
 }
 
@@ -132,7 +137,7 @@ func HandleSeasonDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	// Dailymotion-ро мебинад ва аксар вақт бисёр қисмҳоро гум мекунад), ҳар
 	// қисми фаслро АЛОҲИДА меҷӯем — ин сустар аст, вале имконияти ёфтани
 	// ҳамаи 25 қисмро хеле зиёд мекунад
-	results := searchSeasonPerEpisode(d, anime.Title, minEp, maxEp, animeID)
+	results := searchSeasonPerEpisode(d, lang, anime.Title, minEp, maxEp, animeID)
 
 	if len(results) == 0 {
 		// Ҳатто ҷустуҷӯи алоҳида чизе наёфт — ба ҷустуҷӯи умумии эҳтиётӣ мегузарем
@@ -141,17 +146,18 @@ func HandleSeasonDubCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 		if len(ordered) == 0 {
 			edit := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, api.GetMessage(lang, "dub_season_fallback"))
 			d.Bot.Send(edit)
-			sendDubResults(d, chatID, 0, lang, prefixResults(raw))
+			sendDubResults(d, chatID, 0, lang, filterAliveLinks(prefixResults(raw, lang, anime.Title)))
 			return
 		}
 		for _, r := range ordered {
-			ep, _ := api.ExtractEpisodeNumber(r.Title)
 			results = append(results, dubResult{
-				Title: fmt.Sprintf("📺 #%d — %s: %s", ep, r.Source, r.Title),
+				Title: buildResultLabel(lang, anime.Title, r.Source, r.Title),
 				URL:   r.URL,
 			})
 		}
 	}
+
+	results = filterAliveLinks(results)
 
 	totalInSeason := maxEp - minEp + 1
 	summary := fmt.Sprintf(api.GetMessage(lang, "dub_season_found_count"), len(results), totalInSeason)
@@ -178,7 +184,7 @@ type episodeHit struct {
 // нагиранд. Aparat ва Dailymotion ҳамзамон (дар ду goroutine) санҷида
 // мешаванд, то вақти умумӣ кӯтоҳтар шавад; YouTube (сеҳмияи маҳдуд дорад)
 // дар ин ҷустуҷӯи серхарҷ иштирок намекунад
-func searchSeasonPerEpisode(d *Deps, animeTitle string, minEp int, maxEp int, animeID int) []dubResult {
+func searchSeasonPerEpisode(d *Deps, lang string, animeTitle string, minEp int, maxEp int, animeID int) []dubResult {
 	aparatHits := make(map[int]episodeHit)
 	dailymotionHits := make(map[int]episodeHit)
 
@@ -188,7 +194,7 @@ func searchSeasonPerEpisode(d *Deps, animeTitle string, minEp int, maxEp int, an
 	go func() {
 		defer wg.Done()
 		for ep := minEp; ep <= maxEp; ep++ {
-			query := fmt.Sprintf("%s قسمت %d", animeTitle, ep)
+			query := fmt.Sprintf("%s قسمت %d دوبله", animeTitle, ep)
 			videos, err := d.Aparat.SearchVideos(query, 3)
 			if err != nil {
 				utils.LogError("aparat per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
@@ -209,7 +215,7 @@ func searchSeasonPerEpisode(d *Deps, animeTitle string, minEp int, maxEp int, an
 	go func() {
 		defer wg.Done()
 		for ep := minEp; ep <= maxEp; ep++ {
-			query := fmt.Sprintf("%s episode %d", animeTitle, ep)
+			query := fmt.Sprintf("%s episode %d دوبله فارسی", animeTitle, ep)
 			videos, err := d.Dailymotion.SearchVideos(query, 3)
 			if err != nil {
 				utils.LogError("dailymotion per-episode search failed anime=%d ep=%d: %v", animeID, ep, err)
@@ -239,7 +245,7 @@ func searchSeasonPerEpisode(d *Deps, animeTitle string, minEp int, maxEp int, an
 			continue
 		}
 		results = append(results, dubResult{
-			Title: fmt.Sprintf("📺 #%d — %s: %s", ep, hit.source, hit.title),
+			Title: buildResultLabel(lang, animeTitle, hit.source, hit.title),
 			URL:   hit.url,
 		})
 	}
@@ -282,13 +288,75 @@ func capResults(results []dubResult, max int) []dubResult {
 	return results
 }
 
-// prefixResults ба ҳар натиҷа номи манбаъро илова мекунад, то корбар донад аз куҷо омадааст
-func prefixResults(raw []rawDubResult) []dubResult {
+// prefixResults ба ҳар натиҷа лейбели пурраи маҳаллисозишударо месозад (ба
+// ҷои нишон додани унвони хоми платформа, ки одатан бо забони форсӣ аст)
+func prefixResults(raw []rawDubResult, lang string, refTitle string) []dubResult {
 	results := make([]dubResult, 0, len(raw))
 	for _, r := range raw {
-		results = append(results, dubResult{Title: r.Source + ": " + r.Title, URL: r.URL})
+		results = append(results, dubResult{Title: buildResultLabel(lang, refTitle, r.Source, r.Title), URL: r.URL})
 	}
 	return results
+}
+
+// buildResultLabel ба ҷои унвони хоми платформа (ки одатан бо забони форсӣ
+// аст ва корбар онро намефаҳмад), лейбели пурра дар забони интерфейси корбар
+// месозад — масалан "📺 Naruto — Қисми 5 (Aparat)" ба ҷои матни хоми форсӣ
+func buildResultLabel(lang, refTitle, source, rawTitle string) string {
+	if ep, ok := api.ExtractEpisodeNumber(rawTitle); ok {
+		epLabel := fmt.Sprintf(api.GetMessage(lang, "episode_line_label"), ep)
+		return fmt.Sprintf("📺 %s — %s (%s)", refTitle, epLabel, source)
+	}
+	return fmt.Sprintf("📺 %s (%s)", refTitle, source)
+}
+
+// linkCheckClient барои санҷиши зудаи он ки оё пайванди видео воқеан кор
+// мекунад (на 404-и вайроншуда), пеш аз фиристодан ба корбар
+var linkCheckClient = &http.Client{Timeout: 5 * time.Second}
+
+// isLinkAlive месанҷад, ки пайванд ҳанӯз дастрас аст. Аз GET бо Range
+// истифода мешавад (на HEAD), зеро баъзе платформаҳо (масалан Aparat) HEAD-ро
+// дуруст дастгирӣ намекунанд ва метавонанд хатои бардурӯғ диҳанд. Танҳо 404-и
+// возеҳ (саҳифа воқеан ҳазф шудааст) сабаби хориҷ кардан аст — дар ҳар гуна
+// ҳолати номуайян (хатои шабака, коди дигар) пайванд нигоҳ дошта мешавад,
+// беҳтар аз хориҷ кардани натиҷаи эҳтимолан дурусте, ки дар назорати мо нест
+func isLinkAlive(rawURL string) bool {
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err != nil {
+		return true
+	}
+	req.Header.Set("User-Agent", "anime-bot/1.0 (+https://github.com)")
+	req.Header.Set("Range", "bytes=0-2048")
+	resp, err := linkCheckClient.Do(req)
+	if err != nil {
+		return true
+	}
+	defer resp.Body.Close()
+	io.Copy(io.Discard, resp.Body)
+	return resp.StatusCode != http.StatusNotFound
+}
+
+// filterAliveLinks пайвандҳои вайроншударо (масалан видеоҳои ҳазфшудаи
+// Aparat, ки 404 бармегардонанд) хориҷ мекунад, то корбар пайванди мурда
+// нагирад. Санҷиш ҳамзамон (concurrent) аст, то вақти умумӣ кӯтоҳ монад
+func filterAliveLinks(results []dubResult) []dubResult {
+	alive := make([]bool, len(results))
+	var wg sync.WaitGroup
+	for i, r := range results {
+		wg.Add(1)
+		go func(i int, url string) {
+			defer wg.Done()
+			alive[i] = isLinkAlive(url)
+		}(i, r.URL)
+	}
+	wg.Wait()
+
+	filtered := make([]dubResult, 0, len(results))
+	for i, r := range results {
+		if alive[i] {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
 }
 
 // dubSearchLimits шумораи натиҷаҳое, ки аз ҳар платформа дархост карда мешавад
@@ -313,19 +381,25 @@ func fetchRawDubResults(d *Deps, title string, perSource int, animeID int) []raw
 func fetchRawDubResultsWithLimits(d *Deps, title string, limits dubSearchLimits, animeID int) []rawDubResult {
 	var raw []rawDubResult
 
-	aparatVideos, err := d.Aparat.SearchVideos(title, limits.Aparat)
+	aparatVideos, err := d.Aparat.SearchVideos(title+" دوبله", limits.Aparat)
 	if err != nil {
 		utils.LogError("aparat search failed for anime=%d: %v", animeID, err)
 	}
 	for _, v := range aparatVideos {
+		if api.IsFranchiseMismatch(title, v.Title) {
+			continue
+		}
 		raw = append(raw, rawDubResult{Source: "Aparat", Title: v.Title, URL: v.URL()})
 	}
 
-	dailymotionVideos, err := d.Dailymotion.SearchVideos(title, limits.Dailymotion)
+	dailymotionVideos, err := d.Dailymotion.SearchVideos(title+" دوبله فارسی", limits.Dailymotion)
 	if err != nil {
 		utils.LogError("dailymotion search failed for anime=%d: %v", animeID, err)
 	}
 	for _, v := range dailymotionVideos {
+		if api.IsFranchiseMismatch(title, v.Title) {
+			continue
+		}
 		raw = append(raw, rawDubResult{Source: "Dailymotion", Title: v.Title, URL: v.URL})
 	}
 
@@ -337,6 +411,9 @@ func fetchRawDubResultsWithLimits(d *Deps, title string, limits dubSearchLimits,
 			utils.LogError("youtube search failed for anime=%d: %v", animeID, err)
 		}
 		for _, v := range youtubeVideos {
+			if api.IsFranchiseMismatch(title, v.Title) {
+				continue
+			}
 			raw = append(raw, rawDubResult{Source: "YouTube", Title: v.Title, URL: v.URL})
 		}
 	}
