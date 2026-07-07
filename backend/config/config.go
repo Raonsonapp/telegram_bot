@@ -8,4 +8,5 @@ type Config struct {
 	DefaultLanguage string
 	Debug           bool
 	Port            string
+	YouTubeAPIKey   string
 }

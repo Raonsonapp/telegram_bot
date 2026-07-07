@@ -47,6 +47,12 @@ func main() {
 	animeProvider := api.NewAnimeProvider(jikanClient, anilistClient)
 	aparatClient := api.NewAparatClient()
 	dailymotionClient := api.NewDailymotionClient()
+	youtubeClient := api.NewYouTubeClient(cfg.YouTubeAPIKey)
+	if youtubeClient.Enabled() {
+		utils.LogInfo("YouTube: манбаи видео фаъол аст")
+	} else {
+		utils.LogInfo("YouTube: YOUTUBE_API_KEY танзим нашудааст, ин манбаъ ғайрифаъол мемонад")
+	}
 	translator := utils.NewTranslator()
 	cache := utils.NewCache(10 * time.Minute)
 
@@ -56,6 +62,7 @@ func main() {
 		Jikan:       animeProvider,
 		Aparat:      aparatClient,
 		Dailymotion: dailymotionClient,
+		YouTube:     youtubeClient,
 		Translator:  translator,
 		Cache:       cache,
 		Config:      cfg,

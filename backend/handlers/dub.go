@@ -82,6 +82,18 @@ func searchAllDubSources(d *Deps, title string, animeID int) []dubResult {
 		results = append(results, dubResult{Title: "Dailymotion: " + v.Title, URL: v.URL})
 	}
 
+	if d.YouTube.Enabled() {
+		// Дар YouTube ҷустуҷӯи танҳо номи аниме бисёр натиҷаи расмии бе дубляж
+		// медиҳад — "дубле форсӣ" мушаххас каналҳои дубляжро меёбад
+		youtubeVideos, err := d.YouTube.SearchVideos(title+" دوبله فارسی", 4)
+		if err != nil {
+			utils.LogError("youtube search failed for anime=%d: %v", animeID, err)
+		}
+		for _, v := range youtubeVideos {
+			results = append(results, dubResult{Title: "YouTube: " + v.Title, URL: v.URL})
+		}
+	}
+
 	if len(results) > maxResults {
 		results = results[:maxResults]
 	}

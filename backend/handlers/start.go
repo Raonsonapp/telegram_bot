@@ -19,6 +19,7 @@ type Deps struct {
 	Jikan       *api.AnimeProvider
 	Aparat      *api.AparatClient
 	Dailymotion *api.DailymotionClient
+	YouTube     *api.YouTubeClient
 	Translator  *utils.Translator
 	Cache       *utils.Cache
 	Config      *config.Config

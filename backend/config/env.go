@@ -55,5 +55,6 @@ func LoadConfig() *Config {
 		DefaultLanguage: getEnv("DEFAULT_LANGUAGE", "en"),
 		Debug:           getEnv("DEBUG", "false") == "true",
 		Port:            getEnv("PORT", "10000"),
+		YouTubeAPIKey:   getEnv("YOUTUBE_API_KEY", ""),
 	}
 }
