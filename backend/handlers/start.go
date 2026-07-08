@@ -20,6 +20,7 @@ type Deps struct {
 	Aparat      *api.AparatClient
 	Dailymotion *api.DailymotionClient
 	YouTube     *api.YouTubeClient
+	Currency    *api.CurrencyClient
 	Translator  *utils.Translator
 	Cache       *utils.Cache
 	Config      *config.Config

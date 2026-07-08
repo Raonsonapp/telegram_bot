@@ -90,4 +90,16 @@ var EnglishMessages = map[string]string{
 	"feedback_sent":                 "✅ Sent! The admin will see it and may reply here.",
 	"admin_reply_prefix":            "💬 Admin's reply:",
 	"feedback_admin_not_configured": "⚠️ This feature isn't set up yet (ADMIN_CHAT_ID missing). If you're the bot owner, send /myid to get your ID.",
+
+	"btn_tools":             "🛠 Tools",
+	"tools_menu_title":      "🛠 Handy tools — which one do you need?",
+	"btn_password_gen":      "🔐 Password Generator",
+	"btn_qr_gen":            "📷 QR Generator",
+	"btn_currency":          "💱 Currency Converter",
+	"password_result":       "🔐 New strong password:\n`%s`",
+	"ask_qr_text":           "📷 Send text or a link, I'll turn it into a QR code:",
+	"ask_currency_text":     "💱 Type in this format: AMOUNT FROM TO (e.g. 100 USD EUR):",
+	"currency_format_error": "😔 Wrong format. Example: 100 USD EUR",
+	"currency_result":       "💱 %.2f %s = %.2f %s",
+	"currency_error":        "😔 Couldn't find that rate. Check the currency code (e.g. USD, EUR, RUB).",
 }

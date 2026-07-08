@@ -57,6 +57,7 @@ func main() {
 	}
 	translator := utils.NewTranslator()
 	cache := utils.NewCache(10 * time.Minute)
+	currencyClient := api.NewCurrencyClient()
 
 	deps := &handlers.Deps{
 		Bot:         bot,
@@ -65,6 +66,7 @@ func main() {
 		Aparat:      aparatClient,
 		Dailymotion: dailymotionClient,
 		YouTube:     youtubeClient,
+		Currency:    currencyClient,
 		Translator:  translator,
 		Cache:       cache,
 		Config:      cfg,
@@ -297,6 +299,21 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_help"):
 			handlers.HandleHelp(d, msg)
 			return
+		case buttonLabel(lang, "btn_tools"):
+			handlers.HandleToolsMenuButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_password_gen"):
+			handlers.HandlePasswordGenButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_qr_gen"):
+			handlers.HandleQRGenButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_currency"):
+			handlers.HandleCurrencyButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_back_to_menu"):
+			handlers.HandleBackToMainMenuButton(d, msg)
+			return
 		}
 	}
 
@@ -311,6 +328,20 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 	// бошад, онро ҳамчун номи анимеи ҷустуҷӯшаванда барои дубляж коркард мекунем
 	if handlers.PendingDub[msg.From.ID] {
 		handlers.HandleDubTextQuery(d, msg)
+		return
+	}
+
+	// Агар корбар пас аз пахши "📷 Генератори QR" матн фиристода бошад,
+	// онро ба расми QR-код табдил медиҳем
+	if handlers.PendingQR[msg.From.ID] {
+		handlers.HandleQRGenText(d, msg)
+		return
+	}
+
+	// Агар корбар пас аз пахши "💱 Мубодилаи асъор" матн фиристода бошад,
+	// онро ҳамчун дархости мубодила коркард мекунем
+	if handlers.PendingCurrency[msg.From.ID] {
+		handlers.HandleCurrencyText(d, msg)
 		return
 	}
 

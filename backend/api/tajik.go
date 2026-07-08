@@ -93,6 +93,18 @@ var TajikMessages = map[string]string{
 	"feedback_sent":                 "✅ Фиристода шуд! Админ мебинад ва агар лозим шавад, ҳамин ҷо ҷавоб медиҳад.",
 	"admin_reply_prefix":            "💬 Ҷавоби админ:",
 	"feedback_admin_not_configured": "⚠️ Ин хусусият ҳанӯз танзим нашудааст (админ ADMIN_CHAT_ID-ро гузошта нашудааст). Агар ту соҳиби бот ҳастӣ, /myid занад, то ID-и худро гирӣ.",
+
+	"btn_tools":             "🛠 Абзорҳо",
+	"tools_menu_title":      "🛠 Абзорҳои ёрирасон — кадомашро мехоҳӣ?",
+	"btn_password_gen":      "🔐 Генератори парол",
+	"btn_qr_gen":            "📷 Генератори QR",
+	"btn_currency":          "💱 Мубодилаи асъор",
+	"password_result":       "🔐 Пароли нави қавӣ:\n`%s`",
+	"ask_qr_text":           "📷 Матн ё пайвандеро бинавис, ман QR-код месозам:",
+	"ask_currency_text":     "💱 Бинавис бо ин формат: МИҚДОР АЗ БА (масалан: 100 USD EUR):",
+	"currency_format_error": "😔 Формат нодуруст. Мисол: 100 USD EUR",
+	"currency_result":       "💱 %.2f %s = %.2f %s",
+	"currency_error":        "😔 Мубодиларо ёфта натавонистам. Рамзи асъорро санҷ (масалан USD, EUR, RUB).",
 }
 
 // GetMessage паёми маҳаллисозишударо аз рӯи забон ва калид бармегардонад.

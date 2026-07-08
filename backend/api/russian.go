@@ -90,4 +90,16 @@ var RussianMessages = map[string]string{
 	"feedback_sent":                 "✅ Отправлено! Админ увидит и может ответить здесь же.",
 	"admin_reply_prefix":            "💬 Ответ админа:",
 	"feedback_admin_not_configured": "⚠️ Эта функция ещё не настроена (не задан ADMIN_CHAT_ID). Если ты владелец бота, отправь /myid, чтобы узнать свой ID.",
+
+	"btn_tools":             "🛠 Инструменты",
+	"tools_menu_title":      "🛠 Полезные инструменты — что нужно?",
+	"btn_password_gen":      "🔐 Генератор паролей",
+	"btn_qr_gen":            "📷 Генератор QR-кодов",
+	"btn_currency":          "💱 Конвертер валют",
+	"password_result":       "🔐 Новый надёжный пароль:\n`%s`",
+	"ask_qr_text":           "📷 Напиши текст или ссылку, я сделаю QR-код:",
+	"ask_currency_text":     "💱 Напиши в формате: СУММА ИЗ В (например: 100 USD EUR):",
+	"currency_format_error": "😔 Неверный формат. Пример: 100 USD EUR",
+	"currency_result":       "💱 %.2f %s = %.2f %s",
+	"currency_error":        "😔 Не удалось найти курс. Проверь код валюты (например USD, EUR, RUB).",
 }

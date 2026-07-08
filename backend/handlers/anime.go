@@ -189,6 +189,15 @@ func HandleBackToMenu(d *Deps, cb *tgbotapi.CallbackQuery) {
 	d.Bot.Send(message)
 }
 
+// HandleBackToMainMenuButton вақте ки корбар аз менюи "🛠 Абзорҳо" тугмаи
+// "⬅️ Ба меню"-ро пахш мекунад, ба менюи асосии аниме бармегардонад
+func HandleBackToMainMenuButton(d *Deps, msg *tgbotapi.Message) {
+	lang := getUserLang(d, msg.From.ID)
+	message := tgbotapi.NewMessage(msg.Chat.ID, api.GetMessage(lang, "main_menu"))
+	message.ReplyMarkup = keyboard.MainMenu(lang)
+	d.Bot.Send(message)
+}
+
 // atoi як ёрирасони кӯтоҳ барои табдили сатр ба рақам (истифода дар episodes.go низ)
 func atoi(s string) int {
 	n, _ := strconv.Atoi(s)
