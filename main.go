@@ -58,6 +58,7 @@ func main() {
 	translator := utils.NewTranslator()
 	cache := utils.NewCache(10 * time.Minute)
 	currencyClient := api.NewCurrencyClient()
+	worldCupClient := api.NewWorldCupClient(cfg.WorldCupEmail, cfg.WorldCupPassword)
 
 	deps := &handlers.Deps{
 		Bot:         bot,
@@ -67,6 +68,7 @@ func main() {
 		Dailymotion: dailymotionClient,
 		YouTube:     youtubeClient,
 		Currency:    currencyClient,
+		WorldCup:    worldCupClient,
 		Translator:  translator,
 		Cache:       cache,
 		Config:      cfg,
@@ -310,6 +312,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 			return
 		case buttonLabel(lang, "btn_currency"):
 			handlers.HandleCurrencyButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_worldcup"):
+			handlers.HandleWorldCupButton(d, msg)
 			return
 		case buttonLabel(lang, "btn_back_to_menu"):
 			handlers.HandleBackToMainMenuButton(d, msg)

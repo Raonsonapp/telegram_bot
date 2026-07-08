@@ -105,6 +105,12 @@ var TajikMessages = map[string]string{
 	"currency_format_error": "😔 Формат нодуруст. Мисол: 100 USD EUR",
 	"currency_result":       "💱 %.2f %s = %.2f %s",
 	"currency_error":        "😔 Мубодиларо ёфта натавонистам. Рамзи асъорро санҷ (масалан USD, EUR, RUB).",
+
+	"btn_worldcup":        "⚽ Ҷоми Ҷаҳонӣ 2026",
+	"worldcup_loading":    "⚽ Бозиҳоро меҷӯям...",
+	"worldcup_title":      "⚽ Бозиҳои Ҷоми Ҷаҳонии 2026:",
+	"worldcup_no_matches": "😔 Ҳозир бозии наздик ёфт нашуд.",
+	"worldcup_error":      "⚠️ Натиҷаро гирифта натавонистам. Баъдтар боз кӯшиш кун.",
 }
 
 // GetMessage паёми маҳаллисозишударо аз рӯи забон ва калид бармегардонад.

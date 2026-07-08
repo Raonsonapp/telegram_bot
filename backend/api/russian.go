@@ -102,4 +102,10 @@ var RussianMessages = map[string]string{
 	"currency_format_error": "😔 Неверный формат. Пример: 100 USD EUR",
 	"currency_result":       "💱 %.2f %s = %.2f %s",
 	"currency_error":        "😔 Не удалось найти курс. Проверь код валюты (например USD, EUR, RUB).",
+
+	"btn_worldcup":        "⚽ Чемпионат мира 2026",
+	"worldcup_loading":    "⚽ Ищу матчи...",
+	"worldcup_title":      "⚽ Матчи Чемпионата мира 2026:",
+	"worldcup_no_matches": "😔 Сейчас ближайших матчей не найдено.",
+	"worldcup_error":      "⚠️ Не удалось получить результаты. Попробуй позже.",
 }

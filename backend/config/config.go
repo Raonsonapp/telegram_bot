@@ -12,4 +12,6 @@ type Config struct {
 	RequiredChannels []string
 	AdminChatID      int64
 	PublicBaseURL    string
+	WorldCupEmail    string
+	WorldCupPassword string
 }

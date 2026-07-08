@@ -102,4 +102,10 @@ var EnglishMessages = map[string]string{
 	"currency_format_error": "😔 Wrong format. Example: 100 USD EUR",
 	"currency_result":       "💱 %.2f %s = %.2f %s",
 	"currency_error":        "😔 Couldn't find that rate. Check the currency code (e.g. USD, EUR, RUB).",
+
+	"btn_worldcup":        "⚽ World Cup 2026",
+	"worldcup_loading":    "⚽ Looking up matches...",
+	"worldcup_title":      "⚽ World Cup 2026 matches:",
+	"worldcup_no_matches": "😔 No nearby matches found right now.",
+	"worldcup_error":      "⚠️ Couldn't fetch results. Try again later.",
 }

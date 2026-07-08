@@ -15,6 +15,7 @@ func ToolsMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_currency")),
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_worldcup")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_back_to_menu")),

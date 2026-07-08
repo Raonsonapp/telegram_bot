@@ -21,6 +21,7 @@ type Deps struct {
 	Dailymotion *api.DailymotionClient
 	YouTube     *api.YouTubeClient
 	Currency    *api.CurrencyClient
+	WorldCup    *api.WorldCupClient
 	Translator  *utils.Translator
 	Cache       *utils.Cache
 	Config      *config.Config
