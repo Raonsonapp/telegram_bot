@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -15,109 +17,64 @@ import (
 // медиҳад, ҳеҷ видео ё пахши зинда надорад
 const worldCupBaseURL = "https://worldcup26.ir"
 
-// WorldCupMatch як бозии Ҷоми Ҷаҳонии 2026-ро ифода мекунад. Сохти дақиқи
-// ҷавоби API аз ҷониби мо тасдиқ нашудааст (API дар лаҳзаи навиштани ин код
-// аз берун санҷида нашуд) — UnmarshalJSON якчанд номи имконпазири майдонҳоро
-// меозмояд, то агар яке мувофиқат накунад, дигараш кор кунад
+// WorldCupMatch як бозии Ҷоми Ҷаҳонии 2026-ро ифода мекунад. Сохти майдонҳо
+// мутобиқи мисоли воқеии ҷавоби API дар README-и лоиҳа аст (масалан
+// "home_score" ҳамчун сатр, на рақам — API ин тавр бармегардонад)
 type WorldCupMatch struct {
-	ID        int
-	HomeTeam  string
-	AwayTeam  string
-	HomeScore *int
-	AwayScore *int
-	Status    string
-	Date      string
-	Group     string
+	ID             string
+	HomeTeamNameEn string
+	AwayTeamNameEn string
+	HomeScore      int
+	AwayScore      int
+	Group          string
+	LocalDate      string
+	Finished       bool
+	TimeElapsed    string
+	Type           string
 }
 
 func (m *WorldCupMatch) UnmarshalJSON(data []byte) error {
-	var raw map[string]json.RawMessage
+	var raw struct {
+		ID             string `json:"id"`
+		HomeTeamNameEn string `json:"home_team_name_en"`
+		AwayTeamNameEn string `json:"away_team_name_en"`
+		HomeTeamLabel  string `json:"home_team_label"`
+		AwayTeamLabel  string `json:"away_team_label"`
+		HomeScore      string `json:"home_score"`
+		AwayScore      string `json:"away_score"`
+		Group          string `json:"group"`
+		LocalDate      string `json:"local_date"`
+		Finished       string `json:"finished"`
+		TimeElapsed    string `json:"time_elapsed"`
+		Type           string `json:"type"`
+	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
-	getString := func(keys ...string) string {
-		for _, k := range keys {
-			v, ok := raw[k]
-			if !ok {
-				continue
-			}
-			var s string
-			if json.Unmarshal(v, &s) == nil && s != "" {
-				return s
-			}
-		}
-		return ""
+	m.ID = raw.ID
+	m.HomeTeamNameEn = raw.HomeTeamNameEn
+	if m.HomeTeamNameEn == "" {
+		m.HomeTeamNameEn = raw.HomeTeamLabel
 	}
-
-	getTeamName := func(keys ...string) string {
-		for _, k := range keys {
-			v, ok := raw[k]
-			if !ok {
-				continue
-			}
-			var s string
-			if json.Unmarshal(v, &s) == nil && s != "" {
-				return s
-			}
-			var obj struct {
-				Name  string `json:"name"`
-				Title string `json:"title"`
-			}
-			if json.Unmarshal(v, &obj) == nil {
-				if obj.Name != "" {
-					return obj.Name
-				}
-				if obj.Title != "" {
-					return obj.Title
-				}
-			}
-		}
-		return ""
+	m.AwayTeamNameEn = raw.AwayTeamNameEn
+	if m.AwayTeamNameEn == "" {
+		m.AwayTeamNameEn = raw.AwayTeamLabel
 	}
-
-	getInt := func(keys ...string) int {
-		for _, k := range keys {
-			v, ok := raw[k]
-			if !ok {
-				continue
-			}
-			var n int
-			if json.Unmarshal(v, &n) == nil {
-				return n
-			}
-		}
-		return 0
-	}
-
-	getIntPtr := func(keys ...string) *int {
-		for _, k := range keys {
-			v, ok := raw[k]
-			if !ok {
-				continue
-			}
-			var n int
-			if json.Unmarshal(v, &n) == nil {
-				return &n
-			}
-		}
-		return nil
-	}
-
-	m.ID = getInt("id", "matchId", "match_id")
-	m.HomeTeam = getTeamName("homeTeam", "home_team", "home")
-	m.AwayTeam = getTeamName("awayTeam", "away_team", "away")
-	m.HomeScore = getIntPtr("homeScore", "home_score", "homeGoals")
-	m.AwayScore = getIntPtr("awayScore", "away_score", "awayGoals")
-	m.Status = getString("status", "matchStatus")
-	m.Date = getString("date", "matchDate", "datetime", "kickoff")
-	m.Group = getString("group", "groupName")
+	m.HomeScore, _ = strconv.Atoi(raw.HomeScore)
+	m.AwayScore, _ = strconv.Atoi(raw.AwayScore)
+	m.Group = raw.Group
+	m.LocalDate = raw.LocalDate
+	m.Finished = strings.EqualFold(raw.Finished, "true")
+	m.TimeElapsed = raw.TimeElapsed
+	m.Type = raw.Type
 	return nil
 }
 
-// WorldCupClient ба worldcup26.ir пайваст мешавад. API бо JWT кор мекунад —
-// корбари собити боти мо худкор сабти ном/вуруд мекунад ва токенро дар хотир
-// нигоҳ медорад (то ~80 рӯз, бе дархости такрорӣ)
+// WorldCupClient ба worldcup26.ir пайваст мешавад. Мувофиқи README-и лоиҳа,
+// хондани /get/* бе токен ҳам бояд кор кунад (сатҳи "демо"-и ройгон бо
+// маҳдудияти суръат) — барои ҳамин аввал бе Authorization кӯшиш мекунем,
+// ва танҳо агар 401 гирем, ба JWT (сабти ном/вуруди худкор) мегузарем
 type WorldCupClient struct {
 	http     *http.Client
 	email    string
@@ -202,22 +159,15 @@ func (c *WorldCupClient) postAuth(path string, extra map[string]string) (string,
 	}
 
 	var result struct {
-		Token       string `json:"token"`
-		AccessToken string `json:"accessToken"`
-		Jwt         string `json:"jwt"`
-		Data        struct {
-			Token string `json:"token"`
-		} `json:"data"`
+		Token string `json:"token"`
 	}
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return "", fmt.Errorf("failed to parse auth response from %s: %w", path, err)
 	}
-	for _, t := range []string{result.Token, result.AccessToken, result.Jwt, result.Data.Token} {
-		if t != "" {
-			return t, nil
-		}
+	if result.Token == "" {
+		return "", fmt.Errorf("no token in response from %s", path)
 	}
-	return "", fmt.Errorf("no recognizable token field in response from %s", path)
+	return result.Token, nil
 }
 
 // GetGames ҳамаи 104 бозии турнирро мегирад
@@ -228,15 +178,15 @@ func (c *WorldCupClient) GetGames() ([]WorldCupMatch, error) {
 	}
 
 	var wrapped struct {
-		Data  []WorldCupMatch `json:"data"`
 		Games []WorldCupMatch `json:"games"`
+		Data  []WorldCupMatch `json:"data"`
 	}
 	if err := json.Unmarshal(body, &wrapped); err == nil {
-		if len(wrapped.Data) > 0 {
-			return wrapped.Data, nil
-		}
 		if len(wrapped.Games) > 0 {
 			return wrapped.Games, nil
+		}
+		if len(wrapped.Data) > 0 {
+			return wrapped.Data, nil
 		}
 	}
 
@@ -248,45 +198,66 @@ func (c *WorldCupClient) GetGames() ([]WorldCupMatch, error) {
 	return nil, fmt.Errorf("unrecognized response shape from /get/games")
 }
 
+// authorizedGet мувофиқи README аввал бе токен мекӯшад (сатҳи ройгони
+// "демо"), баъд агар 401 гирад, бо JWT (сабти ном/вуруди худкор) такрор мекунад
 func (c *WorldCupClient) authorizedGet(path string) ([]byte, error) {
-	if err := c.ensureToken(); err != nil {
-		return nil, err
-	}
-
-	do := func() (*http.Response, error) {
-		req, err := http.NewRequest(http.MethodGet, worldCupBaseURL+path, nil)
-		if err != nil {
-			return nil, err
-		}
-		c.mu.Lock()
-		token := c.token
-		c.mu.Unlock()
-		req.Header.Set("Authorization", "Bearer "+token)
-		return c.http.Do(req)
-	}
-
-	resp, err := do()
+	body, status, err := c.rawGet(path, "")
 	if err != nil {
 		return nil, err
 	}
+	if status == http.StatusOK {
+		return body, nil
+	}
 
-	if resp.StatusCode == http.StatusUnauthorized {
-		resp.Body.Close()
+	if err := c.ensureToken(); err != nil {
+		return nil, fmt.Errorf("unauthenticated request failed (status %d) and auth fallback failed: %w", status, err)
+	}
+	c.mu.Lock()
+	token := c.token
+	c.mu.Unlock()
+
+	body, status, err = c.rawGet(path, token)
+	if err != nil {
+		return nil, err
+	}
+	if status == http.StatusUnauthorized {
 		c.mu.Lock()
 		c.token = ""
 		c.mu.Unlock()
 		if err := c.ensureToken(); err != nil {
 			return nil, err
 		}
-		resp, err = do()
+		c.mu.Lock()
+		token = c.token
+		c.mu.Unlock()
+		body, status, err = c.rawGet(path, token)
 		if err != nil {
 			return nil, err
 		}
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request to %s failed: status %d", path, resp.StatusCode)
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("request to %s failed: status %d", path, status)
 	}
-	return io.ReadAll(resp.Body)
+	return body, nil
+}
+
+func (c *WorldCupClient) rawGet(path string, token string) ([]byte, int, error) {
+	req, err := http.NewRequest(http.MethodGet, worldCupBaseURL+path, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, err
+	}
+	return body, resp.StatusCode, nil
 }
