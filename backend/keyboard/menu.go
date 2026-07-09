@@ -6,28 +6,18 @@ import (
 	"anime-bot/backend/api"
 )
 
-// MainMenu менюи асосии клавиатура (reply keyboard)-ро месозад мутобиқи забон
+// MainMenu менюи асосии клавиатура (reply keyboard)-ро месозад мутобиқи забон.
+// Бот акнун танҳо ба App Builder бахшида шудааст — хусусиятҳои дигар (аниме,
+// абзорҳо ва ғ.) дар код мемонанд (архив), вале дигар дар меню нестанд
 func MainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_search")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_dub_menu")),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_random")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_mood")),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_top")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_profile")),
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_app_builder")),
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_fetch_apk")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_help")),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_feedback")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_tools")),
 		),
 	)
 }

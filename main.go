@@ -384,8 +384,8 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		return
 	}
 
-	// Дар ҳолати дигар, матни фиристодашударо ҳамчун дархости ҷустуҷӯи аниме мешуморем
-	handlers.HandlePlainTextSearch(d, msg)
+	// Матни номафҳум — менюи асосиро бозмефиристем, то корбар донад чӣ кор кунад
+	handlers.HandleUnknownText(d, msg)
 }
 
 // routeCallback callback query-ҳоро (тугмаҳои inline) равона мекунад

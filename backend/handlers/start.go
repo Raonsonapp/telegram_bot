@@ -63,6 +63,15 @@ func HandleStart(d *Deps, msg *tgbotapi.Message) {
 	d.Bot.Send(message)
 }
 
+// HandleUnknownText вақте фиристода мешавад, ки матни корбар ба ягон тугма
+// ё ҳолати интизории мушаххас мувофиқат намекунад — менюи асосиро бозмефиристад
+func HandleUnknownText(d *Deps, msg *tgbotapi.Message) {
+	lang := getUserLang(d, msg.From.ID)
+	message := tgbotapi.NewMessage(msg.Chat.ID, api.GetMessage(lang, "main_menu"))
+	message.ReplyMarkup = keyboard.MainMenu(lang)
+	d.Bot.Send(message)
+}
+
 // sendText функсияи ёрирасон барои фиристодани матни оддӣ
 func sendText(d *Deps, chatID int64, text string) {
 	message := tgbotapi.NewMessage(chatID, text)

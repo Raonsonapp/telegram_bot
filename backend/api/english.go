@@ -2,8 +2,8 @@ package api
 
 // EnglishMessages сатрҳои интерфейс барои забони англисӣ
 var EnglishMessages = map[string]string{
-	"welcome":                     "👋 Welcome to *AnimeBot*!\n\nPlease choose your language:",
-	"welcome_back":                "👋 Welcome back, %s!\n\nWhat would you like to do?",
+	"welcome":                     "👋 Welcome to *App Builder Bot*!\n\nPlease choose your language:",
+	"welcome_back":                "👋 Welcome back, %s!\n\nBuilding an app?",
 	"language_set":                "✅ Language set to English!",
 	"main_menu":                   "What would you like to do?",
 	"btn_search":                  "🔍 Search Anime",
@@ -32,7 +32,7 @@ var EnglishMessages = map[string]string{
 	"btn_back_to_menu":            "⬅️ Back to menu",
 	"settings_title":              "⚙️ *Settings*\n\nCurrent language: %s",
 	"btn_change_lang":             "🌐 Change Language",
-	"help_text":                   "🤖 *AnimeBot Help*\n\nSend any anime name to search, or use the menu buttons below.\n\nCommands:\n/start - restart the bot\n/search <name> - search anime\n/random - get a random anime\n/top - top anime list\n/settings - change language\n/help - show this message",
+	"help_text":                   "🤖 *What I can do:*\n\n🏗 *App Builder* — send the app name, I'll create a repo on the bot owner's GitHub with a ready-made APK build workflow.\n\n📦 *Fetch APK* — once you've pushed your code and GitHub Actions built it, send the repo name — I'll send the APK.\n\nCommands:\n/start - restart the bot\n/settings - change language\n/help - show this message",
 	"error_generic":               "⚠️ Something went wrong. Please try again later.",
 	"subscription_required":       "📢 To use this bot, please subscribe to these channels first, then tap \"✅ Check\":",
 	"btn_check_subscription":      "✅ Check",
