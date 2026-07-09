@@ -108,4 +108,15 @@ var RussianMessages = map[string]string{
 	"worldcup_title":      "⚽ Матчи Чемпионата мира 2026:",
 	"worldcup_no_matches": "😔 Сейчас ближайших матчей не найдено.",
 	"worldcup_error":      "⚠️ Не удалось получить результаты. Попробуй позже.",
+
+	"btn_app_builder":           "🏗 Конструктор приложений",
+	"btn_fetch_apk":             "📦 Получить APK",
+	"ask_app_name":              "🏗 Напиши название приложения, я создам репозиторий на твоём GitHub (с готовым workflow для сборки APK):",
+	"appbuilder_creating":       "🏗 Создаю репозиторий...",
+	"appbuilder_created":        "✅ Готово!\n\nРепозиторий: `%s`\nСсылка: %s\n\nЗапушь код самого приложения (проект Android Studio, папка \"app\") — GitHub Actions автоматически соберёт APK. Потом нажми \"📦 Получить APK\".",
+	"appbuilder_error":          "😔 Не удалось создать репозиторий. Возможно, имя повторяется или токен неверный — проверь.",
+	"appbuilder_not_configured": "⚠️ Эта функция не настроена (не задан GITHUB_APP_BUILDER_TOKEN).",
+	"ask_apk_repo":              "📦 Напиши название репозитория (например \"my-app\" или \"owner/my-app\"):",
+	"apk_fetching":              "📦 Ищу последний APK...",
+	"apk_not_found":             "😔 Готового APK не найдено. Возможно, сборка ещё не завершена или код ещё не запушен.",
 }

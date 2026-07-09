@@ -112,5 +112,6 @@ func LoadConfig() *Config {
 		PublicBaseURL:    strings.TrimSuffix(getEnv("RENDER_EXTERNAL_URL", ""), "/"),
 		WorldCupEmail:    getEnv("WORLDCUP_API_EMAIL", ""),
 		WorldCupPassword: getEnv("WORLDCUP_API_PASSWORD", ""),
+		GitHubAppToken:   getEnv("GITHUB_APP_BUILDER_TOKEN", ""),
 	}
 }

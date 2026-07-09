@@ -111,6 +111,17 @@ var TajikMessages = map[string]string{
 	"worldcup_title":      "⚽ Бозиҳои Ҷоми Ҷаҳонии 2026:",
 	"worldcup_no_matches": "😔 Ҳозир бозии наздик ёфт нашуд.",
 	"worldcup_error":      "⚠️ Натиҷаро гирифта натавонистам. Баъдтар боз кӯшиш кун.",
+
+	"btn_app_builder":           "🏗 Барномасоз",
+	"btn_fetch_apk":             "📦 Гирифтани APK",
+	"ask_app_name":              "🏗 Номи барномаро бинавис, ман репо дар GitHub-и ту месозам (бо workflow-и тайёри build-и APK):",
+	"appbuilder_creating":       "🏗 Репо месозам...",
+	"appbuilder_created":        "✅ Тайёр!\n\nРепо: `%s`\nПайванд: %s\n\nКоди худи барномаро (лоиҳаи Android Studio, папкаи \"app\") push кун — GitHub Actions худкор APK месозад. Баъд тугмаи \"📦 Гирифтани APK\"-ро зан.",
+	"appbuilder_error":          "😔 Сохтани репо ноком шуд. Шояд номи такрорӣ бошад ё токен нодуруст — санҷ.",
+	"appbuilder_not_configured": "⚠️ Ин хусусият танзим нашудааст (GITHUB_APP_BUILDER_TOKEN гузошта нашудааст).",
+	"ask_apk_repo":              "📦 Номи репоро бинавис (масалан \"my-app\" ё \"owner/my-app\"):",
+	"apk_fetching":              "📦 APK-и охиринро мекобам...",
+	"apk_not_found":             "😔 Ягон APK-и тайёр наёфтам. Шояд ҳанӯз build тамом нашудааст, ё коде push нашудааст.",
 }
 
 // GetMessage паёми маҳаллисозишударо аз рӯи забон ва калид бармегардонад.

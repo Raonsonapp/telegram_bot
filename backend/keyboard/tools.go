@@ -18,6 +18,10 @@ func ToolsMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_worldcup")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_app_builder")),
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_fetch_apk")),
+		),
+		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_back_to_menu")),
 		),
 	)

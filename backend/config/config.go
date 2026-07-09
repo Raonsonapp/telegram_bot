@@ -14,4 +14,5 @@ type Config struct {
 	PublicBaseURL    string
 	WorldCupEmail    string
 	WorldCupPassword string
+	GitHubAppToken   string
 }

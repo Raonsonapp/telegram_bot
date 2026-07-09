@@ -22,6 +22,7 @@ type Deps struct {
 	YouTube     *api.YouTubeClient
 	Currency    *api.CurrencyClient
 	WorldCup    *api.WorldCupClient
+	GitHubApp   *api.GitHubAppClient
 	Translator  *utils.Translator
 	Cache       *utils.Cache
 	Config      *config.Config

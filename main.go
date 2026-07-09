@@ -59,6 +59,12 @@ func main() {
 	cache := utils.NewCache(10 * time.Minute)
 	currencyClient := api.NewCurrencyClient()
 	worldCupClient := api.NewWorldCupClient(cfg.WorldCupEmail, cfg.WorldCupPassword)
+	gitHubAppClient := api.NewGitHubAppClient(cfg.GitHubAppToken)
+	if gitHubAppClient.Enabled() {
+		utils.LogInfo("App Builder: GitHub integration фаъол аст")
+	} else {
+		utils.LogInfo("App Builder: GITHUB_APP_BUILDER_TOKEN танзим нашудааст, ин хусусият ғайрифаъол мемонад")
+	}
 
 	deps := &handlers.Deps{
 		Bot:         bot,
@@ -69,6 +75,7 @@ func main() {
 		YouTube:     youtubeClient,
 		Currency:    currencyClient,
 		WorldCup:    worldCupClient,
+		GitHubApp:   gitHubAppClient,
 		Translator:  translator,
 		Cache:       cache,
 		Config:      cfg,
@@ -316,6 +323,12 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_worldcup"):
 			handlers.HandleWorldCupButton(d, msg)
 			return
+		case buttonLabel(lang, "btn_app_builder"):
+			handlers.HandleAppBuilderButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_fetch_apk"):
+			handlers.HandleFetchAPKButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_back_to_menu"):
 			handlers.HandleBackToMainMenuButton(d, msg)
 			return
@@ -347,6 +360,20 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 	// онро ҳамчун дархости мубодила коркард мекунем
 	if handlers.PendingCurrency[msg.From.ID] {
 		handlers.HandleCurrencyText(d, msg)
+		return
+	}
+
+	// Агар корбар пас аз пахши "🏗 Барномасоз" номи барномаро фиристода бошад,
+	// репои GitHub бо workflow-и build-и APK сохта мешавад
+	if handlers.PendingAppName[msg.From.ID] {
+		handlers.HandleAppNameText(d, msg)
+		return
+	}
+
+	// Агар корбар пас аз пахши "📦 Гирифтани APK" номи репоро фиристода бошад,
+	// охирин APK-и сохташуда аз GitHub Actions гирифта мешавад
+	if handlers.PendingAPKRepo[msg.From.ID] {
+		handlers.HandleFetchAPKText(d, msg)
 		return
 	}
 

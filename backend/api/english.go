@@ -108,4 +108,15 @@ var EnglishMessages = map[string]string{
 	"worldcup_title":      "⚽ World Cup 2026 matches:",
 	"worldcup_no_matches": "😔 No nearby matches found right now.",
 	"worldcup_error":      "⚠️ Couldn't fetch results. Try again later.",
+
+	"btn_app_builder":           "🏗 App Builder",
+	"btn_fetch_apk":             "📦 Fetch APK",
+	"ask_app_name":              "🏗 Send the app name, I'll create a repo on your GitHub (with a ready-made APK build workflow):",
+	"appbuilder_creating":       "🏗 Creating the repo...",
+	"appbuilder_created":        "✅ Done!\n\nRepo: `%s`\nLink: %s\n\nPush your app's own code (a standard Android Studio project, \"app\" module) — GitHub Actions will build the APK automatically. Then tap \"📦 Fetch APK\".",
+	"appbuilder_error":          "😔 Failed to create the repo. Maybe the name already exists or the token is wrong — check it.",
+	"appbuilder_not_configured": "⚠️ This feature isn't set up (GITHUB_APP_BUILDER_TOKEN missing).",
+	"ask_apk_repo":              "📦 Send the repo name (e.g. \"my-app\" or \"owner/my-app\"):",
+	"apk_fetching":              "📦 Looking for the latest APK...",
+	"apk_not_found":             "😔 No finished APK found. The build may not be done yet, or no code has been pushed.",
 }
