@@ -225,12 +225,25 @@ func (c *GitHubAppClient) getRepo(owner, repoName string) (fullName string, html
 // PushFile як файли ягонаро дар репо месозад/навсозӣ мекунад (тавассути
 // GitHub Contents API)
 func (c *GitHubAppClient) PushFile(fullName, path, message, content string) error {
-	payload, _ := json.Marshal(map[string]interface{}{
+	apiPath := fmt.Sprintf("/repos/%s/contents/%s", fullName, path)
+
+	payloadMap := map[string]interface{}{
 		"message": message,
 		"content": base64.StdEncoding.EncodeToString([]byte(content)),
-	})
+	}
 
-	apiPath := fmt.Sprintf("/repos/%s/contents/%s", fullName, path)
+	// GitHub Contents API-и PUT ҳангоми НАВСОЗИИ файли МАВҶУДА "sha"-и
+	// нусхаи ҳозираро талаб мекунад (вагарна 422 "sha" wasn't supplied
+	// медиҳад). Азбаски ҳар корбар танҳо 1 репо дорад ва лоиҳаро борҳо
+	// навсозӣ карда метавонад, lib/main.dart метавонад аллакай вуҷуд дошта
+	// бошад — пас аввал sha-и мавҷударо мегирем (агар файл нав бошад, ин
+	// 404 медиҳад ва sha холӣ мемонад, ки барои сохтани файли нав дуруст аст)
+	if sha, err := c.getFileSHA(fullName, path); err == nil && sha != "" {
+		payloadMap["sha"] = sha
+	}
+
+	payload, _ := json.Marshal(payloadMap)
+
 	body, status, err := c.doRequest(http.MethodPut, apiPath, payload)
 	if err != nil {
 		return err
@@ -239,6 +252,29 @@ func (c *GitHubAppClient) PushFile(fullName, path, message, content string) erro
 		return fmt.Errorf("failed to push file %q: status %d, body: %s", path, status, string(body))
 	}
 	return nil
+}
+
+// getFileSHA sha-и blob-и файли ҳозираро мегирад (агар мавҷуд бошад).
+// Агар файл вуҷуд надошта бошад (404), sha холӣ бе хато бармегардад
+func (c *GitHubAppClient) getFileSHA(fullName, path string) (string, error) {
+	apiPath := fmt.Sprintf("/repos/%s/contents/%s", fullName, path)
+	body, status, err := c.doRequest(http.MethodGet, apiPath, nil)
+	if err != nil {
+		return "", err
+	}
+	if status == http.StatusNotFound {
+		return "", nil
+	}
+	if status != http.StatusOK {
+		return "", fmt.Errorf("failed to get file sha for %q: status %d", path, status)
+	}
+	var result struct {
+		SHA string `json:"sha"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
+	}
+	return result.SHA, nil
 }
 
 // PushFlutterScreen танҳо lib/main.dart-и AI-сохташударо ба репо мебарорад.
