@@ -17,6 +17,58 @@ import (
 
 const githubAPIBase = "https://api.github.com"
 
+// flutterAutoCreateWorkflow скелети пурраи Flutter-ро (агар набошад) месозад
+// ва ФАВРАН ба репо commit мекунад — то pubspec.yaml/android/ios ва ғ. дар
+// худи репо боқӣ монад, на ҳар дафъа аз нав дар ичрокунандаи муваққатии
+// GitHub Actions сохта шавад. Ин workflow пеш аз ҳар коднависии AI ва пеш
+// аз build.yml push ва иҷро карда мешавад (дар CreateOrGetUserRepo)
+const flutterAutoCreateWorkflow = `name: Auto Create Flutter Project
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  create_flutter:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Create Flutter project if missing
+        run: |
+          if [ ! -f "pubspec.yaml" ]; then
+            PROJECT_NAME=$(basename "$GITHUB_REPOSITORY" | tr '-' '_')
+            flutter create --project-name "$PROJECT_NAME" .
+          else
+            echo "Flutter project already exists."
+          fi
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .
+
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Auto create Flutter project"
+            git push
+          fi
+`
+
 // flutterBuildWorkflow workflow-и GitHub Actions барои лоиҳаи Flutter.
 // Агар pubspec.yaml вуҷуд надошта бошад (репои нав), "flutter create ."
 // худкор скелети пурраи лоиҳаро месозад (ин ҳамеша дуруст build мешавад,
@@ -147,12 +199,15 @@ func (c *GitHubAppClient) CreateOrGetUserRepo(telegramID int64, appName string) 
 			return "", "", false, fmt.Errorf("repo already exists but failed to fetch it: %w", getErr)
 		}
 
-		// Ҳатто барои репои мавҷуда низ build.yml-ро бо нусхаи ҲОЗИРА иваз
+		// Ҳатто барои репои мавҷуда низ workflow-ҳоро бо нусхаи ҲОЗИРА иваз
 		// мекунем — вагарна корбароне, ки репояшон қаблан сохта шудааст,
 		// ҳамеша бо версияи кӯҳнаи workflow (бо баги эҳтимолӣ) кор мекунанд,
 		// ҳатто пас аз ислоҳи мо дар код
+		if err := c.PushFile(full, ".github/workflows/auto-create.yml", "Update auto-create Flutter workflow", flutterAutoCreateWorkflow); err != nil {
+			utils.LogError("githubapp: failed to update auto-create workflow for existing repo %s: %v", full, err)
+		}
 		if err := c.PushFile(full, ".github/workflows/build.yml", "Update Flutter APK build workflow", flutterBuildWorkflow); err != nil {
-			utils.LogError("githubapp: failed to update workflow for existing repo %s: %v", full, err)
+			utils.LogError("githubapp: failed to update build workflow for existing repo %s: %v", full, err)
 		}
 
 		return full, url, false, nil
@@ -181,27 +236,40 @@ func (c *GitHubAppClient) CreateOrGetUserRepo(telegramID int64, appName string) 
 	// сохта шуд) пеш аз навиштани файли дигар пурра омода шавад
 	time.Sleep(2 * time.Second)
 
-	if err := c.PushFile(repo.FullName, ".github/workflows/build.yml", "Add Flutter APK build workflow", flutterBuildWorkflow); err != nil {
-		return repo.FullName, repo.HTMLURL, true, fmt.Errorf("repo created but failed to add workflow: %w", err)
+	// Аввал auto-create.yml — пеш аз ҳар коднависии AI ва пеш аз build.yml —
+	// то скелети Flutter (pubspec.yaml, android/, ios/ ва ғ.) ба худи репо
+	// commit шавад, на ҳар дафъа дар ичрокунандаи муваққатӣ аз нав сохта шавад
+	if err := c.PushFile(repo.FullName, ".github/workflows/auto-create.yml", "Add auto-create Flutter workflow", flutterAutoCreateWorkflow); err != nil {
+		return repo.FullName, repo.HTMLURL, true, fmt.Errorf("repo created but failed to add auto-create workflow: %w", err)
 	}
 
 	// МУҲИМ: GitHub Actions худи commit-е, ки workflow-ро аввалин бор
 	// илова мекунад, фаъол намекунад (маҳдудияти худи GitHub, на бағи мо).
 	// Барои ҳамин баъд аз илова кардани workflow, онро мустақим тавассути
-	// workflow_dispatch оғоз мекунем — то build ҳатман сар шавад, ҳатто
-	// агар баъдтар экрани AI илова нашавад (масалан токен нодуруст бошад)
+	// workflow_dispatch оғоз мекунем — то скелети Flutter ҳатман commit шавад,
+	// пеш аз он ки build.yml ё коди AI илова шавад
 	time.Sleep(2 * time.Second)
-	if err := c.TriggerWorkflow(repo.FullName); err != nil {
-		utils.LogError("githubapp: failed to trigger initial workflow run for %s: %v", repo.FullName, err)
+	if err := c.TriggerWorkflow(repo.FullName, "auto-create.yml"); err != nil {
+		utils.LogError("githubapp: failed to trigger auto-create workflow for %s: %v", repo.FullName, err)
+	}
+
+	if err := c.PushFile(repo.FullName, ".github/workflows/build.yml", "Add Flutter APK build workflow", flutterBuildWorkflow); err != nil {
+		return repo.FullName, repo.HTMLURL, true, fmt.Errorf("repo created but failed to add build workflow: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+	if err := c.TriggerWorkflow(repo.FullName, "build.yml"); err != nil {
+		utils.LogError("githubapp: failed to trigger initial build workflow run for %s: %v", repo.FullName, err)
 	}
 
 	return repo.FullName, repo.HTMLURL, true, nil
 }
 
-// TriggerWorkflow build.yml-и репоро тавассути workflow_dispatch оғоз мекунад
-func (c *GitHubAppClient) TriggerWorkflow(fullName string) error {
+// TriggerWorkflow workflow-и додашударо (масалан "build.yml" ё
+// "auto-create.yml") тавассути workflow_dispatch оғоз мекунад
+func (c *GitHubAppClient) TriggerWorkflow(fullName, workflowFile string) error {
 	payload, _ := json.Marshal(map[string]interface{}{"ref": "main"})
-	path := fmt.Sprintf("/repos/%s/actions/workflows/build.yml/dispatches", fullName)
+	path := fmt.Sprintf("/repos/%s/actions/workflows/%s/dispatches", fullName, workflowFile)
 	body, status, err := c.doRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return err
