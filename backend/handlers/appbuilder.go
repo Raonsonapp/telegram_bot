@@ -55,7 +55,7 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 		if err != nil {
 			utils.LogError("appbuilder: AI screen generation failed for %q: %v", description, err)
 			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
-		} else if err := d.GitHubApp.PushAndroidScaffold(fullName, screen); err != nil {
+		} else if err := d.GitHubApp.PushFlutterScreen(fullName, screen); err != nil {
 			utils.LogError("appbuilder: failed to push AI-generated scaffold to %s: %v", fullName, err)
 			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
 		}

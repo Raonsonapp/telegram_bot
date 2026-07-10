@@ -46,33 +46,28 @@ func (c *AICoderClient) Enabled() bool {
 	return c.token != ""
 }
 
-// GeneratedScreen се файли асосии экрани як-саҳифагии Android-ро (Kotlin + XML)
+// GeneratedScreen файли асосии экрани як-саҳифагии Flutter (lib/main.dart)-ро
 // дар бар мегирад
 type GeneratedScreen struct {
-	AppName         string
-	MainActivityKt  string
-	ActivityMainXML string
+	AppName  string
+	MainDart string
 }
 
-const screenPromptTemplate = `You generate Android Kotlin code for a minimal single-screen demo app.
+const screenPromptTemplate = `You generate Flutter/Dart code for a minimal single-screen demo app.
 
-Fixed package name: com.appbuilder.generated
 User's app description: %s
 
-Create exactly ONE screen (MainActivity) with exactly 5 buttons, one per major function implied by the description. Each button's onClick listener should just show a Toast with that function's name (placeholder only — no real backend, networking, or database logic; this is a scaffold the user will extend).
+Create exactly ONE screen with exactly 5 buttons, one per major function implied by the description. Each button's onPressed should just show a SnackBar with that function's name (placeholder only — no real backend, networking, or database logic; this is a scaffold the user will extend).
 
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
-{"app_name": "Short App Name", "main_activity_kt": "...", "activity_main_xml": "..."}
+{"app_name": "Short App Name", "main_dart": "..."}
 
-Rules for main_activity_kt (full file content, as a single string with \n for newlines):
-- package com.appbuilder.generated
-- imports: androidx.appcompat.app.AppCompatActivity, android.os.Bundle, android.widget.Toast, android.widget.Button
-- class MainActivity : AppCompatActivity()
-- onCreate calls setContentView(R.layout.activity_main), then for each of btn1..btn5: findViewById<Button>(R.id.btnN).setOnClickListener { Toast.makeText(this, "<function name>", Toast.LENGTH_SHORT).show() }
-
-Rules for activity_main_xml (full file content, as a single string with \n for newlines):
-- root LinearLayout, xmlns:android, orientation="vertical", layout_width/height="match_parent", padding="16dp"
-- exactly 5 Button elements with android:id="@+id/btn1" through "@+id/btn5", each with a descriptive android:text matching one function`
+Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart"):
+- import 'package:flutter/material.dart';
+- void main() => runApp(const MyApp());
+- MyApp is a StatelessWidget returning a MaterialApp with title matching app_name and a home of MyHomePage
+- MyHomePage is a StatelessWidget with a Scaffold: AppBar with the app title, and a body Column (mainAxisAlignment: MainAxisAlignment.center) containing exactly 5 ElevatedButton widgets, each with a descriptive child Text matching one function, and an onPressed that calls ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('<function name>')))
+- wrap the 5 buttons so they don't overflow (e.g. each on its own row with some spacing, using SizedBox(height: 12) between them)`
 
 // GenerateScreen тавсифи озоди корбарро мегирад ва экрани якум (MainActivity.kt +
 // activity_main.xml + номи барнома)-ро тавассути Qwen мебарорад
@@ -133,21 +128,19 @@ func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, err
 	content := extractJSONObject(result.Choices[0].Message.Content)
 
 	var screen struct {
-		AppName         string `json:"app_name"`
-		MainActivityKt  string `json:"main_activity_kt"`
-		ActivityMainXML string `json:"activity_main_xml"`
+		AppName  string `json:"app_name"`
+		MainDart string `json:"main_dart"`
 	}
 	if err := json.Unmarshal([]byte(content), &screen); err != nil {
 		return GeneratedScreen{}, fmt.Errorf("failed to parse generated screen JSON: %w (raw: %s)", err, truncateStr(content, 300))
 	}
-	if screen.MainActivityKt == "" || screen.ActivityMainXML == "" {
+	if screen.MainDart == "" {
 		return GeneratedScreen{}, fmt.Errorf("generated screen missing required fields")
 	}
 
 	return GeneratedScreen{
-		AppName:         screen.AppName,
-		MainActivityKt:  screen.MainActivityKt,
-		ActivityMainXML: screen.ActivityMainXML,
+		AppName:  screen.AppName,
+		MainDart: screen.MainDart,
 	}, nil
 }
 

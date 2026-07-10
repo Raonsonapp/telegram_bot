@@ -15,12 +15,13 @@ import (
 
 const githubAPIBase = "https://api.github.com"
 
-// androidBuildWorkflow workflow-и стандартии GitHub Actions, ки лоиҳаи
-// Android-и Gradle-ро build карда, APK-ро ҳамчун artifact бор мекунад.
-// Ин ба ҳар репои нав худкор илова мешавад. Аз gradle/actions/setup-gradle
-// истифода мешавад (на ./gradlew), то ниёз ба комитти gradle-wrapper.jar-и
-// бинарӣ набошад — репо метавонад холӣ бошад ё лоиҳаи худи корбар/AI-ро дошта бошад
-const androidBuildWorkflow = `name: Build APK
+// flutterBuildWorkflow workflow-и GitHub Actions барои лоиҳаи Flutter.
+// Агар pubspec.yaml вуҷуд надошта бошад (репои нав), "flutter create ."
+// худкор скелети пурраи лоиҳаро месозад (ин ҳамеша дуруст build мешавад,
+// чун худи Flutter месозад, на AI) — файлҳои мавҷуда (масалан lib/main.dart-и
+// AI-сохташуда, агар пеш аз ин push шуда бошад) аз ҷониби "flutter create"
+// рӯй гардонда намешаванд, танҳо чизҳои норасида илова мешаванд
+const flutterBuildWorkflow = `name: Build APK
 
 on:
   push:
@@ -33,96 +34,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: subosito/flutter-action@v2
         with:
-          distribution: temurin
-          java-version: '17'
+          channel: stable
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Create Flutter project if missing
+        run: |
+          if [ ! -f "pubspec.yaml" ]; then
+            flutter create .
+          fi
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Get dependencies
+        run: flutter pub get
 
-      - name: Build debug APK
-        run: gradle assembleDebug
+      - name: Build APK
+        run: flutter build apk --debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
-`
-
-// androidPackageName номи собити package барои ҳамаи барномаҳои AI-сохташуда
-const androidPackageName = "com.appbuilder.generated"
-
-const settingsGradleFile = `rootProject.name = "GeneratedApp"
-include(":app")
-`
-
-const rootBuildGradleFile = `plugins {
-    id("com.android.application") version "8.5.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.24" apply false
-}
-`
-
-const appBuildGradleFile = `plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-}
-
-android {
-    namespace = "` + androidPackageName + `"
-    compileSdk = 34
-
-    defaultConfig {
-        applicationId = "` + androidPackageName + `"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-}
-
-dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-}
-`
-
-const androidManifestFile = `<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application
-        android:allowBackup="true"
-        android:label="@string/app_name"
-        android:theme="@style/Theme.Material3.DayNight">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
+          path: build/app/outputs/flutter-apk/*.apk
 `
 
 // GitHubAppClient ба GitHub REST API пайваст мешавад — репо месозад,
@@ -244,7 +176,7 @@ func (c *GitHubAppClient) CreateAppRepo(appName string) (fullName string, htmlUR
 	// сохта шуд) пеш аз навиштани файли дигар пурра омода шавад
 	time.Sleep(2 * time.Second)
 
-	if err := c.PushFile(repo.FullName, ".github/workflows/build.yml", "Add Android APK build workflow", androidBuildWorkflow); err != nil {
+	if err := c.PushFile(repo.FullName, ".github/workflows/build.yml", "Add Flutter APK build workflow", flutterBuildWorkflow); err != nil {
 		return repo.FullName, repo.HTMLURL, fmt.Errorf("repo created but failed to add workflow: %w", err)
 	}
 
@@ -270,33 +202,13 @@ func (c *GitHubAppClient) PushFile(fullName, path, message, content string) erro
 	return nil
 }
 
-// PushAndroidScaffold сохтори собити лоиҳаи Android (Gradle, Manifest)-ро
-// якҷоя бо экрани AI-сохташуда (MainActivity.kt, activity_main.xml,
-// strings.xml) ба репо мебарорад — репо баъд аз ин омода барои build аст
-func (c *GitHubAppClient) PushAndroidScaffold(fullName string, screen GeneratedScreen) error {
-	appNameForStrings := screen.AppName
-	if appNameForStrings == "" {
-		appNameForStrings = "Generated App"
-	}
-	stringsXML := fmt.Sprintf(`<resources>
-    <string name="app_name">%s</string>
-</resources>
-`, appNameForStrings)
-
-	files := map[string]string{
-		"settings.gradle.kts":                                        settingsGradleFile,
-		"build.gradle.kts":                                           rootBuildGradleFile,
-		"app/build.gradle.kts":                                       appBuildGradleFile,
-		"app/src/main/AndroidManifest.xml":                           androidManifestFile,
-		"app/src/main/res/values/strings.xml":                        stringsXML,
-		"app/src/main/res/layout/activity_main.xml":                  screen.ActivityMainXML,
-		"app/src/main/java/com/appbuilder/generated/MainActivity.kt": screen.MainActivityKt,
-	}
-
-	for path, content := range files {
-		if err := c.PushFile(fullName, path, "Add generated app screen", content); err != nil {
-			return fmt.Errorf("failed to push %q: %w", path, err)
-		}
+// PushFlutterScreen танҳо lib/main.dart-и AI-сохташударо ба репо мебарорад.
+// Дигар файлҳои лоиҳаи Flutter (pubspec.yaml, android/, ios/ ва ғ.) лозим
+// нестанд — вақте workflow иҷро мешавад, "flutter create ." онҳоро худкор
+// месозад, бе рӯй гардондани lib/main.dart-и мавҷуда (чун файл аллакай ҳаст)
+func (c *GitHubAppClient) PushFlutterScreen(fullName string, screen GeneratedScreen) error {
+	if err := c.PushFile(fullName, "lib/main.dart", "Add generated app screen", screen.MainDart); err != nil {
+		return fmt.Errorf("failed to push lib/main.dart: %w", err)
 	}
 	return nil
 }
