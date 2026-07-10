@@ -154,6 +154,8 @@ var TajikMessages = map[string]string{
 	"ask_apk_repo":              "📦 Номи репоро бинавис (масалан \"my-app\" ё \"owner/my-app\"):",
 	"apk_fetching":              "📦 APK-и охиринро мекобам...",
 	"apk_not_found":             "😔 Ягон APK-и тайёр наёфтам. Шояд ҳанӯз build тамом нашудааст, ё коде push нашудааст.",
+	"apk_too_large":             "😔 APK аз ҳадди Telegram (50МБ) калонтар аст ва фиристода намешавад.",
+	"apk_send_failed":           "😔 Хатогӣ ҳангоми фиристодани APK. Боз кӯшиш кун.",
 }
 
 // GetMessage паёми маҳаллисозишударо аз рӯи забон ва калид бармегардонад.

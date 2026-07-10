@@ -151,4 +151,6 @@ var RussianMessages = map[string]string{
 	"ask_apk_repo":              "📦 Напиши название репозитория (например \"my-app\" или \"owner/my-app\"):",
 	"apk_fetching":              "📦 Ищу последний APK...",
 	"apk_not_found":             "😔 Готового APK не найдено. Возможно, сборка ещё не завершена или код ещё не запушен.",
+	"apk_too_large":             "😔 APK больше лимита Telegram (50МБ) и не может быть отправлен.",
+	"apk_send_failed":           "😔 Ошибка при отправке APK. Попробуй ещё раз.",
 }

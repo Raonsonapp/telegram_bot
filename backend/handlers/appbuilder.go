@@ -449,6 +449,10 @@ func HandleAppEditLogoPhoto(d *Deps, msg *tgbotapi.Message) {
 	}
 }
 
+// telegramMaxFileBytes — ҳадди фиристодани файл аз бот (Telegram Bot API,
+// ~50МБ). Аз ин боло кӯшиши фиристодан бе хатогии равшан ноком мешавад
+const telegramMaxFileBytes = 49 * 1024 * 1024
+
 // HandleFetchAPKButton охирин APK-и репои шахсии корбарро мегирад. Номи
 // репо аз ID-и Telegram-и корбар худкор ҳосил мешавад (app-user-<ID>) —
 // аз корбар дигар чизе пурсида намешавад, зеро номи репо аллакай муайян аст
@@ -476,6 +480,18 @@ func HandleFetchAPKButton(d *Deps, msg *tgbotapi.Message) {
 		return
 	}
 
+	// Telegram-и бот файлро танҳо то ~50МБ иҷозат медиҳад — агар аз ин
+	// зиёд бошад, кӯшиши фиристодан бе хабардор кардани корбар ноком
+	// мешавад (ба назар "ҳамту меистад" мерасад). Барои ҳамин пешакӣ санҷем
+	if len(apkBytes) > telegramMaxFileBytes {
+		utils.LogError("appbuilder: APK for %q is %d bytes, exceeds Telegram's bot upload limit", repoName, len(apkBytes))
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "apk_too_large"))
+		return
+	}
+
 	doc := tgbotapi.NewDocument(msg.Chat.ID, tgbotapi.FileBytes{Name: apkFileName, Bytes: apkBytes})
-	d.Bot.Send(doc)
+	if _, err := d.Bot.Send(doc); err != nil {
+		utils.LogError("appbuilder: failed to send APK document for %q: %v", repoName, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "apk_send_failed"))
+	}
 }

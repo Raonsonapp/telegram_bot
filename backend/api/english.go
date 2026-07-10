@@ -151,4 +151,6 @@ var EnglishMessages = map[string]string{
 	"ask_apk_repo":              "📦 Send the repo name (e.g. \"my-app\" or \"owner/my-app\"):",
 	"apk_fetching":              "📦 Looking for the latest APK...",
 	"apk_not_found":             "😔 No finished APK found. The build may not be done yet, or no code has been pushed.",
+	"apk_too_large":             "😔 The APK is bigger than Telegram's 50MB limit and can't be sent.",
+	"apk_send_failed":           "😔 Failed to send the APK. Try again.",
 }
