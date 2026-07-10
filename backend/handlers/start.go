@@ -44,6 +44,8 @@ func HandleStart(d *Deps, msg *tgbotapi.Message) {
 		return
 	}
 
+	applyPendingReferralIfAny(d, telegramID, isNew)
+
 	if isNew {
 		text := api.GetMessage(d.Config.DefaultLanguage, "welcome")
 		message := tgbotapi.NewMessage(msg.Chat.ID, text)

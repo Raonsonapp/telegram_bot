@@ -246,6 +246,11 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 		return
 	}
 
+	// Агар ин /start бо payload-и линки даъват (ref_<ID>) бошад, ПЕШ АЗ
+	// gate-и обунаи ҳатмӣ нигоҳ дошта мешавад — вагарна агар корбар ҳанӯз
+	// обуна набошад, payload то тасдиқи обуна гум мешавад
+	handlers.CapturePendingReferralArg(msg)
+
 	if msg.Chat.ID != d.Config.AdminChatID {
 		if !handlers.EnsureSubscribed(d, msg.From.ID, msg.Chat.ID) {
 			return
@@ -331,6 +336,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 			return
 		case buttonLabel(lang, "btn_feedback"):
 			handlers.HandleFeedbackButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_invite"):
+			handlers.HandleInviteButton(d, msg)
 			return
 		case buttonLabel(lang, "btn_help"):
 			handlers.HandleHelp(d, msg)

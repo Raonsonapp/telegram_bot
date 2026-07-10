@@ -229,20 +229,7 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 		utils.LogError("appbuilder: failed to finalize app setup for %s: %v", fullName, err)
 	}
 
-	var aiScreen *api.GeneratedScreen
-	if d.AICoder.Enabled() {
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
-		screen, err := d.AICoder.GenerateScreen(description)
-		if err != nil {
-			utils.LogError("appbuilder: AI screen generation failed for %q: %v", description, err)
-			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
-		} else if err := d.GitHubApp.PushFlutterScreen(fullName, screen); err != nil {
-			utils.LogError("appbuilder: failed to push AI-generated scaffold to %s: %v", fullName, err)
-			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
-		} else {
-			aiScreen = &screen
-		}
-	}
+	aiScreen := generateAndPushScreen(d, msg, lang, fullName, description)
 
 	delete(appBuilderSessions, msg.From.ID)
 
@@ -251,6 +238,41 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), fullName, htmlURL)
 		sendTextMarkdown(d, msg.Chat.ID, text)
 	}
+}
+
+// generateAndPushScreen тавсифро ба AI медиҳад ва экрани сохташударо push
+// мекунад. Агар корбар ҳадди даъватро (5 нафар) пур карда бошад, аз
+// GenerateFullApp (bottom-navigation, якчанд tab) истифода мешавад; вагарна
+// аз GenerateScreen-и оддӣ (1 экран, 5 функсия)
+func generateAndPushScreen(d *Deps, msg *tgbotapi.Message, lang, fullName, description string) *api.GeneratedScreen {
+	if !d.AICoder.Enabled() {
+		return nil
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
+
+	unlimited, err := d.DB.HasUnlimitedAI(msg.From.ID)
+	if err != nil {
+		utils.LogError("appbuilder: failed to check unlimited-AI status for %d: %v", msg.From.ID, err)
+	}
+
+	var screen api.GeneratedScreen
+	if unlimited {
+		screen, err = d.AICoder.GenerateFullApp(description)
+	} else {
+		screen, err = d.AICoder.GenerateScreen(description)
+	}
+	if err != nil {
+		utils.LogError("appbuilder: AI screen generation failed for %q: %v", description, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return nil
+	}
+	if err := d.GitHubApp.PushFlutterScreen(fullName, screen); err != nil {
+		utils.LogError("appbuilder: failed to push AI-generated scaffold to %s: %v", fullName, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return nil
+	}
+	return &screen
 }
 
 const (
@@ -352,21 +374,13 @@ func HandleAppEditDescriptionText(d *Deps, msg *tgbotapi.Message) {
 		return
 	}
 
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
-	screen, err := d.AICoder.GenerateScreen(description)
-	if err != nil {
-		utils.LogError("appbuilder: AI screen generation failed for %q: %v", description, err)
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
-		return
-	}
-	if err := d.GitHubApp.PushFlutterScreen(repo.FullName, screen); err != nil {
-		utils.LogError("appbuilder: failed to push AI-generated scaffold to %s: %v", repo.FullName, err)
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+	aiScreen := generateAndPushScreen(d, msg, lang, repo.FullName, description)
+	if aiScreen == nil {
 		return
 	}
 
 	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_waiting_build"))
-	if waitForGreenBuild(d, msg, lang, repo.FullName, description, &screen) {
+	if waitForGreenBuild(d, msg, lang, repo.FullName, description, aiScreen) {
 		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), repo.FullName, repo.URL)
 		sendTextMarkdown(d, msg.Chat.ID, text)
 	}

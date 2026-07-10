@@ -20,7 +20,10 @@ func MainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_feedback")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_invite")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
+		),
+		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_help")),
 		),
 	)

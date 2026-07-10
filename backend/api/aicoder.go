@@ -86,6 +86,28 @@ Rules for main_dart (full content of lib/main.dart, as a single string with \n f
 - add a FloatingActionButton on the Scaffold for the single most important function, with a fitting icon, that also shows the same SnackBar as its card
 - use consistent padding (e.g. EdgeInsets.all(16)) and spacing (SizedBox(height: 16) between the header and the grid) so the screen looks intentional and complete, not sparse`
 
+// fullAppPromptTemplate — барои корбароне истифода мешавад, ки ҳадди
+// даъватро (5 нафар) пур кардаанд: ба ҷои 1 экрани оддӣ, барномаи
+// бо якчанд қисм (bottom navigation) месозад — ҳанӯз 1 файл (lib/main.dart),
+// то системаи мавҷудаи push/build/fix бе тағйир кор кунад, вале аз назари
+// корбар "барномаи пурратар" ба назар мерасад
+const fullAppPromptTemplate = `You generate Flutter/Dart code for a fuller, more complete app (still a single lib/main.dart file, but richer than a single screen).
+
+User's app description: %s
+
+Identify 3 to 4 main sections/tabs implied by the description (e.g. Home, Search, Profile, Settings — pick ones that actually fit the description, not generic placeholders). Build a proper bottom-navigation app: a Scaffold with a BottomNavigationBar (3 to 4 items with fitting icons+labels) switching between an IndexedStack of that many tab widgets. Each tab must have its own realistic, complete UI (lists, cards, forms, avatars — whatever fits that tab's purpose), not just a placeholder button. Any action that would need a real backend should just show a SnackBar placeholder.
+
+Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
+{"app_name": "Short App Name", "main_dart": "..."}
+
+Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", with every tab widget defined as a private class in this same file):
+- import 'package:flutter/material.dart';
+- void main() => runApp(const MyApp());
+- MyApp is a StatelessWidget: MaterialApp with useMaterial3: true, theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and home MyHomePage
+- MyHomePage is a StatefulWidget holding the selected tab index in its State; its Scaffold has body: IndexedStack(index: _selectedIndex, children: [...one widget per tab...]) and bottomNavigationBar: BottomNavigationBar(currentIndex: _selectedIndex, onTap: (i) => setState(() => _selectedIndex = i), type: BottomNavigationBarType.fixed, items: [...])
+- each tab is its own private StatelessWidget or StatefulWidget class (e.g. _HomeTab, _SearchTab, _ProfileTab) with its own Scaffold-less body (each tab supplies just its content; wrap each tab's content in its own AppBar+body via a Scaffold per tab, or share one AppBar in MyHomePage whose title updates with the tab — pick whichever is simpler to implement correctly)
+- keep the file complete and compiling — prioritize correctness over maximal feature count; it is fine to keep each tab's content moderately simple as long as it looks like a real, finished screen`
+
 const fixPromptTemplate = `The following Flutter/Dart lib/main.dart failed to build in GitHub Actions ("flutter build apk"). Fix it so it builds successfully, while preserving the same screen design and functionality intent.
 
 Original app description: %s
@@ -127,6 +149,14 @@ const maxRateLimitWait = 15 * time.Second
 // пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
 	prompt := fmt.Sprintf(screenPromptTemplate, description)
+	return c.runPromptAcrossModels(prompt)
+}
+
+// GenerateFullApp мисли GenerateScreen аст, вале дархости пурратар
+// (bottom-navigation бо якчанд tab, на 1 экрани оддӣ) мефиристад — барои
+// корбароне, ки ҳадди даъватро (5 нафар) пур кардаанд
+func (c *AICoderClient) GenerateFullApp(description string) (GeneratedScreen, error) {
+	prompt := fmt.Sprintf(fullAppPromptTemplate, description)
 	return c.runPromptAcrossModels(prompt)
 }
 
