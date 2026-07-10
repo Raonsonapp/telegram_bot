@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"anime-bot/backend/utils"
 )
 
 const githubAPIBase = "https://api.github.com"
@@ -173,7 +175,31 @@ func (c *GitHubAppClient) CreateOrGetUserRepo(telegramID int64, appName string) 
 		return repo.FullName, repo.HTMLURL, true, fmt.Errorf("repo created but failed to add workflow: %w", err)
 	}
 
+	// МУҲИМ: GitHub Actions худи commit-е, ки workflow-ро аввалин бор
+	// илова мекунад, фаъол намекунад (маҳдудияти худи GitHub, на бағи мо).
+	// Барои ҳамин баъд аз илова кардани workflow, онро мустақим тавассути
+	// workflow_dispatch оғоз мекунем — то build ҳатман сар шавад, ҳатто
+	// агар баъдтар экрани AI илова нашавад (масалан токен нодуруст бошад)
+	time.Sleep(2 * time.Second)
+	if err := c.TriggerWorkflow(repo.FullName); err != nil {
+		utils.LogError("githubapp: failed to trigger initial workflow run for %s: %v", repo.FullName, err)
+	}
+
 	return repo.FullName, repo.HTMLURL, true, nil
+}
+
+// TriggerWorkflow build.yml-и репоро тавассути workflow_dispatch оғоз мекунад
+func (c *GitHubAppClient) TriggerWorkflow(fullName string) error {
+	payload, _ := json.Marshal(map[string]interface{}{"ref": "main"})
+	path := fmt.Sprintf("/repos/%s/actions/workflows/build.yml/dispatches", fullName)
+	body, status, err := c.doRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return err
+	}
+	if status != http.StatusNoContent {
+		return fmt.Errorf("failed to dispatch workflow: status %d, body: %s", status, string(body))
+	}
+	return nil
 }
 
 // getRepo маълумоти репои мавҷударо (full_name, html_url) мегирад

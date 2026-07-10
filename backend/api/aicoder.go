@@ -11,14 +11,15 @@ import (
 )
 
 // openRouterEndpoint API-и OpenRouter (дастрасии ройгону пулакӣ ба
-// моделҳои гуногун бо як калид) — модели пешфарз дар зер Qwen-и коднависии
-// ройгонро истифода мебарад
+// моделҳои гуногун бо як калид)
 const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions"
 
-// defaultCoderModel Qwen-и ройгон дар OpenRouter, махсус барои коднависӣ.
-// Бо OPENROUTER_MODEL метавон дигар кард (масалан агар номи ройгони
-// OpenRouter иваз шавад)
-const defaultCoderModel = "qwen/qwen-2.5-coder-32b-instruct:free"
+// defaultCoderModel модели пешфарз. МУҲИМ: рӯйхати моделҳои ройгони
+// OpenRouter хеле тез иваз мешавад (масалан Qwen coder-и ройгон дар миёнаи
+// 2026 хориҷ шуд) — агар ин модел низ дигар кор накунад, ба ҷои тағйири
+// код, тавассути Environment Variable-и OPENROUTER_MODEL дар Render
+// модели дигари ройгонро аз openrouter.ai/models (филтри "free") гузор
+const defaultCoderModel = "openai/gpt-oss-120b:free"
 
 // AICoderClient барои сохтани экрани оддии Android (1 саҳифа, 5 функсия)
 // аз тавсифи озоди корбар, тавассути OpenRouter (Qwen coder), истифода мешавад
