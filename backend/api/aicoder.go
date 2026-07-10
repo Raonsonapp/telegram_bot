@@ -47,7 +47,10 @@ func NewAICoderClient(token, model string) *AICoderClient {
 		model = defaultCoderModel
 	}
 	return &AICoderClient{
-		http:  &http.Client{Timeout: 90 * time.Second},
+		// Дархости экрани пурратар (AppBar, grid-и корт, FAB ва ғ.) аз ду
+		// тугмаи оддӣ дарозтар аст, пас ба моделҳои сатҳи ройгон вақти
+		// бештар лозим — 90с баъзан кам буд ("context deadline exceeded")
+		http:  &http.Client{Timeout: 150 * time.Second},
 		token: token,
 		model: model,
 	}
@@ -108,7 +111,7 @@ const maxRateLimitWait = 15 * time.Second
 // бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора кӯшиш мекунад
 // пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
-	var lastErr error
+	var attempts []string
 	for _, model := range c.candidateModels() {
 		screen, err := c.generateWithModel(description, model)
 		if err == nil {
@@ -124,9 +127,9 @@ func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, err
 			}
 		}
 
-		lastErr = fmt.Errorf("model %s: %w", model, err)
+		attempts = append(attempts, fmt.Sprintf("%s: %v", model, err))
 	}
-	return GeneratedScreen{}, lastErr
+	return GeneratedScreen{}, fmt.Errorf("all models failed — %s", strings.Join(attempts, " | "))
 }
 
 // candidateModels рӯйхати моделҳоеро бармегардонад, ки паиҳам озмуда
