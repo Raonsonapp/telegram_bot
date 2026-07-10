@@ -28,24 +28,37 @@ func HandleAppBuilderButton(d *Deps, msg *tgbotapi.Message) {
 	sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_name"))
 }
 
-// HandleAppNameText номи фиристодаи корбарро мегирад, репои нав месозад
-// (бо workflow-и Android build-и тайёр) ва пайвандашро мефиристад
+// HandleAppNameText тавсифи фиристодаи корбарро мегирад, репои нав месозад
+// (бо workflow-и Android build-и тайёр), ва агар AICoder фаъол бошад,
+// экрани 1-саҳифагӣ бо 5 функсия (тавассути Qwen) месозаду push мекунад
 func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 	PendingAppName[msg.From.ID] = false
 	lang := getUserLang(d, msg.From.ID)
-	name := strings.TrimSpace(msg.Text)
-	if name == "" {
+	description := strings.TrimSpace(msg.Text)
+	if description == "" {
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_name"))
 		return
 	}
 
 	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_creating"))
 
-	fullName, htmlURL, err := d.GitHubApp.CreateAppRepo(name)
+	fullName, htmlURL, err := d.GitHubApp.CreateAppRepo(description)
 	if err != nil {
-		utils.LogError("appbuilder: failed to create repo for %q: %v", name, err)
+		utils.LogError("appbuilder: failed to create repo for %q: %v", description, err)
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
 		return
+	}
+
+	if d.AICoder.Enabled() {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
+		screen, err := d.AICoder.GenerateScreen(description)
+		if err != nil {
+			utils.LogError("appbuilder: AI screen generation failed for %q: %v", description, err)
+			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		} else if err := d.GitHubApp.PushAndroidScaffold(fullName, screen); err != nil {
+			utils.LogError("appbuilder: failed to push AI-generated scaffold to %s: %v", fullName, err)
+			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		}
 	}
 
 	text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), fullName, htmlURL)

@@ -15,4 +15,6 @@ type Config struct {
 	WorldCupEmail    string
 	WorldCupPassword string
 	GitHubAppToken   string
+	OpenRouterToken  string
+	OpenRouterModel  string
 }

@@ -113,5 +113,7 @@ func LoadConfig() *Config {
 		WorldCupEmail:    getEnv("WORLDCUP_API_EMAIL", ""),
 		WorldCupPassword: getEnv("WORLDCUP_API_PASSWORD", ""),
 		GitHubAppToken:   getEnv("GITHUB_APP_BUILDER_TOKEN", ""),
+		OpenRouterToken:  getEnv("OPENROUTER_API_KEY", ""),
+		OpenRouterModel:  getEnv("OPENROUTER_MODEL", ""),
 	}
 }

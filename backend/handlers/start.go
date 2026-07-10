@@ -23,6 +23,7 @@ type Deps struct {
 	Currency    *api.CurrencyClient
 	WorldCup    *api.WorldCupClient
 	GitHubApp   *api.GitHubAppClient
+	AICoder     *api.AICoderClient
 	Translator  *utils.Translator
 	Cache       *utils.Cache
 	Config      *config.Config

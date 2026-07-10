@@ -66,6 +66,13 @@ func main() {
 		utils.LogInfo("App Builder: GITHUB_APP_BUILDER_TOKEN танзим нашудааст, ин хусусият ғайрифаъол мемонад")
 	}
 
+	aiCoderClient := api.NewAICoderClient(cfg.OpenRouterToken, cfg.OpenRouterModel)
+	if aiCoderClient.Enabled() {
+		utils.LogInfo("App Builder: сохтани экрани AI (Qwen тавассути OpenRouter) фаъол аст")
+	} else {
+		utils.LogInfo("App Builder: OPENROUTER_API_KEY танзим нашудааст, репо бе экрани AI сохта мешавад")
+	}
+
 	deps := &handlers.Deps{
 		Bot:         bot,
 		DB:          db,
@@ -76,6 +83,7 @@ func main() {
 		Currency:    currencyClient,
 		WorldCup:    worldCupClient,
 		GitHubApp:   gitHubAppClient,
+		AICoder:     aiCoderClient,
 		Translator:  translator,
 		Cache:       cache,
 		Config:      cfg,
