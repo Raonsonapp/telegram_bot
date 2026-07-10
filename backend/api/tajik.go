@@ -135,6 +135,7 @@ var TajikMessages = map[string]string{
 	"price_order_cancelled":     "❌ Фармоиш бекор карда шуд.",
 	"price_order_sent":          "✅ Фармоишат ба админ фиристода шуд! Ба зудӣ бо ту тамос мегиранд.",
 	"price_session_expired":     "😔 Ҳисоб гум шуд, лутфан аз нав сар кун (🧮 Ҳисобкунаки нарх).",
+	"price_too_large":           "😔 Аз 10 Screen ё 100 Function зиёд — ин лоиҳаи калон аст, вақти бисёр ва нархи алоҳида мехоҳад. Лутфан бевосита бо админ тамос гир (💬 Бо админ гап зан), то нархи мушаххас гуфта шавад.",
 	"appbuilder_not_configured": "⚠️ Ин хусусият танзим нашудааст (GITHUB_APP_BUILDER_TOKEN гузошта нашудааст).",
 	"ask_apk_repo":              "📦 Номи репоро бинавис (масалан \"my-app\" ё \"owner/my-app\"):",
 	"apk_fetching":              "📦 APK-и охиринро мекобам...",

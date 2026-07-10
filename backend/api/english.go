@@ -132,6 +132,7 @@ var EnglishMessages = map[string]string{
 	"price_order_cancelled":     "❌ Order cancelled.",
 	"price_order_sent":          "✅ Your order was sent to the admin! They'll be in touch soon.",
 	"price_session_expired":     "😔 The estimate was lost, please start again (🧮 Price Calculator).",
+	"price_too_large":           "😔 More than 10 Screens or 100 Functions — that's a big project needing a lot of time and a custom price. Please contact the admin directly (💬 Contact Admin) to discuss the exact price.",
 	"appbuilder_not_configured": "⚠️ This feature isn't set up (GITHUB_APP_BUILDER_TOKEN missing).",
 	"ask_apk_repo":              "📦 Send the repo name (e.g. \"my-app\" or \"owner/my-app\"):",
 	"apk_fetching":              "📦 Looking for the latest APK...",

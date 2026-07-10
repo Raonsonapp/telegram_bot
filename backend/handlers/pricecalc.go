@@ -32,6 +32,13 @@ const (
 	pricePerFunctionOnline  = 35
 )
 
+// Ҳадди болоӣ — аз ин зиёд лоиҳаи калон ҳисоб мешавад, ки вақти зиёд ва
+// нархи алоҳида (аз рӯи муроҷиати мустақим) мехоҳад, на ҳисоби худкор
+const (
+	maxPriceScreens   = 10
+	maxPriceFunctions = 100
+)
+
 // HandlePriceCalcButton шумораи Screen-ро мепурсад
 func HandlePriceCalcButton(d *Deps, msg *tgbotapi.Message) {
 	lang := getUserLang(d, msg.From.ID)
@@ -46,6 +53,12 @@ func HandlePriceScreensText(d *Deps, msg *tgbotapi.Message) {
 	n, err := strconv.Atoi(strings.TrimSpace(msg.Text))
 	if err != nil || n <= 0 {
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "price_number_error"))
+		return
+	}
+	if n > maxPriceScreens {
+		PendingPriceScreens[msg.From.ID] = false
+		delete(priceCalcSessions, msg.From.ID)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "price_too_large"))
 		return
 	}
 	PendingPriceScreens[msg.From.ID] = false
@@ -67,6 +80,12 @@ func HandlePriceFunctionsText(d *Deps, msg *tgbotapi.Message) {
 	n, err := strconv.Atoi(strings.TrimSpace(msg.Text))
 	if err != nil || n <= 0 {
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "price_number_error"))
+		return
+	}
+	if n > maxPriceFunctions {
+		PendingPriceFunctions[msg.From.ID] = false
+		delete(priceCalcSessions, msg.From.ID)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "price_too_large"))
 		return
 	}
 	PendingPriceFunctions[msg.From.ID] = false

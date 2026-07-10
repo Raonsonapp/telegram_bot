@@ -132,6 +132,7 @@ var RussianMessages = map[string]string{
 	"price_order_cancelled":     "❌ Заказ отменён.",
 	"price_order_sent":          "✅ Заказ отправлен админу! С тобой скоро свяжутся.",
 	"price_session_expired":     "😔 Расчёт потерян, начни заново (🧮 Калькулятор цены).",
+	"price_too_large":           "😔 Больше 10 Screen или 100 Function — это крупный проект, нужно много времени и отдельная цена. Свяжись напрямую с админом (💬 Написать админу), чтобы обсудить точную цену.",
 	"appbuilder_not_configured": "⚠️ Эта функция не настроена (не задан GITHUB_APP_BUILDER_TOKEN).",
 	"ask_apk_repo":              "📦 Напиши название репозитория (например \"my-app\" или \"owner/my-app\"):",
 	"apk_fetching":              "📦 Ищу последний APK...",
