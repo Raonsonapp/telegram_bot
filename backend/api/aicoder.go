@@ -26,6 +26,10 @@ var fallbackModels = []string{
 	"openai/gpt-oss-120b:free",
 	"openai/gpt-oss-20b:free",
 	"meta-llama/llama-3.3-70b-instruct:free",
+	// openrouter/free худаш аз байни моделҳои ройгони ҲОЗИР дастрас интихоб
+	// мекунад (на аз рӯйхати собити боло) — то агар ҳамаи се модели дар боло
+	// ҳамзамон rate-limit шуда бошанд, ин ҳамчун ҷамъбасти охирин кӯмак кунад
+	"openrouter/free",
 }
 
 // AICoderClient барои сохтани экрани оддии Android (1 саҳифа, 5 функсия)
