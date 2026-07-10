@@ -126,6 +126,9 @@ jobs:
             flutter create --project-name "$PROJECT_NAME" .
           fi
 
+      - name: Ensure Feather icons dependency
+        run: flutter pub add flutter_feather_icons
+
       - name: Get dependencies
         run: flutter pub get
 

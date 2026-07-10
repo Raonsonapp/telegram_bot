@@ -79,6 +79,10 @@ func main() {
 		utils.LogInfo("Admin: ADMIN_CHAT_ID танзим нашудааст (холӣ ё нодуруст) — хусусияти \"Бо админ гап зан\" паёмро намефиристад")
 	}
 
+	// ReferralStore маълумоти даъватҳоро дар репои давлатии GitHub (на дар
+	// SQLite-и муваққатии Render) нигоҳ медорад — то бо ҳар деплой гум нашавад
+	referralStore := api.NewReferralStore(gitHubAppClient)
+
 	deps := &handlers.Deps{
 		Bot:         bot,
 		DB:          db,
@@ -90,6 +94,7 @@ func main() {
 		WorldCup:    worldCupClient,
 		GitHubApp:   gitHubAppClient,
 		AICoder:     aiCoderClient,
+		Referrals:   referralStore,
 		Translator:  translator,
 		Cache:       cache,
 		Config:      cfg,

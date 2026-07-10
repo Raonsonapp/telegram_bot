@@ -68,7 +68,7 @@ type GeneratedScreen struct {
 	MainDart string
 }
 
-const screenPromptTemplate = `You generate Flutter/Dart code for a polished, realistic-looking single-screen home UI demo app.
+const screenPromptTemplate = `You generate Flutter/Dart code for a polished, realistic-looking single-screen home UI demo app. Design quality is the TOP priority — a beautiful, professional-looking screen matters more than anything else here, since the user judges the whole app by how this first screen looks.
 
 User's app description: %s
 
@@ -77,21 +77,23 @@ Identify exactly 5 major functions implied by the description. Design a proper h
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart"):
+Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart" and "flutter_feather_icons/flutter_feather_icons.dart"):
 - import 'package:flutter/material.dart';
+- import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+- ALL icons anywhere in the file (feature cards, FloatingActionButton, anything else) MUST use FeatherIcons.<name> (e.g. FeatherIcons.home, FeatherIcons.user, FeatherIcons.search) — never Icons.<name> from Material. Pick the FeatherIcons constant that best matches each function.
 - void main() => runApp(const MyApp());
 - MyApp is a StatelessWidget returning a MaterialApp with title matching app_name, useMaterial3: true, and theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and a home of MyHomePage
 - MyHomePage is a StatelessWidget with a Scaffold: a colored AppBar (backgroundColor from the theme's colorScheme, centerTitle: true) showing the app title, and a body that is a scrollable, padded Column containing (in this order): (1) a short welcome/header Text styled with Theme.of(context).textTheme.headlineSmall, (2) a GridView.count(shrinkWrap: true, physics: NeverScrollableScrollPhysics(), crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12) with exactly 5 feature cards, one per function
-- each feature card is a Card (elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))) wrapping an InkWell (borderRadius matching) with onTap showing the SnackBar, whose child is a Padding containing a Column (mainAxisAlignment: MainAxisAlignment.center) with a large IconData Icon (pick a fitting Material icon per function, sized ~36, colored from the theme) then SizedBox(height: 8) then a Text with the function's short label (textAlign: TextAlign.center, fontWeight: FontWeight.w600)
-- add a FloatingActionButton on the Scaffold for the single most important function, with a fitting icon, that also shows the same SnackBar as its card
-- use consistent padding (e.g. EdgeInsets.all(16)) and spacing (SizedBox(height: 16) between the header and the grid) so the screen looks intentional and complete, not sparse`
+- each feature card is a Card (elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))) wrapping an InkWell (borderRadius matching) with onTap showing the SnackBar, whose child is a Padding containing a Column (mainAxisAlignment: MainAxisAlignment.center) with a large FeatherIcons Icon (sized ~32, colored from the theme) then SizedBox(height: 8) then a Text with the function's short label (textAlign: TextAlign.center, fontWeight: FontWeight.w600)
+- add a FloatingActionButton on the Scaffold for the single most important function, with a fitting FeatherIcons icon, that also shows the same SnackBar as its card
+- use consistent padding (e.g. EdgeInsets.all(16)) and spacing (SizedBox(height: 16) between the header and the grid) so the screen looks intentional, modern, and complete, not sparse or generic`
 
 // fullAppPromptTemplate — барои корбароне истифода мешавад, ки ҳадди
 // даъватро (5 нафар) пур кардаанд: ба ҷои 1 экрани оддӣ, барномаи
 // бо якчанд қисм (bottom navigation) месозад — ҳанӯз 1 файл (lib/main.dart),
 // то системаи мавҷудаи push/build/fix бе тағйир кор кунад, вале аз назари
 // корбар "барномаи пурратар" ба назар мерасад
-const fullAppPromptTemplate = `You generate Flutter/Dart code for a fuller, more complete app (still a single lib/main.dart file, but richer than a single screen).
+const fullAppPromptTemplate = `You generate Flutter/Dart code for a fuller, more complete app (still a single lib/main.dart file, but richer than a single screen). Design quality is the TOP priority — every tab must look like a real, professionally designed screen, not a rough sketch.
 
 User's app description: %s
 
@@ -100,13 +102,15 @@ Identify 3 to 4 main sections/tabs implied by the description (e.g. Home, Search
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", with every tab widget defined as a private class in this same file):
+Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart" and "flutter_feather_icons/flutter_feather_icons.dart", with every tab widget defined as a private class in this same file):
 - import 'package:flutter/material.dart';
+- import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+- ALL icons anywhere in the file (bottom nav items, in-tab icons, everything) MUST use FeatherIcons.<name> — never Icons.<name> from Material. Pick the FeatherIcons constant that best matches each purpose.
 - void main() => runApp(const MyApp());
 - MyApp is a StatelessWidget: MaterialApp with useMaterial3: true, theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and home MyHomePage
 - MyHomePage is a StatefulWidget holding the selected tab index in its State; its Scaffold has body: IndexedStack(index: _selectedIndex, children: [...one widget per tab...]) and bottomNavigationBar: BottomNavigationBar(currentIndex: _selectedIndex, onTap: (i) => setState(() => _selectedIndex = i), type: BottomNavigationBarType.fixed, items: [...])
 - each tab is its own private StatelessWidget or StatefulWidget class (e.g. _HomeTab, _SearchTab, _ProfileTab) with its own Scaffold-less body (each tab supplies just its content; wrap each tab's content in its own AppBar+body via a Scaffold per tab, or share one AppBar in MyHomePage whose title updates with the tab — pick whichever is simpler to implement correctly)
-- keep the file complete and compiling — prioritize correctness over maximal feature count; it is fine to keep each tab's content moderately simple as long as it looks like a real, finished screen`
+- keep the file complete and compiling — prioritize correctness over maximal feature count; it is fine to keep each tab's content moderately simple as long as it looks like a real, finished, well-designed screen`
 
 const fixPromptTemplate = `The following Flutter/Dart lib/main.dart failed to build in GitHub Actions ("flutter build apk"). Fix it so it builds successfully, while preserving the same screen design and functionality intent.
 
@@ -121,7 +125,7 @@ Build error log (tail):
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file importing only 'package:flutter/material.dart'.`
+main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file importing only 'package:flutter/material.dart' and 'package:flutter_feather_icons/flutter_feather_icons.dart'. Keep using FeatherIcons.<name> for every icon (never Icons.<name>) unless a wrong FeatherIcons name is the actual cause of the build failure, in which case pick a valid one.`
 
 // rateLimitError маънои онро дорад, ки OpenRouter модели интихобшударо
 // муваққатан маҳдуд кардааст (rate-limit-и умумии сатҳи ройгон). retryAfter

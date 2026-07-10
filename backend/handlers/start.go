@@ -24,6 +24,7 @@ type Deps struct {
 	WorldCup    *api.WorldCupClient
 	GitHubApp   *api.GitHubAppClient
 	AICoder     *api.AICoderClient
+	Referrals   *api.ReferralStore
 	Translator  *utils.Translator
 	Cache       *utils.Cache
 	Config      *config.Config

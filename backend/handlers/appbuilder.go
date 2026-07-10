@@ -249,9 +249,19 @@ func generateAndPushScreen(d *Deps, msg *tgbotapi.Message, lang, fullName, descr
 		return nil
 	}
 
+	if allowed, retryAfter := checkAIRateLimit(msg.From.ID); !allowed {
+		minutes := int(retryAfter.Round(time.Minute) / time.Minute)
+		if minutes < 1 {
+			minutes = 1
+		}
+		text := fmt.Sprintf(api.GetMessage(lang, "ai_rate_limited"), minutes)
+		sendText(d, msg.Chat.ID, text)
+		return nil
+	}
+
 	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
 
-	unlimited, err := d.DB.HasUnlimitedAI(msg.From.ID)
+	unlimited, err := d.Referrals.HasUnlimitedAI(msg.From.ID)
 	if err != nil {
 		utils.LogError("appbuilder: failed to check unlimited-AI status for %d: %v", msg.From.ID, err)
 	}

@@ -8,7 +8,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"anime-bot/backend/api"
-	"anime-bot/backend/database"
 	"anime-bot/backend/utils"
 )
 
@@ -62,7 +61,7 @@ func applyPendingReferralIfAny(d *Deps, telegramID int64, isNew bool) {
 	}
 	delete(PendingReferral, telegramID)
 
-	added, err := d.DB.AddReferral(referrerID, telegramID)
+	added, err := d.Referrals.AddReferral(referrerID, telegramID)
 	if err != nil {
 		utils.LogError("referral: failed to record referral %d->%d: %v", referrerID, telegramID, err)
 		return
@@ -71,7 +70,7 @@ func applyPendingReferralIfAny(d *Deps, telegramID int64, isNew bool) {
 		return
 	}
 
-	count, err := d.DB.CountReferrals(referrerID)
+	count, err := d.Referrals.CountReferrals(referrerID)
 	if err != nil {
 		utils.LogError("referral: failed to count referrals for %d: %v", referrerID, err)
 		return
@@ -79,10 +78,10 @@ func applyPendingReferralIfAny(d *Deps, telegramID int64, isNew bool) {
 
 	refLang := getUserLang(d, referrerID)
 	var text string
-	if count >= database.RequiredReferralsForUnlimitedAI {
-		text = fmt.Sprintf(api.GetMessage(refLang, "referral_unlocked"), database.RequiredReferralsForUnlimitedAI)
+	if count >= api.RequiredReferralsForUnlimitedAI {
+		text = fmt.Sprintf(api.GetMessage(refLang, "referral_unlocked"), api.RequiredReferralsForUnlimitedAI)
 	} else {
-		text = fmt.Sprintf(api.GetMessage(refLang, "referral_progress"), count, database.RequiredReferralsForUnlimitedAI)
+		text = fmt.Sprintf(api.GetMessage(refLang, "referral_progress"), count, api.RequiredReferralsForUnlimitedAI)
 	}
 	d.Bot.Send(tgbotapi.NewMessage(referrerID, text))
 }
@@ -91,23 +90,23 @@ func applyPendingReferralIfAny(d *Deps, telegramID int64, isNew bool) {
 func HandleInviteButton(d *Deps, msg *tgbotapi.Message) {
 	lang := getUserLang(d, msg.From.ID)
 
-	count, err := d.DB.CountReferrals(msg.From.ID)
+	count, err := d.Referrals.CountReferrals(msg.From.ID)
 	if err != nil {
 		utils.LogError("referral: failed to count referrals for %d: %v", msg.From.ID, err)
 		count = 0
 	}
 
 	link := ReferralLink(d.Bot.Self.UserName, msg.From.ID)
-	remaining := database.RequiredReferralsForUnlimitedAI - count
+	remaining := api.RequiredReferralsForUnlimitedAI - count
 	if remaining < 0 {
 		remaining = 0
 	}
 
 	var text string
-	if count >= database.RequiredReferralsForUnlimitedAI {
+	if count >= api.RequiredReferralsForUnlimitedAI {
 		text = fmt.Sprintf(api.GetMessage(lang, "invite_unlocked"), link)
 	} else {
-		text = fmt.Sprintf(api.GetMessage(lang, "invite_progress"), link, count, database.RequiredReferralsForUnlimitedAI, remaining)
+		text = fmt.Sprintf(api.GetMessage(lang, "invite_progress"), link, count, api.RequiredReferralsForUnlimitedAI, remaining)
 	}
 	sendTextMarkdown(d, msg.Chat.ID, text)
 }
