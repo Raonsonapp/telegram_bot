@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -395,6 +396,49 @@ func (c *GitHubAppClient) getFileSHA(fullName, path string) (string, error) {
 		return "", err
 	}
 	return result.SHA, nil
+}
+
+// getFileContent матни (decoded) файли додашударо аз репо мегирад
+func (c *GitHubAppClient) getFileContent(fullName, path string) (string, error) {
+	apiPath := fmt.Sprintf("/repos/%s/contents/%s", fullName, path)
+	body, status, err := c.doRequest(http.MethodGet, apiPath, nil)
+	if err != nil {
+		return "", err
+	}
+	if status != http.StatusOK {
+		return "", fmt.Errorf("failed to get file content for %q: status %d", path, status)
+	}
+	var result struct {
+		Content string `json:"content"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
+	}
+	raw := strings.ReplaceAll(result.Content, "\n", "")
+	decoded, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		return "", err
+	}
+	return string(decoded), nil
+}
+
+var androidLabelRe = regexp.MustCompile(`android:label="([^"]*)"`)
+
+// GetCurrentAppName номи намоишии ҳозираи барномаро (android:label дар
+// AndroidManifest.xml, ки дар репо ҳамчун манбаи ягонаи ҳақиқат нигоҳ
+// дошта мешавад — на дар SQLite-и мо, ки бо ҳар деплой пок мешавад) мегирад.
+// Барои таҳрирҳое (масалан танҳо тағйир додани тавсиф ё логотип) лозим аст,
+// ки номи кӯҳна набояд гум шавад
+func (c *GitHubAppClient) GetCurrentAppName(fullName string) (string, error) {
+	content, err := c.getFileContent(fullName, "android/app/src/main/AndroidManifest.xml")
+	if err != nil {
+		return "", err
+	}
+	m := androidLabelRe.FindStringSubmatch(content)
+	if len(m) < 2 || m[1] == "" {
+		return "", fmt.Errorf("android:label not found in AndroidManifest.xml")
+	}
+	return m[1], nil
 }
 
 // GetLatestRunID ID-и охирин (навтарин) run-и як workflow-и додашударо

@@ -126,6 +126,12 @@ var EnglishMessages = map[string]string{
 	"appbuilder_build_fixing":      "🔧 The build failed — AI is trying to auto-fix it...",
 	"appbuilder_build_failed":      "😔 The build failed and the auto-fix didn't help either. Try a simpler description, or contact the admin (💬 Contact Admin).",
 	"appbuilder_build_timeout":     "⏳ The build didn't finish in time (GitHub Actions may be busy). Check \"📦 Fetch APK\" again in a couple minutes.",
+	"appbuilder_updating":          "🔄 Updating...",
+	"appbuilder_edit_menu":         "🏗 You already have an app. What do you want to do?",
+	"btn_edit_description":         "✏️ Change topic/functions",
+	"btn_edit_name":                "🏷 Change name",
+	"btn_edit_logo":                "🖼 Change logo",
+	"btn_edit_all":                 "🔄 Rebuild everything from scratch",
 
 	"btn_price_calc":            "🧮 Price Calculator",
 	"ask_price_screens":         "🧮 How many Screens do you need? (send a number)",

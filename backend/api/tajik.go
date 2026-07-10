@@ -129,6 +129,12 @@ var TajikMessages = map[string]string{
 	"appbuilder_build_fixing":      "🔧 Build хато дод — AI кӯшиш мекунад худкор ислоҳ кунад...",
 	"appbuilder_build_failed":      "😔 Build ноком шуд ва ислоҳи худкор ҳам натиҷа надод. Тавсифро содатар карда бори дигар кӯшиш кун, ё бо админ тамос гир (💬 Бо админ гап зан).",
 	"appbuilder_build_timeout":     "⏳ Build аз вақти интизорӣ гузашт (GitHub Actions банд аст, эҳтимол). Баъд аз чанд дақиқаи дигар тугмаи \"📦 Гирифтани APK\"-ро санҷ.",
+	"appbuilder_updating":          "🔄 Навсозӣ мекунам...",
+	"appbuilder_edit_menu":         "🏗 Ту аллакай барнома дорӣ. Чӣ кор кардан мехоҳӣ?",
+	"btn_edit_description":         "✏️ Тағйир додани мавзуъ/функсия",
+	"btn_edit_name":                "🏷 Тағйир додани ном",
+	"btn_edit_logo":                "🖼 Тағйир додани логотип",
+	"btn_edit_all":                 "🔄 Аз нав сохтан (ҳама)",
 
 	"btn_price_calc":            "🧮 Ҳисобкунаки нарх",
 	"ask_price_screens":         "🧮 Чанд Screen лозим аст? (рақам бинавис)",

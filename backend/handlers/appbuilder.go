@@ -23,23 +23,89 @@ type appBuilderState struct {
 var appBuilderSessions = make(map[int64]*appBuilderState)
 
 // PendingAppDisplayName, PendingAppLogo ва PendingAppName нигоҳ медоранд
-// корбар дар кадом зинаи сохтани барнома қарор дорад: аввал номи намоишӣ,
-// баъд логотип (ихтиёрӣ), баъд тавсифи функсияҳо
+// корбар дар кадом зинаи сохтани барномаи НАВ қарор дорад: аввал номи
+// намоишӣ, баъд логотип (ихтиёрӣ), баъд тавсифи функсияҳо
 var PendingAppDisplayName = make(map[int64]bool)
 var PendingAppLogo = make(map[int64]bool)
 var PendingAppName = make(map[int64]bool)
 
-// HandleAppBuilderButton зинаи якуми сохтани барномаро оғоз мекунад:
-// номи намоишии барнома (он чи дар телефони корбар нишон дода мешавад)
+// PendingAppEditDescription, PendingAppEditName ва PendingAppEditLogo барои
+// корбароне истифода мешаванд, ки АЛЛАКАЙ барнома доранд ва аз менюи
+// таҳрир танҳо ЯК қисматро иваз карданӣ ҳастанд (то ҳар дафъа ҳамаи
+// ном+логотип+тавсифро аз нав нагӯянд)
+var PendingAppEditDescription = make(map[int64]bool)
+var PendingAppEditName = make(map[int64]bool)
+var PendingAppEditLogo = make(map[int64]bool)
+
+// HandleAppBuilderButton вақте пахш мешавад. Агар корбар аллакай барнома
+// дошта бошад, менюи таҳрир (танҳо тавсиф/ном/логотип ё ҳама аз нав)
+// нишон дода мешавад; вагарна зинаи якуми сохтани барномаи нав (номи
+// намоишӣ) оғоз мешавад
 func HandleAppBuilderButton(d *Deps, msg *tgbotapi.Message) {
 	lang := getUserLang(d, msg.From.ID)
 	if !d.GitHubApp.Enabled() {
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_not_configured"))
 		return
 	}
-	appBuilderSessions[msg.From.ID] = &appBuilderState{}
-	PendingAppDisplayName[msg.From.ID] = true
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_display_name"))
+
+	if repo, err := d.DB.GetUserRepo(msg.From.ID); err == nil && repo != nil {
+		showAppEditMenu(d, msg.Chat.ID, lang)
+		return
+	}
+
+	startNewAppFlow(d, msg.From.ID, msg.Chat.ID, lang)
+}
+
+// startNewAppFlow зинаи якуми сохтани барномаи нав (номи намоишӣ)-ро оғоз мекунад
+func startNewAppFlow(d *Deps, userID, chatID int64, lang string) {
+	appBuilderSessions[userID] = &appBuilderState{}
+	PendingAppDisplayName[userID] = true
+	sendText(d, chatID, api.GetMessage(lang, "ask_app_display_name"))
+}
+
+// showAppEditMenu менюи интихоби навъи таҳрирро (тугмаҳои inline) нишон медиҳад
+func showAppEditMenu(d *Deps, chatID int64, lang string) {
+	message := tgbotapi.NewMessage(chatID, api.GetMessage(lang, "appbuilder_edit_menu"))
+	message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_description"), "appedit:description"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_name"), "appedit:name"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_logo"), "appedit:logo"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_all"), "appedit:all"),
+		),
+	)
+	d.Bot.Send(message)
+}
+
+// HandleAppEditCallback интихоби корбарро аз менюи таҳрир мегирад ва
+// зинаи дурусти навбатиро оғоз мекунад
+func HandleAppEditCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
+	callback := tgbotapi.NewCallback(cb.ID, "")
+	d.Bot.Request(callback)
+
+	lang := getUserLang(d, cb.From.ID)
+	chatID := cb.Message.Chat.ID
+	mode := strings.TrimPrefix(cb.Data, "appedit:")
+
+	switch mode {
+	case "description":
+		PendingAppEditDescription[cb.From.ID] = true
+		sendText(d, chatID, api.GetMessage(lang, "ask_app_name"))
+	case "name":
+		PendingAppEditName[cb.From.ID] = true
+		sendText(d, chatID, api.GetMessage(lang, "ask_app_display_name"))
+	case "logo":
+		PendingAppEditLogo[cb.From.ID] = true
+		sendText(d, chatID, api.GetMessage(lang, "ask_app_logo"))
+	case "all":
+		startNewAppFlow(d, cb.From.ID, chatID, lang)
+	}
 }
 
 // HandleAppDisplayNameText номи намоишии барномаро мегирад, баъд логотипро мепурсад
@@ -261,6 +327,126 @@ func waitForGreenBuild(d *Deps, msg *tgbotapi.Message, lang, fullName, descripti
 	}
 
 	return true
+}
+
+// HandleAppEditDescriptionText танҳо тавсифи функсияҳоро иваз мекунад —
+// экрани навро бо AI аз тавсифи нав месозад ва push мекунад (ном ва
+// логотипи мавҷуда дастнахӯрда мемонанд)
+func HandleAppEditDescriptionText(d *Deps, msg *tgbotapi.Message) {
+	lang := getUserLang(d, msg.From.ID)
+	description := strings.TrimSpace(msg.Text)
+	if description == "" {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_name"))
+		return
+	}
+	PendingAppEditDescription[msg.From.ID] = false
+
+	repo, err := d.DB.GetUserRepo(msg.From.ID)
+	if err != nil || repo == nil {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	if !d.AICoder.Enabled() {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
+	screen, err := d.AICoder.GenerateScreen(description)
+	if err != nil {
+		utils.LogError("appbuilder: AI screen generation failed for %q: %v", description, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return
+	}
+	if err := d.GitHubApp.PushFlutterScreen(repo.FullName, screen); err != nil {
+		utils.LogError("appbuilder: failed to push AI-generated scaffold to %s: %v", repo.FullName, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_waiting_build"))
+	if waitForGreenBuild(d, msg, lang, repo.FullName, description, &screen) {
+		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), repo.FullName, repo.URL)
+		sendTextMarkdown(d, msg.Chat.ID, text)
+	}
+}
+
+// HandleAppEditNameText танҳо номи намоиширо иваз мекунад (лого ва
+// lib/main.dart-и мавҷуда дастнахӯрда мемонанд)
+func HandleAppEditNameText(d *Deps, msg *tgbotapi.Message) {
+	lang := getUserLang(d, msg.From.ID)
+	name := strings.TrimSpace(msg.Text)
+	if name == "" {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_display_name"))
+		return
+	}
+	PendingAppEditName[msg.From.ID] = false
+
+	repo, err := d.DB.GetUserRepo(msg.From.ID)
+	if err != nil || repo == nil {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_updating"))
+	if err := d.GitHubApp.FinalizeAppSetup(repo.FullName, name, nil); err != nil {
+		utils.LogError("appbuilder: failed to update app name for %s: %v", repo.FullName, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_waiting_build"))
+	if waitForGreenBuild(d, msg, lang, repo.FullName, "", nil) {
+		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), repo.FullName, repo.URL)
+		sendTextMarkdown(d, msg.Chat.ID, text)
+	}
+}
+
+// HandleAppEditLogoPhoto танҳо логотипро иваз мекунад — номи ҳозираро аз
+// худи репо (AndroidManifest.xml) мехонад, то гум нашавад
+func HandleAppEditLogoPhoto(d *Deps, msg *tgbotapi.Message) {
+	lang := getUserLang(d, msg.From.ID)
+	PendingAppEditLogo[msg.From.ID] = false
+
+	repo, err := d.DB.GetUserRepo(msg.From.ID)
+	if err != nil || repo == nil {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	if len(msg.Photo) == 0 {
+		PendingAppEditLogo[msg.From.ID] = true
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_logo"))
+		return
+	}
+
+	largest := msg.Photo[len(msg.Photo)-1]
+	data, err := downloadTelegramFile(d, largest.FileID)
+	if err != nil {
+		utils.LogError("appbuilder: failed to download new logo for user=%d: %v", msg.From.ID, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	displayName, err := d.GitHubApp.GetCurrentAppName(repo.FullName)
+	if err != nil {
+		utils.LogError("appbuilder: failed to resolve current app name for %s, using default: %v", repo.FullName, err)
+		displayName = "Flutter App"
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_logo_received"))
+	if err := d.GitHubApp.FinalizeAppSetup(repo.FullName, displayName, data); err != nil {
+		utils.LogError("appbuilder: failed to update app logo for %s: %v", repo.FullName, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_waiting_build"))
+	if waitForGreenBuild(d, msg, lang, repo.FullName, "", nil) {
+		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), repo.FullName, repo.URL)
+		sendTextMarkdown(d, msg.Chat.ID, text)
+	}
 }
 
 // HandleFetchAPKButton охирин APK-и репои шахсии корбарро мегирад. Номи

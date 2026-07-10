@@ -264,6 +264,11 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 		handlers.HandleAppLogoPhoto(d, msg)
 		return
 	}
+	// Ҳамин тавр, вале барои таҳрири логотипи барномаи МАВҶУДА (аз менюи таҳрир)
+	if len(msg.Photo) > 0 && handlers.PendingAppEditLogo[msg.From.ID] {
+		handlers.HandleAppEditLogoPhoto(d, msg)
+		return
+	}
 
 	routeText(d, msg)
 }
@@ -404,6 +409,17 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		return
 	}
 
+	// Менюи таҳрири барномаи МАВҶУДА: танҳо як қисматро иваз мекунад
+	// (тавсиф/ном/логотип), то ҳар дафъа ҳамаашро аз нав напурсем
+	if handlers.PendingAppEditDescription[msg.From.ID] {
+		handlers.HandleAppEditDescriptionText(d, msg)
+		return
+	}
+	if handlers.PendingAppEditName[msg.From.ID] {
+		handlers.HandleAppEditNameText(d, msg)
+		return
+	}
+
 	// Ҳисобкунаки нарх: аввал шумораи Screen, баъд шумораи Function
 	if handlers.PendingPriceScreens[msg.From.ID] {
 		handlers.HandlePriceScreensText(d, msg)
@@ -455,6 +471,8 @@ func routeCallback(d *handlers.Deps, cb *tgbotapi.CallbackQuery) {
 		handlers.HandlePricePackageCallback(d, cb)
 	case strings.HasPrefix(data, "priceorder:"):
 		handlers.HandlePriceOrderCallback(d, cb)
+	case strings.HasPrefix(data, "appedit:"):
+		handlers.HandleAppEditCallback(d, cb)
 	case data == "back:menu":
 		handlers.HandleBackToMenu(d, cb)
 	default:
