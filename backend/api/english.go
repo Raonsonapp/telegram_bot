@@ -111,6 +111,10 @@ var EnglishMessages = map[string]string{
 
 	"btn_app_builder":              "🏗 App Builder",
 	"btn_fetch_apk":                "📦 Fetch APK",
+	"ask_app_display_name":         "🏗 What should the app be called? (e.g. \"SocialApp\") — this name will show on the user's phone:",
+	"ask_app_logo":                 "🖼 If you have a logo (image) for the app, send it here. If not, type \"-\":",
+	"appbuilder_logo_received":     "✅ Logo received.",
+	"appbuilder_logo_skipped":      "⏭ Continuing without a logo.",
 	"ask_app_name":                 "🏗 Describe what the app should be (e.g. \"social app with profile, messages, search\") — I'll create a repo on your GitHub and (if AI is enabled) generate a first screen with 5 functions:",
 	"appbuilder_creating":          "🏗 Creating the repo...",
 	"appbuilder_generating_screen": "🎨 Generating the app screen with AI...",

@@ -65,11 +65,11 @@ type GeneratedScreen struct {
 	MainDart string
 }
 
-const screenPromptTemplate = `You generate Flutter/Dart code for a minimal single-screen demo app.
+const screenPromptTemplate = `You generate Flutter/Dart code for a polished, realistic-looking single-screen home UI demo app.
 
 User's app description: %s
 
-Create exactly ONE screen with exactly 5 buttons, one per major function implied by the description. Each button's onPressed should just show a SnackBar with that function's name (placeholder only — no real backend, networking, or database logic; this is a scaffold the user will extend).
+Identify exactly 5 major functions implied by the description. Design a proper home screen for a real app around them — NOT a plain column of stacked buttons. Each function's tap action should just show a SnackBar with that function's name (placeholder only — no real backend, networking, or database logic; this is a visual scaffold the user will extend).
 
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
@@ -77,9 +77,11 @@ Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactl
 Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart"):
 - import 'package:flutter/material.dart';
 - void main() => runApp(const MyApp());
-- MyApp is a StatelessWidget returning a MaterialApp with title matching app_name and a home of MyHomePage
-- MyHomePage is a StatelessWidget with a Scaffold: AppBar with the app title, and a body Column (mainAxisAlignment: MainAxisAlignment.center) containing exactly 5 ElevatedButton widgets, each with a descriptive child Text matching one function, and an onPressed that calls ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('<function name>')))
-- wrap the 5 buttons so they don't overflow (e.g. each on its own row with some spacing, using SizedBox(height: 12) between them)`
+- MyApp is a StatelessWidget returning a MaterialApp with title matching app_name, useMaterial3: true, and theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and a home of MyHomePage
+- MyHomePage is a StatelessWidget with a Scaffold: a colored AppBar (backgroundColor from the theme's colorScheme, centerTitle: true) showing the app title, and a body that is a scrollable, padded Column containing (in this order): (1) a short welcome/header Text styled with Theme.of(context).textTheme.headlineSmall, (2) a GridView.count(shrinkWrap: true, physics: NeverScrollableScrollPhysics(), crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12) with exactly 5 feature cards, one per function
+- each feature card is a Card (elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))) wrapping an InkWell (borderRadius matching) with onTap showing the SnackBar, whose child is a Padding containing a Column (mainAxisAlignment: MainAxisAlignment.center) with a large IconData Icon (pick a fitting Material icon per function, sized ~36, colored from the theme) then SizedBox(height: 8) then a Text with the function's short label (textAlign: TextAlign.center, fontWeight: FontWeight.w600)
+- add a FloatingActionButton on the Scaffold for the single most important function, with a fitting icon, that also shows the same SnackBar as its card
+- use consistent padding (e.g. EdgeInsets.all(16)) and spacing (SizedBox(height: 16) between the header and the grid) so the screen looks intentional and complete, not sparse`
 
 // rateLimitError маънои онро дорад, ки OpenRouter модели интихобшударо
 // муваққатан маҳдуд кардааст (rate-limit-и умумии сатҳи ройгон). retryAfter

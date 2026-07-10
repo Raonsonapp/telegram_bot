@@ -21,15 +21,18 @@ const githubAPIBase = "https://api.github.com"
 // ва ФАВРАН ба репо commit мекунад — то pubspec.yaml/android/ios ва ғ. дар
 // худи репо боқӣ монад, на ҳар дафъа аз нав дар ичрокунандаи муваққатии
 // GitHub Actions сохта шавад. Ин workflow пеш аз ҳар коднависии AI ва пеш
-// аз build.yml push ва иҷро карда мешавад (дар CreateOrGetUserRepo)
+// аз build.yml push ва иҷро карда мешавад (дар FinalizeAppSetup). Танҳо бо
+// workflow_dispatch оғоз мешавад (на бо push) — то ҳамеша бо app_name-и
+// дурусти корбар (аз input) иҷро шавад, на бо номи пешфарз
 const flutterAutoCreateWorkflow = `name: Auto Create Flutter Project
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
+    inputs:
+      app_name:
+        description: 'App display name'
+        required: false
+        default: 'Flutter App'
 
 permissions:
   contents: write
@@ -52,6 +55,29 @@ jobs:
             flutter create --project-name "$PROJECT_NAME" .
           else
             echo "Flutter project already exists."
+          fi
+
+      - name: Set app display name
+        run: |
+          APP_NAME="${{ github.event.inputs.app_name }}"
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME="Flutter App"
+          fi
+          if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
+            sed -i "s/android:label=\"[^\"]*\"/android:label=\"$APP_NAME\"/" android/app/src/main/AndroidManifest.xml
+          fi
+
+      - name: Generate app icon if provided
+        run: |
+          if [ -f "assets/icon/icon.png" ]; then
+            flutter pub add --dev flutter_launcher_icons
+            {
+              echo 'flutter_launcher_icons:'
+              echo '  android: "launcher_icon"'
+              echo '  ios: true'
+              echo '  image_path: "assets/icon/icon.png"'
+            } >> pubspec.yaml
+            dart run flutter_launcher_icons
           fi
 
       - name: Commit and Push
@@ -236,39 +262,56 @@ func (c *GitHubAppClient) CreateOrGetUserRepo(telegramID int64, appName string) 
 	// сохта шуд) пеш аз навиштани файли дигар пурра омода шавад
 	time.Sleep(2 * time.Second)
 
-	// Аввал auto-create.yml — пеш аз ҳар коднависии AI ва пеш аз build.yml —
-	// то скелети Flutter (pubspec.yaml, android/, ios/ ва ғ.) ба худи репо
-	// commit шавад, на ҳар дафъа дар ичрокунандаи муваққатӣ аз нав сохта шавад
 	if err := c.PushFile(repo.FullName, ".github/workflows/auto-create.yml", "Add auto-create Flutter workflow", flutterAutoCreateWorkflow); err != nil {
 		return repo.FullName, repo.HTMLURL, true, fmt.Errorf("repo created but failed to add auto-create workflow: %w", err)
 	}
-
-	// МУҲИМ: GitHub Actions худи commit-е, ки workflow-ро аввалин бор
-	// илова мекунад, фаъол намекунад (маҳдудияти худи GitHub, на бағи мо).
-	// Барои ҳамин баъд аз илова кардани workflow, онро мустақим тавассути
-	// workflow_dispatch оғоз мекунем — то скелети Flutter ҳатман commit шавад,
-	// пеш аз он ки build.yml ё коди AI илова шавад
-	time.Sleep(2 * time.Second)
-	if err := c.TriggerWorkflow(repo.FullName, "auto-create.yml"); err != nil {
-		utils.LogError("githubapp: failed to trigger auto-create workflow for %s: %v", repo.FullName, err)
-	}
-
 	if err := c.PushFile(repo.FullName, ".github/workflows/build.yml", "Add Flutter APK build workflow", flutterBuildWorkflow); err != nil {
 		return repo.FullName, repo.HTMLURL, true, fmt.Errorf("repo created but failed to add build workflow: %w", err)
-	}
-
-	time.Sleep(2 * time.Second)
-	if err := c.TriggerWorkflow(repo.FullName, "build.yml"); err != nil {
-		utils.LogError("githubapp: failed to trigger initial build workflow run for %s: %v", repo.FullName, err)
 	}
 
 	return repo.FullName, repo.HTMLURL, true, nil
 }
 
+// FinalizeAppSetup баъд аз CreateOrGetUserRepo даъват мешавад — пеш аз ҳар
+// коднависии AI. Агар logoBytes холӣ набошад, ҳамчун иконка push мешавад;
+// баъд auto-create.yml тавассути workflow_dispatch бо app_name-и дурусти
+// корбар оғоз мешавад (то скелети Flutter ва ном/иконка commit шаванд), ва
+// дар охир build.yml низ оғоз мешавад — то ҳатто агар AI баъдтар коде
+// илова накунад (масалан токен нодуруст бошад), як APK-и оддӣ омода шавад
+func (c *GitHubAppClient) FinalizeAppSetup(fullName, displayName string, logoBytes []byte) error {
+	if len(logoBytes) > 0 {
+		if err := c.PushFile(fullName, "assets/icon/icon.png", "Add app icon", string(logoBytes)); err != nil {
+			utils.LogError("githubapp: failed to push app icon for %s: %v", fullName, err)
+		}
+	}
+
+	// МУҲИМ: GitHub Actions худи commit-е, ки workflow-ро аввалин бор
+	// илова мекунад, фаъол намекунад (маҳдудияти худи GitHub, на бағи мо).
+	// Барои ҳамин ҳамеша мустақим тавассути workflow_dispatch оғоз мекунем —
+	// то скелети Flutter (ва ном/иконка) ҳатман commit шавад, пеш аз он ки
+	// build.yml ё коди AI илова шавад
+	time.Sleep(2 * time.Second)
+	if err := c.TriggerWorkflow(fullName, "auto-create.yml", map[string]string{"app_name": displayName}); err != nil {
+		return fmt.Errorf("failed to trigger auto-create workflow: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+	if err := c.TriggerWorkflow(fullName, "build.yml", nil); err != nil {
+		utils.LogError("githubapp: failed to trigger initial build workflow run for %s: %v", fullName, err)
+	}
+
+	return nil
+}
+
 // TriggerWorkflow workflow-и додашударо (масалан "build.yml" ё
-// "auto-create.yml") тавассути workflow_dispatch оғоз мекунад
-func (c *GitHubAppClient) TriggerWorkflow(fullName, workflowFile string) error {
-	payload, _ := json.Marshal(map[string]interface{}{"ref": "main"})
+// "auto-create.yml") тавассути workflow_dispatch оғоз мекунад. inputs
+// метавонад nil бошад, агар workflow input лозим надошта бошад
+func (c *GitHubAppClient) TriggerWorkflow(fullName, workflowFile string, inputs map[string]string) error {
+	payloadMap := map[string]interface{}{"ref": "main"}
+	if len(inputs) > 0 {
+		payloadMap["inputs"] = inputs
+	}
+	payload, _ := json.Marshal(payloadMap)
 	path := fmt.Sprintf("/repos/%s/actions/workflows/%s/dispatches", fullName, workflowFile)
 	body, status, err := c.doRequest(http.MethodPost, path, payload)
 	if err != nil {

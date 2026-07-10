@@ -251,6 +251,14 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 		return
 	}
 
+	// Агар корбар пас аз пахши "🏗 Барномасоз" ва пурсидани логотип акс
+	// фиристода бошад, ин ба ҷои routeText (ки матни холиро рад мекунад)
+	// бояд ба HandleAppLogoPhoto равона шавад
+	if len(msg.Photo) > 0 && handlers.PendingAppLogo[msg.From.ID] {
+		handlers.HandleAppLogoPhoto(d, msg)
+		return
+	}
+
 	routeText(d, msg)
 }
 
@@ -374,8 +382,17 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		return
 	}
 
-	// Агар корбар пас аз пахши "🏗 Барномасоз" номи барномаро фиристода бошад,
-	// репои GitHub бо workflow-и build-и APK сохта мешавад
+	// Зинаҳои сохтани барнома: аввал номи намоишӣ, баъд логотип (агар акс
+	// нафиристода, ин ҷо ҳамчун матни гузарондан коркард мешавад), баъд
+	// тавсифи функсияҳо (репои GitHub бо workflow-и build-и APK сохта мешавад)
+	if handlers.PendingAppDisplayName[msg.From.ID] {
+		handlers.HandleAppDisplayNameText(d, msg)
+		return
+	}
+	if handlers.PendingAppLogo[msg.From.ID] {
+		handlers.HandleAppLogoSkipText(d, msg)
+		return
+	}
 	if handlers.PendingAppName[msg.From.ID] {
 		handlers.HandleAppNameText(d, msg)
 		return
