@@ -397,6 +397,112 @@ func (c *GitHubAppClient) getFileSHA(fullName, path string) (string, error) {
 	return result.SHA, nil
 }
 
+// GetLatestRunID ID-и охирин (навтарин) run-и як workflow-и додашударо
+// мегирад (масалан "build.yml") — то баъд аз workflow_dispatch (ки худаш
+// ID бармегардонад) вазъи ҳамон run-ро пайгирӣ кунем
+func (c *GitHubAppClient) GetLatestRunID(fullName, workflowFile string) (int64, error) {
+	path := fmt.Sprintf("/repos/%s/actions/workflows/%s/runs?per_page=1", fullName, workflowFile)
+	body, status, err := c.doRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return 0, err
+	}
+	if status != http.StatusOK {
+		return 0, fmt.Errorf("failed to list workflow runs: status %d, body: %s", status, string(body))
+	}
+	var result struct {
+		WorkflowRuns []struct {
+			ID int64 `json:"id"`
+		} `json:"workflow_runs"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return 0, err
+	}
+	if len(result.WorkflowRuns) == 0 {
+		return 0, fmt.Errorf("no workflow runs found yet")
+	}
+	return result.WorkflowRuns[0].ID, nil
+}
+
+// getRunStatus вазъи ҳозираи як run-ро мегирад ("queued"/"in_progress"/"completed")
+// ва conclusion-ашро (агар тамом шуда бошад — "success"/"failure"/...)
+func (c *GitHubAppClient) getRunStatus(fullName string, runID int64) (status, conclusion string, err error) {
+	path := fmt.Sprintf("/repos/%s/actions/runs/%d", fullName, runID)
+	body, code, err := c.doRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return "", "", err
+	}
+	if code != http.StatusOK {
+		return "", "", fmt.Errorf("failed to get run status: status %d, body: %s", code, string(body))
+	}
+	var result struct {
+		Status     string `json:"status"`
+		Conclusion string `json:"conclusion"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", "", err
+	}
+	return result.Status, result.Conclusion, nil
+}
+
+// WaitForRunCompletion то тамом шудани run-и додашуда мунтазир мешавад
+// (интихобан то timeout), ҳар pollInterval як бор вазъро месанҷад. conclusion
+// ("success", "failure" ва ғ.) баргардонда мешавад. Агар аз timeout гузашт
+// ва ҳанӯз тамом нашуда бошад, хатогӣ бармегардад
+func (c *GitHubAppClient) WaitForRunCompletion(fullName string, runID int64, timeout, pollInterval time.Duration) (string, error) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		status, conclusion, err := c.getRunStatus(fullName, runID)
+		if err != nil {
+			return "", err
+		}
+		if status == "completed" {
+			return conclusion, nil
+		}
+		time.Sleep(pollInterval)
+	}
+	return "", fmt.Errorf("timed out waiting for run %d to complete", runID)
+}
+
+// GetRunFailureLog барои run-и ноком, лог(ҳо)-и job-ҳои ноком (то ҳадде
+// кӯтоҳшуда)-ро мегирад — барои ба AI фиристодан то хатогиро ислоҳ кунад
+func (c *GitHubAppClient) GetRunFailureLog(fullName string, runID int64) (string, error) {
+	path := fmt.Sprintf("/repos/%s/actions/runs/%d/jobs", fullName, runID)
+	body, status, err := c.doRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return "", err
+	}
+	if status != http.StatusOK {
+		return "", fmt.Errorf("failed to list jobs: status %d, body: %s", status, string(body))
+	}
+	var result struct {
+		Jobs []struct {
+			ID         int64  `json:"id"`
+			Conclusion string `json:"conclusion"`
+		} `json:"jobs"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
+	}
+
+	var logs strings.Builder
+	for _, job := range result.Jobs {
+		if job.Conclusion != "failure" {
+			continue
+		}
+		logPath := fmt.Sprintf("/repos/%s/actions/jobs/%d/logs", fullName, job.ID)
+		logBody, logStatus, err := c.doRequest(http.MethodGet, logPath, nil)
+		if err != nil || logStatus != http.StatusOK {
+			continue
+		}
+		logs.Write(logBody)
+		logs.WriteString("\n")
+	}
+	if logs.Len() == 0 {
+		return "", fmt.Errorf("no failed job logs found")
+	}
+	return logs.String(), nil
+}
+
 // PushFlutterScreen танҳо lib/main.dart-и AI-сохташударо ба репо мебарорад.
 // Дигар файлҳои лоиҳаи Flutter (pubspec.yaml, android/, ios/ ва ғ.) лозим
 // нестанд — вақте workflow иҷро мешавад, "flutter create ." онҳоро худкор

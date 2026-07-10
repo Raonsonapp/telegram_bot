@@ -86,6 +86,21 @@ Rules for main_dart (full content of lib/main.dart, as a single string with \n f
 - add a FloatingActionButton on the Scaffold for the single most important function, with a fitting icon, that also shows the same SnackBar as its card
 - use consistent padding (e.g. EdgeInsets.all(16)) and spacing (SizedBox(height: 16) between the header and the grid) so the screen looks intentional and complete, not sparse`
 
+const fixPromptTemplate = `The following Flutter/Dart lib/main.dart failed to build in GitHub Actions ("flutter build apk"). Fix it so it builds successfully, while preserving the same screen design and functionality intent.
+
+Original app description: %s
+
+Previous lib/main.dart:
+%s
+
+Build error log (tail):
+%s
+
+Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
+{"app_name": "Short App Name", "main_dart": "..."}
+
+main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file importing only 'package:flutter/material.dart'.`
+
 // rateLimitError маънои онро дорад, ки OpenRouter модели интихобшударо
 // муваққатан маҳдуд кардааст (rate-limit-и умумии сатҳи ройгон). retryAfter
 // вақти пешниҳодшуда барои интизорӣ пеш аз кӯшиши дигар аст (аз
@@ -111,9 +126,27 @@ const maxRateLimitWait = 15 * time.Second
 // бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора кӯшиш мекунад
 // пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
+	prompt := fmt.Sprintf(screenPromptTemplate, description)
+	return c.runPromptAcrossModels(prompt)
+}
+
+// FixScreen вақте даъват мешавад, ки build.yml бо lib/main.dart-и
+// AI-сохташуда ноком шуда бошад — матни хатогии build-ро (логи job-и
+// ноком) ва коди пешинаро ба AI медиҳад, то версияи ислоҳшударо баргардонад
+func (c *AICoderClient) FixScreen(description, previousCode, errorLog string) (GeneratedScreen, error) {
+	prompt := fmt.Sprintf(fixPromptTemplate, description, previousCode, truncateStr(errorLog, 3000))
+	return c.runPromptAcrossModels(prompt)
+}
+
+// runPromptAcrossModels як prompt-и додашударо дар якчанд модели ройгон
+// паиҳам меозмояд (аввал c.model, баъд fallbackModels) — то агар яке аз
+// рӯйхати ройгон хориҷ шуда бошад, натиҷа гум нашавад. Агар модел
+// rate-limit шуда бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора
+// кӯшиш мекунад пеш аз гузаштан ба модели навбатӣ
+func (c *AICoderClient) runPromptAcrossModels(prompt string) (GeneratedScreen, error) {
 	var attempts []string
 	for _, model := range c.candidateModels() {
-		screen, err := c.generateWithModel(description, model)
+		screen, err := c.callModel(prompt, model)
 		if err == nil {
 			return screen, nil
 		}
@@ -121,7 +154,7 @@ func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, err
 		var rle *rateLimitError
 		if errors.As(err, &rle) && rle.retryAfter > 0 && rle.retryAfter <= maxRateLimitWait {
 			time.Sleep(rle.retryAfter)
-			screen, err = c.generateWithModel(description, model)
+			screen, err = c.callModel(prompt, model)
 			if err == nil {
 				return screen, nil
 			}
@@ -145,9 +178,7 @@ func (c *AICoderClient) candidateModels() []string {
 	return models
 }
 
-func (c *AICoderClient) generateWithModel(description, model string) (GeneratedScreen, error) {
-	prompt := fmt.Sprintf(screenPromptTemplate, description)
-
+func (c *AICoderClient) callModel(prompt, model string) (GeneratedScreen, error) {
 	payload, err := json.Marshal(map[string]interface{}{
 		"model": model,
 		"messages": []map[string]string{
