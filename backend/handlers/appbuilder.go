@@ -42,28 +42,20 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 		return
 	}
 
-	existing, err := d.DB.GetUserRepo(msg.From.ID)
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_creating"))
+
+	fullName, htmlURL, isNew, err := d.GitHubApp.CreateOrGetUserRepo(msg.From.ID, description)
 	if err != nil {
-		utils.LogError("appbuilder: failed to check existing repo for user=%d: %v", msg.From.ID, err)
+		utils.LogError("appbuilder: failed to create/get repo for user=%d %q: %v", msg.From.ID, description, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+	if !isNew {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_updating_existing"))
 	}
 
-	var fullName, htmlURL string
-	if existing != nil {
-		fullName, htmlURL = existing.FullName, existing.URL
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_updating_existing"))
-	} else {
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_creating"))
-
-		fullName, htmlURL, err = d.GitHubApp.CreateAppRepo(description)
-		if err != nil {
-			utils.LogError("appbuilder: failed to create repo for %q: %v", description, err)
-			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
-			return
-		}
-
-		if err := d.DB.SaveUserRepo(msg.From.ID, fullName, htmlURL); err != nil {
-			utils.LogError("appbuilder: failed to save repo mapping for user=%d repo=%s: %v", msg.From.ID, fullName, err)
-		}
+	if err := d.DB.SaveUserRepo(msg.From.ID, fullName, htmlURL); err != nil {
+		utils.LogError("appbuilder: failed to save repo mapping for user=%d repo=%s: %v", msg.From.ID, fullName, err)
 	}
 
 	if d.AICoder.Enabled() {

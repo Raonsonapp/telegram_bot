@@ -112,35 +112,15 @@ func (c *GitHubAppClient) doRequest(method, path string, body []byte) ([]byte, i
 	return respBody, resp.StatusCode, nil
 }
 
-// sanitizeRepoName номи озоди корбарро ба номи қобили қабули GitHub
-// (ҳарфи хурд, рақам, хат) табдил медиҳад
-func sanitizeRepoName(name string) string {
-	name = strings.ToLower(strings.TrimSpace(name))
-	var b strings.Builder
-	lastWasDash := false
-	for _, r := range name {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			b.WriteRune(r)
-			lastWasDash = false
-		case r == ' ', r == '-', r == '_':
-			if !lastWasDash {
-				b.WriteRune('-')
-				lastWasDash = true
-			}
-		}
-	}
-	result := strings.Trim(b.String(), "-")
-	if result == "" {
-		result = fmt.Sprintf("app-%d", time.Now().Unix())
-	}
-	return result
-}
-
-// CreateAppRepo репои нав месозад ва workflow-и build-и APK-ро дар он
-// ҷойгир мекунад. fullName формати "owner/repo" дорад
-func (c *GitHubAppClient) CreateAppRepo(appName string) (fullName string, htmlURL string, err error) {
-	repoName := sanitizeRepoName(appName)
+// CreateOrGetUserRepo репои бо номи собити ба telegramID вобастаро месозад
+// (масалан "app-user-6822119590"), то ҳар корбар ҳамеша ба ҳамон як номи
+// репо расад — новобаста аз он ки тавсифаш чӣ буд. Агар репо аллакай вуҷуд
+// дошта бошад (масалан агар пойгоҳи додаҳои SQLite-и мо аз сабаби деплой
+// пок шуда бошад, вале худи репо дар GitHub монда бошад), ба ҷои хатогии
+// "номи такрорӣ", маълумоти ҳамон репои мавҷударо мегирад — то ҳеҷ гоҳ
+// беасос ноком нашавад. isNew нишон медиҳад, ки оё репо ҳозир аввалин бор сохта шуд
+func (c *GitHubAppClient) CreateOrGetUserRepo(telegramID int64, appName string) (fullName string, htmlURL string, isNew bool, err error) {
+	repoName := fmt.Sprintf("app-user-%d", telegramID)
 
 	payload, _ := json.Marshal(map[string]interface{}{
 		"name":        repoName,
@@ -151,10 +131,23 @@ func (c *GitHubAppClient) CreateAppRepo(appName string) (fullName string, htmlUR
 
 	body, status, err := c.doRequest(http.MethodPost, "/user/repos", payload)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create repo: %w", err)
+		return "", "", false, fmt.Errorf("failed to create repo: %w", err)
 	}
+
+	if status == http.StatusUnprocessableEntity && strings.Contains(string(body), "already exists") {
+		owner, ownerErr := c.CurrentOwner()
+		if ownerErr != nil {
+			return "", "", false, fmt.Errorf("repo already exists but failed to resolve owner: %w", ownerErr)
+		}
+		full, url, getErr := c.getRepo(owner, repoName)
+		if getErr != nil {
+			return "", "", false, fmt.Errorf("repo already exists but failed to fetch it: %w", getErr)
+		}
+		return full, url, false, nil
+	}
+
 	if status != http.StatusCreated {
-		return "", "", fmt.Errorf("failed to create repo: status %d, body: %s", status, string(body))
+		return "", "", false, fmt.Errorf("failed to create repo: status %d, body: %s", status, string(body))
 	}
 
 	var repo struct {
@@ -165,7 +158,7 @@ func (c *GitHubAppClient) CreateAppRepo(appName string) (fullName string, htmlUR
 		} `json:"owner"`
 	}
 	if err := json.Unmarshal(body, &repo); err != nil {
-		return "", "", fmt.Errorf("failed to parse create-repo response: %w", err)
+		return "", "", false, fmt.Errorf("failed to parse create-repo response: %w", err)
 	}
 
 	c.mu.Lock()
@@ -177,9 +170,28 @@ func (c *GitHubAppClient) CreateAppRepo(appName string) (fullName string, htmlUR
 	time.Sleep(2 * time.Second)
 
 	if err := c.PushFile(repo.FullName, ".github/workflows/build.yml", "Add Flutter APK build workflow", flutterBuildWorkflow); err != nil {
-		return repo.FullName, repo.HTMLURL, fmt.Errorf("repo created but failed to add workflow: %w", err)
+		return repo.FullName, repo.HTMLURL, true, fmt.Errorf("repo created but failed to add workflow: %w", err)
 	}
 
+	return repo.FullName, repo.HTMLURL, true, nil
+}
+
+// getRepo маълумоти репои мавҷударо (full_name, html_url) мегирад
+func (c *GitHubAppClient) getRepo(owner, repoName string) (fullName string, htmlURL string, err error) {
+	body, status, err := c.doRequest(http.MethodGet, fmt.Sprintf("/repos/%s/%s", owner, repoName), nil)
+	if err != nil {
+		return "", "", err
+	}
+	if status != http.StatusOK {
+		return "", "", fmt.Errorf("failed to fetch repo: status %d, body: %s", status, string(body))
+	}
+	var repo struct {
+		FullName string `json:"full_name"`
+		HTMLURL  string `json:"html_url"`
+	}
+	if err := json.Unmarshal(body, &repo); err != nil {
+		return "", "", err
+	}
 	return repo.FullName, repo.HTMLURL, nil
 }
 
