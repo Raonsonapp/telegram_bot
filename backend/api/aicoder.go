@@ -14,12 +14,18 @@ import (
 // моделҳои гуногун бо як калид)
 const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions"
 
-// defaultCoderModel модели пешфарз. МУҲИМ: рӯйхати моделҳои ройгони
-// OpenRouter хеле тез иваз мешавад (масалан Qwen coder-и ройгон дар миёнаи
-// 2026 хориҷ шуд) — агар ин модел низ дигар кор накунад, ба ҷои тағйири
-// код, тавассути Environment Variable-и OPENROUTER_MODEL дар Render
-// модели дигари ройгонро аз openrouter.ai/models (филтри "free") гузор
+// defaultCoderModel модели пешфарз (аввалин, ки озмуда мешавад).
+// fallbackModels — агар модели якум ноком шавад (масалан аз рӯйхати
+// ройгон хориҷ шуда бошад — рӯйхати моделҳои ройгони OpenRouter хеле тез
+// иваз мешавад), инҳо паиҳам озмуда мешаванд, то АМАЛАН натиҷа гум нашавад,
+// на танҳо ба тағйири дастии OPENROUTER_MODEL такя кунем
 const defaultCoderModel = "openai/gpt-oss-120b:free"
+
+var fallbackModels = []string{
+	"openai/gpt-oss-120b:free",
+	"openai/gpt-oss-20b:free",
+	"meta-llama/llama-3.3-70b-instruct:free",
+}
 
 // AICoderClient барои сохтани экрани оддии Android (1 саҳифа, 5 функсия)
 // аз тавсифи озоди корбар, тавассути OpenRouter (Qwen coder), истифода мешавад
@@ -70,13 +76,40 @@ Rules for main_dart (full content of lib/main.dart, as a single string with \n f
 - MyHomePage is a StatelessWidget with a Scaffold: AppBar with the app title, and a body Column (mainAxisAlignment: MainAxisAlignment.center) containing exactly 5 ElevatedButton widgets, each with a descriptive child Text matching one function, and an onPressed that calls ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('<function name>')))
 - wrap the 5 buttons so they don't overflow (e.g. each on its own row with some spacing, using SizedBox(height: 12) between them)`
 
-// GenerateScreen тавсифи озоди корбарро мегирад ва экрани якум (MainActivity.kt +
-// activity_main.xml + номи барнома)-ро тавассути Qwen мебарорад
+// GenerateScreen тавсифи озоди корбарро мегирад ва lib/main.dart-и Flutter-ро
+// тавассути OpenRouter мебарорад. Якчанд модели ройгон паиҳам озмуда
+// мешаванд (аввал c.model, баъд fallbackModels) — то агар яке аз рӯйхати
+// ройгон хориҷ шуда бошад, натиҷа гум нашавад
 func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
+	var lastErr error
+	for _, model := range c.candidateModels() {
+		screen, err := c.generateWithModel(description, model)
+		if err == nil {
+			return screen, nil
+		}
+		lastErr = fmt.Errorf("model %s: %w", model, err)
+	}
+	return GeneratedScreen{}, lastErr
+}
+
+// candidateModels рӯйхати моделҳоеро бармегардонад, ки паиҳам озмуда
+// мешаванд: аввал c.model (пешфарз ё аз OPENROUTER_MODEL), баъд
+// fallbackModels (бе такрор)
+func (c *AICoderClient) candidateModels() []string {
+	models := []string{c.model}
+	for _, m := range fallbackModels {
+		if m != c.model {
+			models = append(models, m)
+		}
+	}
+	return models
+}
+
+func (c *AICoderClient) generateWithModel(description, model string) (GeneratedScreen, error) {
 	prompt := fmt.Sprintf(screenPromptTemplate, description)
 
 	payload, err := json.Marshal(map[string]interface{}{
-		"model": c.model,
+		"model": model,
 		"messages": []map[string]string{
 			{"role": "user", "content": prompt},
 		},
