@@ -43,7 +43,8 @@ jobs:
       - name: Create Flutter project if missing
         run: |
           if [ ! -f "pubspec.yaml" ]; then
-            flutter create .
+            PROJECT_NAME=$(basename "$GITHUB_REPOSITORY" | tr '-' '_')
+            flutter create --project-name "$PROJECT_NAME" .
           fi
 
       - name: Get dependencies
