@@ -331,6 +331,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_worldcup"):
 			handlers.HandleWorldCupButton(d, msg)
 			return
+		case buttonLabel(lang, "btn_price_calc"):
+			handlers.HandlePriceCalcButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_app_builder"):
 			handlers.HandleAppBuilderButton(d, msg)
 			return
@@ -385,6 +388,16 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		return
 	}
 
+	// Ҳисобкунаки нарх: аввал шумораи Screen, баъд шумораи Function
+	if handlers.PendingPriceScreens[msg.From.ID] {
+		handlers.HandlePriceScreensText(d, msg)
+		return
+	}
+	if handlers.PendingPriceFunctions[msg.From.ID] {
+		handlers.HandlePriceFunctionsText(d, msg)
+		return
+	}
+
 	// Агар корбар пас аз пахши "💬 Бо админ гап зан" матн фиристода бошад,
 	// онро ба админ мефиристем
 	if handlers.PendingFeedback[msg.From.ID] {
@@ -422,6 +435,10 @@ func routeCallback(d *handlers.Deps, cb *tgbotapi.CallbackQuery) {
 		handlers.HandleWatchStatusCallback(d, cb)
 	case strings.HasPrefix(data, "profile:"):
 		handlers.HandleProfileCallback(d, cb)
+	case strings.HasPrefix(data, "pricepkg:"):
+		handlers.HandlePricePackageCallback(d, cb)
+	case strings.HasPrefix(data, "priceorder:"):
+		handlers.HandlePriceOrderCallback(d, cb)
 	case data == "back:menu":
 		handlers.HandleBackToMenu(d, cb)
 	default:

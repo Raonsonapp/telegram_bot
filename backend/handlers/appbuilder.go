@@ -28,11 +28,11 @@ func HandleAppBuilderButton(d *Deps, msg *tgbotapi.Message) {
 	sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_name"))
 }
 
-// HandleAppNameText тавсифи фиристодаи корбарро мегирад, репои нав месозад
-// (бо workflow-и Flutter build-и тайёр), ва агар AICoder фаъол бошад,
-// экрани 1-саҳифагӣ бо 5 функсия (тавассути Qwen) месозаду push мекунад.
-// Ҳар корбар (аккаунти Telegram) танҳо метавонад 1 репо созад — то
-// GitHub-и соҳиби бот бо репоҳои бешумор пур нашавад
+// HandleAppNameText тавсифи фиристодаи корбарро мегирад. Агар корбар
+// аллакай репо дошта бошад, экрани навро дар ҳамон репо навсозӣ мекунад
+// (на репои дигар месозад — ҳар корбар танҳо 1 репо дорад, то GitHub-и
+// соҳиби бот бо репоҳои бешумор пур нашавад); вагарна репои нав месозад
+// (бо workflow-и Flutter build-и тайёр)
 func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 	PendingAppName[msg.From.ID] = false
 	lang := getUserLang(d, msg.From.ID)
@@ -46,23 +46,24 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 	if err != nil {
 		utils.LogError("appbuilder: failed to check existing repo for user=%d: %v", msg.From.ID, err)
 	}
+
+	var fullName, htmlURL string
 	if existing != nil {
-		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_already_has_repo"), existing.FullName, existing.URL)
-		sendTextMarkdown(d, msg.Chat.ID, text)
-		return
-	}
+		fullName, htmlURL = existing.FullName, existing.URL
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_updating_existing"))
+	} else {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_creating"))
 
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_creating"))
+		fullName, htmlURL, err = d.GitHubApp.CreateAppRepo(description)
+		if err != nil {
+			utils.LogError("appbuilder: failed to create repo for %q: %v", description, err)
+			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+			return
+		}
 
-	fullName, htmlURL, err := d.GitHubApp.CreateAppRepo(description)
-	if err != nil {
-		utils.LogError("appbuilder: failed to create repo for %q: %v", description, err)
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
-		return
-	}
-
-	if err := d.DB.SaveUserRepo(msg.From.ID, fullName, htmlURL); err != nil {
-		utils.LogError("appbuilder: failed to save repo mapping for user=%d repo=%s: %v", msg.From.ID, fullName, err)
+		if err := d.DB.SaveUserRepo(msg.From.ID, fullName, htmlURL); err != nil {
+			utils.LogError("appbuilder: failed to save repo mapping for user=%d repo=%s: %v", msg.From.ID, fullName, err)
+		}
 	}
 
 	if d.AICoder.Enabled() {
