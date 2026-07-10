@@ -73,6 +73,12 @@ func main() {
 		utils.LogInfo("App Builder: OPENROUTER_API_KEY танзим нашудааст, репо бе экрани AI сохта мешавад")
 	}
 
+	if cfg.AdminChatID != 0 {
+		utils.LogInfo("Admin: ADMIN_CHAT_ID хонда шуд = %d — паёмҳои \"Бо админ гап зан\" ба ин чат мераванд", cfg.AdminChatID)
+	} else {
+		utils.LogInfo("Admin: ADMIN_CHAT_ID танзим нашудааст (холӣ ё нодуруст) — хусусияти \"Бо админ гап зан\" паёмро намефиристад")
+	}
+
 	deps := &handlers.Deps{
 		Bot:         bot,
 		DB:          db,
