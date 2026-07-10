@@ -117,6 +117,7 @@ var EnglishMessages = map[string]string{
 	"appbuilder_ai_error":          "⚠️ Repo created, but the AI screen generation failed (maybe a bad OpenRouter token or an AI error). The repo is empty — you can push your own code.",
 	"appbuilder_created":           "✅ Done!\n\nRepo: `%s`\nLink: %s\n\nIf the AI screen was generated, the repo is already ready to build — just tap \"📦 Fetch APK\" in a couple minutes. If not, push your own code.",
 	"appbuilder_error":             "😔 Failed to create the repo. Maybe the name already exists or the token is wrong — check it.",
+	"appbuilder_already_has_repo":  "🏗 You've already created 1 repo (each user can only create 1):\n\nRepo: `%s`\nLink: %s",
 	"appbuilder_not_configured":    "⚠️ This feature isn't set up (GITHUB_APP_BUILDER_TOKEN missing).",
 	"ask_apk_repo":                 "📦 Send the repo name (e.g. \"my-app\" or \"owner/my-app\"):",
 	"apk_fetching":                 "📦 Looking for the latest APK...",

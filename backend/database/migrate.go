@@ -56,10 +56,19 @@ func Migrate(db *DB) error {
 		created_at TEXT NOT NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS app_builder_repos (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		telegram_id INTEGER UNIQUE NOT NULL,
+		repo_full_name TEXT NOT NULL,
+		repo_url TEXT NOT NULL,
+		created_at TEXT NOT NULL
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
 	CREATE INDEX IF NOT EXISTS idx_favorites_telegram_id ON favorites(telegram_id);
 	CREATE INDEX IF NOT EXISTS idx_watch_history_telegram_id ON watch_history(telegram_id);
 	CREATE INDEX IF NOT EXISTS idx_recently_viewed_telegram_id ON recently_viewed(telegram_id);
+	CREATE INDEX IF NOT EXISTS idx_app_builder_repos_telegram_id ON app_builder_repos(telegram_id);
 	`
 
 	if _, err := db.Conn.Exec(schema); err != nil {

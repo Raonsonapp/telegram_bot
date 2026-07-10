@@ -29,14 +29,26 @@ func HandleAppBuilderButton(d *Deps, msg *tgbotapi.Message) {
 }
 
 // HandleAppNameText тавсифи фиристодаи корбарро мегирад, репои нав месозад
-// (бо workflow-и Android build-и тайёр), ва агар AICoder фаъол бошад,
-// экрани 1-саҳифагӣ бо 5 функсия (тавассути Qwen) месозаду push мекунад
+// (бо workflow-и Flutter build-и тайёр), ва агар AICoder фаъол бошад,
+// экрани 1-саҳифагӣ бо 5 функсия (тавассути Qwen) месозаду push мекунад.
+// Ҳар корбар (аккаунти Telegram) танҳо метавонад 1 репо созад — то
+// GitHub-и соҳиби бот бо репоҳои бешумор пур нашавад
 func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 	PendingAppName[msg.From.ID] = false
 	lang := getUserLang(d, msg.From.ID)
 	description := strings.TrimSpace(msg.Text)
 	if description == "" {
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_app_name"))
+		return
+	}
+
+	existing, err := d.DB.GetUserRepo(msg.From.ID)
+	if err != nil {
+		utils.LogError("appbuilder: failed to check existing repo for user=%d: %v", msg.From.ID, err)
+	}
+	if existing != nil {
+		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_already_has_repo"), existing.FullName, existing.URL)
+		sendTextMarkdown(d, msg.Chat.ID, text)
 		return
 	}
 
@@ -47,6 +59,10 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 		utils.LogError("appbuilder: failed to create repo for %q: %v", description, err)
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
 		return
+	}
+
+	if err := d.DB.SaveUserRepo(msg.From.ID, fullName, htmlURL); err != nil {
+		utils.LogError("appbuilder: failed to save repo mapping for user=%d repo=%s: %v", msg.From.ID, fullName, err)
 	}
 
 	if d.AICoder.Enabled() {
