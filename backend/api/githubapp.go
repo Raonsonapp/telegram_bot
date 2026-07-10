@@ -146,6 +146,15 @@ func (c *GitHubAppClient) CreateOrGetUserRepo(telegramID int64, appName string) 
 		if getErr != nil {
 			return "", "", false, fmt.Errorf("repo already exists but failed to fetch it: %w", getErr)
 		}
+
+		// Ҳатто барои репои мавҷуда низ build.yml-ро бо нусхаи ҲОЗИРА иваз
+		// мекунем — вагарна корбароне, ки репояшон қаблан сохта шудааст,
+		// ҳамеша бо версияи кӯҳнаи workflow (бо баги эҳтимолӣ) кор мекунанд,
+		// ҳатто пас аз ислоҳи мо дар код
+		if err := c.PushFile(full, ".github/workflows/build.yml", "Update Flutter APK build workflow", flutterBuildWorkflow); err != nil {
+			utils.LogError("githubapp: failed to update workflow for existing repo %s: %v", full, err)
+		}
+
 		return full, url, false, nil
 	}
 
