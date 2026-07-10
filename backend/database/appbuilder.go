@@ -30,10 +30,12 @@ func (d *DB) GetUserRepo(telegramID int64) (*UserRepo, error) {
 }
 
 // SaveUserRepo сабт мекунад, ки ин корбар кадом репоро сохтааст — то дафъаи
-// оянда бидонем, ки ӯ аллакай ҳадди 1 репоро истифода кардааст
+// оянда бидонем, ки ӯ аллакай ҳадди 1 репоро истифода кардааст. Идемпотент
+// аст (UPSERT) — дархости такрорӣ хатои UNIQUE constraint намедиҳад
 func (d *DB) SaveUserRepo(telegramID int64, fullName, url string) error {
 	_, err := d.Conn.Exec(
-		`INSERT INTO app_builder_repos (telegram_id, repo_full_name, repo_url, created_at) VALUES (?, ?, ?, ?)`,
+		`INSERT INTO app_builder_repos (telegram_id, repo_full_name, repo_url, created_at) VALUES (?, ?, ?, ?)
+		 ON CONFLICT(telegram_id) DO UPDATE SET repo_full_name = excluded.repo_full_name, repo_url = excluded.repo_url`,
 		telegramID, fullName, url, time.Now().Format(time.RFC3339),
 	)
 	return err

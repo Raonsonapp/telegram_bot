@@ -381,13 +381,6 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		return
 	}
 
-	// Агар корбар пас аз пахши "📦 Гирифтани APK" номи репоро фиристода бошад,
-	// охирин APK-и сохташуда аз GitHub Actions гирифта мешавад
-	if handlers.PendingAPKRepo[msg.From.ID] {
-		handlers.HandleFetchAPKText(d, msg)
-		return
-	}
-
 	// Ҳисобкунаки нарх: аввал шумораи Screen, баъд шумораи Function
 	if handlers.PendingPriceScreens[msg.From.ID] {
 		handlers.HandlePriceScreensText(d, msg)

@@ -10,11 +10,9 @@ import (
 	"anime-bot/backend/utils"
 )
 
-// PendingAppName ва PendingAPKRepo нигоҳ медоранд кадом корбарон мунтазири
-// фиристодани номи барнома (барои сохтани репо) ё номи репо (барои
-// гирифтани APK-и охирин) ҳастанд
+// PendingAppName нигоҳ медорад кадом корбарон мунтазири фиристодани
+// тавсифи барнома (барои сохтани репо) ҳастанд
 var PendingAppName = make(map[int64]bool)
-var PendingAPKRepo = make(map[int64]bool)
 
 // HandleAppBuilderButton номи барномаи навро мепурсад, то репои GitHub
 // бо workflow-и build-и APK сохта шавад
@@ -74,33 +72,23 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 	sendTextMarkdown(d, msg.Chat.ID, text)
 }
 
-// HandleFetchAPKButton номи репоеро мепурсад, ки бояд APK-и охиринашро гирад
+// HandleFetchAPKButton охирин APK-и репои шахсии корбарро мегирад. Номи
+// репо аз ID-и Telegram-и корбар худкор ҳосил мешавад (app-user-<ID>) —
+// аз корбар дигар чизе пурсида намешавад, зеро номи репо аллакай муайян аст
 func HandleFetchAPKButton(d *Deps, msg *tgbotapi.Message) {
 	lang := getUserLang(d, msg.From.ID)
 	if !d.GitHubApp.Enabled() {
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_not_configured"))
 		return
 	}
-	PendingAPKRepo[msg.From.ID] = true
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_apk_repo"))
-}
 
-// HandleFetchAPKText номи репои фиристодаи корбарро мегирад, охирин
-// artifact-и APK-и GitHub Actions-ро мебарорад ва ҳамчун файл мефиристад
-func HandleFetchAPKText(d *Deps, msg *tgbotapi.Message) {
-	PendingAPKRepo[msg.From.ID] = false
-	lang := getUserLang(d, msg.From.ID)
-	repoName := strings.TrimSpace(msg.Text)
-	if repoName == "" {
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_apk_repo"))
+	owner, err := d.GitHubApp.CurrentOwner()
+	if err != nil || owner == "" {
+		utils.LogError("appbuilder: failed to resolve current owner: %v", err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
 		return
 	}
-
-	if !strings.Contains(repoName, "/") {
-		if owner, err := d.GitHubApp.CurrentOwner(); err == nil && owner != "" {
-			repoName = owner + "/" + repoName
-		}
-	}
+	repoName := fmt.Sprintf("%s/app-user-%d", owner, msg.From.ID)
 
 	sendText(d, msg.Chat.ID, api.GetMessage(lang, "apk_fetching"))
 

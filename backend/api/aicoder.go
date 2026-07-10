@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -76,10 +77,30 @@ Rules for main_dart (full content of lib/main.dart, as a single string with \n f
 - MyHomePage is a StatelessWidget with a Scaffold: AppBar with the app title, and a body Column (mainAxisAlignment: MainAxisAlignment.center) containing exactly 5 ElevatedButton widgets, each with a descriptive child Text matching one function, and an onPressed that calls ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('<function name>')))
 - wrap the 5 buttons so they don't overflow (e.g. each on its own row with some spacing, using SizedBox(height: 12) between them)`
 
+// rateLimitError маънои онро дорад, ки OpenRouter модели интихобшударо
+// муваққатан маҳдуд кардааст (rate-limit-и умумии сатҳи ройгон). retryAfter
+// вақти пешниҳодшуда барои интизорӣ пеш аз кӯшиши дигар аст (аз
+// retry_after_seconds-и худи хатогии OpenRouter гирифта мешавад)
+type rateLimitError struct {
+	message    string
+	retryAfter time.Duration
+}
+
+func (e *rateLimitError) Error() string {
+	return fmt.Sprintf("rate-limited: %s (retry after %s)", e.message, e.retryAfter)
+}
+
+// maxRateLimitWait — то ин андоза интизор мешавем, то дархости webhook-и
+// Telegram аз ҳад зиёд дароз нашавад; агар retry_after_seconds аз ин зиёд
+// бошад, ба ҷои интизорӣ бевосита модели навбатиро озмоед
+const maxRateLimitWait = 15 * time.Second
+
 // GenerateScreen тавсифи озоди корбарро мегирад ва lib/main.dart-и Flutter-ро
 // тавассути OpenRouter мебарорад. Якчанд модели ройгон паиҳам озмуда
 // мешаванд (аввал c.model, баъд fallbackModels) — то агар яке аз рӯйхати
-// ройгон хориҷ шуда бошад, натиҷа гум нашавад
+// ройгон хориҷ шуда бошад, натиҷа гум нашавад. Агар модел rate-limit шуда
+// бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора кӯшиш мекунад
+// пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
 	var lastErr error
 	for _, model := range c.candidateModels() {
@@ -87,6 +108,16 @@ func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, err
 		if err == nil {
 			return screen, nil
 		}
+
+		var rle *rateLimitError
+		if errors.As(err, &rle) && rle.retryAfter > 0 && rle.retryAfter <= maxRateLimitWait {
+			time.Sleep(rle.retryAfter)
+			screen, err = c.generateWithModel(description, model)
+			if err == nil {
+				return screen, nil
+			}
+		}
+
 		lastErr = fmt.Errorf("model %s: %w", model, err)
 	}
 	return GeneratedScreen{}, lastErr
@@ -146,13 +177,22 @@ func (c *AICoderClient) generateWithModel(description, model string) (GeneratedS
 			} `json:"message"`
 		} `json:"choices"`
 		Error *struct {
-			Message string `json:"message"`
+			Message  string `json:"message"`
+			Metadata struct {
+				RetryAfterSeconds float64 `json:"retry_after_seconds"`
+			} `json:"metadata"`
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return GeneratedScreen{}, fmt.Errorf("failed to parse openrouter response: %w", err)
 	}
 	if result.Error != nil {
+		if result.Error.Metadata.RetryAfterSeconds > 0 {
+			return GeneratedScreen{}, &rateLimitError{
+				message:    result.Error.Message,
+				retryAfter: time.Duration(result.Error.Metadata.RetryAfterSeconds * float64(time.Second)),
+			}
+		}
 		return GeneratedScreen{}, fmt.Errorf("openrouter error: %s", result.Error.Message)
 	}
 	if len(result.Choices) == 0 {
