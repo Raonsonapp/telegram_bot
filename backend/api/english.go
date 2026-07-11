@@ -147,8 +147,8 @@ var EnglishMessages = map[string]string{
 	"transfer_failed":              "😔 Transfer failed. Maybe the GitHub username is wrong, or that user already has a repo with this name — check and try again.",
 
 	"btn_price_calc":            "🧮 Price Calculator",
-	"ask_price_screens":         "🧮 How many Screens do you need? (send a number)",
-	"ask_price_functions":       "🧮 How many Functions in total? (send a number)",
+	"ask_price_screens":         "🧮 How many *screens* will the app have?\n\nA screen is a distinct view the user switches between. For example:\n📱 Home screen (opens first)\n👤 Profile screen\n💬 Chat/messages screen\n🔍 Search screen\n⚙️ Settings screen\n🔐 Login screen\n🛒 Cart/checkout screen\n\nFor example, if the app has Home + Profile + Chat + Settings, that's 4 screens — send \"4\".\n\nSend the number of screens:",
+	"ask_price_functions":       "🧮 How many *functions* in total?\n\nA function is something the app can actually do. For example:\n🔐 Sign in by phone number or email\n📸 Send photos or videos\n💬 Chat with other users\n🔔 Push notifications\n💳 In-app payments\n🔍 Search\n⭐ Add to favorites\n📍 Show location on a map\n📤 Share with friends\n\nFor example, Login + Chat + Notifications + Search is 4 functions.\n\nSend the total number of functions:",
 	"ask_price_package":         "🧮 Which package do you want?",
 	"price_number_error":        "😔 Please send a valid number (e.g. 3).",
 	"btn_package_offline":       "🟢 APK Basic",

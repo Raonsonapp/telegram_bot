@@ -44,7 +44,7 @@ func HandlePriceCalcButton(d *Deps, msg *tgbotapi.Message) {
 	lang := getUserLang(d, msg.From.ID)
 	priceCalcSessions[msg.From.ID] = &priceCalcState{}
 	PendingPriceScreens[msg.From.ID] = true
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_price_screens"))
+	sendTextMarkdown(d, msg.Chat.ID, api.GetMessage(lang, "ask_price_screens"))
 }
 
 // HandlePriceScreensText шумораи Screen-ро мегирад, баъд шумораи Function-ро мепурсад
@@ -71,7 +71,7 @@ func HandlePriceScreensText(d *Deps, msg *tgbotapi.Message) {
 	state.Screens = n
 
 	PendingPriceFunctions[msg.From.ID] = true
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_price_functions"))
+	sendTextMarkdown(d, msg.Chat.ID, api.GetMessage(lang, "ask_price_functions"))
 }
 
 // HandlePriceFunctionsText шумораи Function-ро мегирад, баъд навъи пакетро мепурсад
@@ -137,6 +137,7 @@ func HandlePricePackageCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 
 	text := fmt.Sprintf(api.GetMessage(lang, "price_result"), state.Screens, state.Functions, pkgLabel, price)
 	message := tgbotapi.NewMessage(chatID, text)
+	message.ParseMode = tgbotapi.ModeMarkdown
 	message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_place_order"), "priceorder:confirm"),
