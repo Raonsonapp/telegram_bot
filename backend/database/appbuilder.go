@@ -40,3 +40,11 @@ func (d *DB) SaveUserRepo(telegramID int64, fullName, url string) error {
 	)
 	return err
 }
+
+// DeleteUserRepo нақшаи репои корбарро тоза мекунад — масалан баъд аз
+// кӯчонидани репо ба GitHub-и худи корбар (бот дигар ба он дастрасӣ надорад),
+// то дафъаи оянда "Барномасоз" аз аввал (репои нав дар зери бот) сар шавад
+func (d *DB) DeleteUserRepo(telegramID int64) error {
+	_, err := d.Conn.Exec(`DELETE FROM app_builder_repos WHERE telegram_id = ?`, telegramID)
+	return err
+}

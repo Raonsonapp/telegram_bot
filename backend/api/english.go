@@ -138,6 +138,13 @@ var EnglishMessages = map[string]string{
 	"btn_edit_name":                "🏷 Change name",
 	"btn_edit_logo":                "🖼 Change logo",
 	"btn_edit_all":                 "🔄 Rebuild everything from scratch",
+	"btn_edit_transfer":            "🔁 Transfer to your GitHub",
+	"ask_github_username_transfer": "🔁 Send your GitHub username (e.g. \"ivan123\", not an email).\n\n⚠️ Important: once transferred, full ownership goes to you, but the BOT will no longer have access to it — \"📦 Fetch APK\" and \"✏️ Edit\" will stop working for this app unless you add the bot's GitHub account as a collaborator on your repo yourself.",
+	"transfer_confirm":             "🔁 *Confirm transfer*\n\nThe repo will be transferred from `%s` to the GitHub account `%s`.\n\n⚠️ After this, GitHub will ask that account to confirm (email or GitHub notification). The transfer won't complete until they accept.\n\nAre you sure?",
+	"btn_confirm_transfer":         "✅ Yes, transfer",
+	"transfer_cancelled":           "❌ Transfer cancelled.",
+	"transfer_started":             "✅ Transfer request sent!\n\nCheck GitHub (email or notifications) and accept it. Once accepted, the repo is fully yours. If you still want the bot to build APKs for this app, add the bot's GitHub account as a collaborator on your repo.",
+	"transfer_failed":              "😔 Transfer failed. Maybe the GitHub username is wrong, or that user already has a repo with this name — check and try again.",
 
 	"btn_price_calc":            "🧮 Price Calculator",
 	"ask_price_screens":         "🧮 How many Screens do you need? (send a number)",

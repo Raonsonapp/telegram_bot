@@ -327,6 +327,24 @@ func (c *GitHubAppClient) TriggerWorkflow(fullName, workflowFile string, inputs 
 	return nil
 }
 
+// TransferRepo дархости кӯчонидани моликияти репоро ба корбари дигари
+// GitHub (масалан худи соҳиби барнома) мефиристад. Агар newOwner account-и
+// шахсӣ бошад (на ташкилот), GitHub интизори тасдиқи ӯ мемонад — кӯчонидан
+// фавран тамом намешавад. Пас аз тасдиқ, токени бот дигар ба ин репо
+// дастрасӣ надорад (агар корбар онро ба ҳайси collaborator илова накунад)
+func (c *GitHubAppClient) TransferRepo(fullName, newOwner string) error {
+	payload, _ := json.Marshal(map[string]interface{}{"new_owner": newOwner})
+	path := fmt.Sprintf("/repos/%s/transfer", fullName)
+	body, status, err := c.doRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return err
+	}
+	if status != http.StatusAccepted && status != http.StatusOK {
+		return fmt.Errorf("failed to transfer repo: status %d, body: %s", status, string(body))
+	}
+	return nil
+}
+
 // getRepo маълумоти репои мавҷударо (full_name, html_url) мегирад
 func (c *GitHubAppClient) getRepo(owner, repoName string) (fullName string, htmlURL string, err error) {
 	body, status, err := c.doRequest(http.MethodGet, fmt.Sprintf("/repos/%s/%s", owner, repoName), nil)

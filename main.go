@@ -432,6 +432,10 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		handlers.HandleAppEditNameText(d, msg)
 		return
 	}
+	if handlers.PendingAppTransferUsername[msg.From.ID] {
+		handlers.HandleAppTransferUsernameText(d, msg)
+		return
+	}
 
 	// Ҳисобкунаки нарх: аввал шумораи Screen, баъд шумораи Function
 	if handlers.PendingPriceScreens[msg.From.ID] {
@@ -486,6 +490,8 @@ func routeCallback(d *handlers.Deps, cb *tgbotapi.CallbackQuery) {
 		handlers.HandlePriceOrderCallback(d, cb)
 	case strings.HasPrefix(data, "appedit:"):
 		handlers.HandleAppEditCallback(d, cb)
+	case strings.HasPrefix(data, "apptransfer:"):
+		handlers.HandleAppTransferConfirmCallback(d, cb)
 	case data == "back:menu":
 		handlers.HandleBackToMenu(d, cb)
 	default:

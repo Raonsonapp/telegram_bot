@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"anime-bot/backend/utils"
 )
 
 // openRouterEndpoint API-и OpenRouter (дастрасии ройгону пулакӣ ба
@@ -68,9 +70,22 @@ type GeneratedScreen struct {
 	MainDart string
 }
 
+// designPromptTemplate — модели АЛОҲИДА (на коднавис), ки танҳо нақшаи
+// дизайнро (ранг, чойгиршавӣ, шаффофият, фосила ва ғ.) месозад, БЕ навиштани
+// код. Натиҷааш баъд ба модели коднавис ҳамчун роҳнамо дода мешавад — ду
+// зинаи алоҳида (аввал "тарроҳ", баъд "коднавис"), тавре ки дархост шуда буд
+const designPromptTemplate = `You are a senior UI/UX designer (not a developer). Given an app description, produce a concise design specification that ANOTHER model (a developer) will use to build a Flutter screen. Do NOT write any code — only design decisions.
+
+App description: %s
+
+Respond with ONLY valid JSON, no markdown fences, no explanation, in exactly this shape:
+{"seed_color": "#RRGGBB", "layout_style": "short description of layout/composition", "spacing": "short guidance on padding and gaps", "elevation_and_shadow": "short guidance on elevation/shadow depth", "corner_radius": "short guidance on corner rounding", "typography": "short guidance on text weight/emphasis", "icon_style_notes": "short note on which kind of FeatherIcons fit this app's tone (e.g. rounded/friendly vs sharp/professional)", "notes": "1-2 sentences of any other guidance that would make the screen look modern and polished"}`
+
 const screenPromptTemplate = `You generate Flutter/Dart code for a polished, realistic-looking single-screen home UI demo app. Design quality is the TOP priority — a beautiful, professional-looking screen matters more than anything else here, since the user judges the whole app by how this first screen looks.
 
 User's app description: %s
+
+Design specification from the design step — follow it closely for colors, spacing, elevation, corners, and icon tone (if empty, use your own best judgment): %s
 
 Identify exactly 5 major functions implied by the description. Design a proper home screen for a real app around them — NOT a plain column of stacked buttons. Each function's tap action should just show a SnackBar with that function's name (placeholder only — no real backend, networking, or database logic; this is a visual scaffold the user will extend).
 
@@ -96,6 +111,8 @@ Rules for main_dart (full content of lib/main.dart, as a single string with \n f
 const fullAppPromptTemplate = `You generate Flutter/Dart code for a fuller, more complete app (still a single lib/main.dart file, but richer than a single screen). Design quality is the TOP priority — every tab must look like a real, professionally designed screen, not a rough sketch.
 
 User's app description: %s
+
+Design specification from the design step — follow it closely for colors, spacing, elevation, corners, and icon tone (if empty, use your own best judgment): %s
 
 Identify 3 to 4 main sections/tabs implied by the description (e.g. Home, Search, Profile, Settings — pick ones that actually fit the description, not generic placeholders). Build a proper bottom-navigation app: a Scaffold with a BottomNavigationBar (3 to 4 items with fitting icons+labels) switching between an IndexedStack of that many tab widgets. Each tab must have its own realistic, complete UI (lists, cards, forms, avatars — whatever fits that tab's purpose), not just a placeholder button. Any action that would need a real backend should just show a SnackBar placeholder.
 
@@ -152,7 +169,8 @@ const maxRateLimitWait = 15 * time.Second
 // бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора кӯшиш мекунад
 // пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
-	prompt := fmt.Sprintf(screenPromptTemplate, description)
+	designSpec := c.generateDesignSpec(description)
+	prompt := fmt.Sprintf(screenPromptTemplate, description, designSpec)
 	return c.runPromptAcrossModels(prompt)
 }
 
@@ -160,8 +178,24 @@ func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, err
 // (bottom-navigation бо якчанд tab, на 1 экрани оддӣ) мефиристад — барои
 // корбароне, ки ҳадди даъватро (5 нафар) пур кардаанд
 func (c *AICoderClient) GenerateFullApp(description string) (GeneratedScreen, error) {
-	prompt := fmt.Sprintf(fullAppPromptTemplate, description)
+	designSpec := c.generateDesignSpec(description)
+	prompt := fmt.Sprintf(fullAppPromptTemplate, description, designSpec)
 	return c.runPromptAcrossModels(prompt)
+}
+
+// generateDesignSpec модели алоҳидаи "тарроҳ"-ро даъват мекунад, то нақшаи
+// дизайнро (ранг, чойгиршавӣ, шаффофият ва ғ.) пеш аз коднависӣ созад. Агар
+// ин зина ноком шавад (масалан rate-limit), сатри холӣ бармегардад — зинаи
+// коднависӣ ҳамоно бе он давом мекунад (танҳо роҳнамои иловагӣ гум мешавад,
+// на худи сохтани барнома)
+func (c *AICoderClient) generateDesignSpec(description string) string {
+	prompt := fmt.Sprintf(designPromptTemplate, description)
+	spec, err := c.runRawPromptAcrossModels(prompt)
+	if err != nil {
+		utils.LogError("aicoder: design step failed for %q: %v", description, err)
+		return ""
+	}
+	return spec
 }
 
 // FixScreen вақте даъват мешавад, ки build.yml бо lib/main.dart-и
@@ -178,25 +212,39 @@ func (c *AICoderClient) FixScreen(description, previousCode, errorLog string) (G
 // rate-limit шуда бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора
 // кӯшиш мекунад пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) runPromptAcrossModels(prompt string) (GeneratedScreen, error) {
+	raw, err := c.runRawPromptAcrossModels(prompt)
+	if err != nil {
+		return GeneratedScreen{}, err
+	}
+	return parseGeneratedScreen(raw)
+}
+
+// runRawPromptAcrossModels як prompt-и додашударо (матни хоми ҷавоб, бе
+// таҳлили шакли мушаххас) дар якчанд модели ройгон паиҳам меозмояд (аввал
+// c.model, баъд fallbackModels) — то агар яке аз рӯйхати ройгон хориҷ шуда
+// бошад, натиҷа гум нашавад. Агар модел rate-limit шуда бошад ва вақти
+// интизорӣ кӯтоҳ бошад, як маротиба дубора кӯшиш мекунад пеш аз гузаштан
+// ба модели навбатӣ
+func (c *AICoderClient) runRawPromptAcrossModels(prompt string) (string, error) {
 	var attempts []string
 	for _, model := range c.candidateModels() {
-		screen, err := c.callModel(prompt, model)
+		content, err := c.callModelRaw(prompt, model)
 		if err == nil {
-			return screen, nil
+			return content, nil
 		}
 
 		var rle *rateLimitError
 		if errors.As(err, &rle) && rle.retryAfter > 0 && rle.retryAfter <= maxRateLimitWait {
 			time.Sleep(rle.retryAfter)
-			screen, err = c.callModel(prompt, model)
+			content, err = c.callModelRaw(prompt, model)
 			if err == nil {
-				return screen, nil
+				return content, nil
 			}
 		}
 
 		attempts = append(attempts, fmt.Sprintf("%s: %v", model, err))
 	}
-	return GeneratedScreen{}, fmt.Errorf("all models failed — %s", strings.Join(attempts, " | "))
+	return "", fmt.Errorf("all models failed — %s", strings.Join(attempts, " | "))
 }
 
 // candidateModels рӯйхати моделҳоеро бармегардонад, ки паиҳам озмуда
@@ -212,7 +260,9 @@ func (c *AICoderClient) candidateModels() []string {
 	return models
 }
 
-func (c *AICoderClient) callModel(prompt, model string) (GeneratedScreen, error) {
+// callModelRaw як дархостро ба модели додашуда мефиристад ва матни хоми
+// ҷавобро (пеш аз ҳар гуна таҳлили шакли мушаххас) бармегардонад
+func (c *AICoderClient) callModelRaw(prompt, model string) (string, error) {
 	payload, err := json.Marshal(map[string]interface{}{
 		"model": model,
 		"messages": []map[string]string{
@@ -220,28 +270,28 @@ func (c *AICoderClient) callModel(prompt, model string) (GeneratedScreen, error)
 		},
 	})
 	if err != nil {
-		return GeneratedScreen{}, err
+		return "", err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, openRouterEndpoint, bytes.NewReader(payload))
 	if err != nil {
-		return GeneratedScreen{}, err
+		return "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return GeneratedScreen{}, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return GeneratedScreen{}, err
+		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return GeneratedScreen{}, fmt.Errorf("openrouter request failed: status %d, body: %s", resp.StatusCode, truncateStr(string(body), 500))
+		return "", fmt.Errorf("openrouter request failed: status %d, body: %s", resp.StatusCode, truncateStr(string(body), 500))
 	}
 
 	var result struct {
@@ -258,22 +308,27 @@ func (c *AICoderClient) callModel(prompt, model string) (GeneratedScreen, error)
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return GeneratedScreen{}, fmt.Errorf("failed to parse openrouter response: %w", err)
+		return "", fmt.Errorf("failed to parse openrouter response: %w", err)
 	}
 	if result.Error != nil {
 		if result.Error.Metadata.RetryAfterSeconds > 0 {
-			return GeneratedScreen{}, &rateLimitError{
+			return "", &rateLimitError{
 				message:    result.Error.Message,
 				retryAfter: time.Duration(result.Error.Metadata.RetryAfterSeconds * float64(time.Second)),
 			}
 		}
-		return GeneratedScreen{}, fmt.Errorf("openrouter error: %s", result.Error.Message)
+		return "", fmt.Errorf("openrouter error: %s", result.Error.Message)
 	}
 	if len(result.Choices) == 0 {
-		return GeneratedScreen{}, fmt.Errorf("no choices in openrouter response")
+		return "", fmt.Errorf("no choices in openrouter response")
 	}
 
-	content := extractJSONObject(result.Choices[0].Message.Content)
+	return result.Choices[0].Message.Content, nil
+}
+
+// parseGeneratedScreen матни хоми ҷавоби модели коднависро ба GeneratedScreen мубаддал мекунад
+func parseGeneratedScreen(raw string) (GeneratedScreen, error) {
+	content := extractJSONObject(raw)
 
 	var screen struct {
 		AppName  string `json:"app_name"`

@@ -37,6 +37,12 @@ var PendingAppEditDescription = make(map[int64]bool)
 var PendingAppEditName = make(map[int64]bool)
 var PendingAppEditLogo = make(map[int64]bool)
 
+// PendingAppTransferUsername корбаронеро нигоҳ медорад, ки мунтазири
+// фиристодани username-и GitHub-и худашон ҳастанд (барои кӯчонидани репо).
+// pendingTransferUsername username-и фиристодашударо то тасдиқи ниҳоӣ нигоҳ медорад
+var PendingAppTransferUsername = make(map[int64]bool)
+var pendingTransferUsername = make(map[int64]string)
+
 // HandleAppBuilderButton вақте пахш мешавад. Агар корбар аллакай барнома
 // дошта бошад, менюи таҳрир (танҳо тавсиф/ном/логотип ё ҳама аз нав)
 // нишон дода мешавад; вагарна зинаи якуми сохтани барномаи нав (номи
@@ -79,6 +85,9 @@ func showAppEditMenu(d *Deps, chatID int64, lang string) {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_all"), "appedit:all"),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_transfer"), "appedit:transfer"),
+		),
 	)
 	d.Bot.Send(message)
 }
@@ -105,6 +114,9 @@ func HandleAppEditCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 		sendText(d, chatID, api.GetMessage(lang, "ask_app_logo"))
 	case "all":
 		startNewAppFlow(d, cb.From.ID, chatID, lang)
+	case "transfer":
+		PendingAppTransferUsername[cb.From.ID] = true
+		sendText(d, chatID, api.GetMessage(lang, "ask_github_username_transfer"))
 	}
 }
 
@@ -471,6 +483,81 @@ func HandleAppEditLogoPhoto(d *Deps, msg *tgbotapi.Message) {
 		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), repo.FullName, repo.URL)
 		sendTextMarkdown(d, msg.Chat.ID, text)
 	}
+}
+
+// HandleAppTransferUsernameText username-и GitHub-и корбарро мегирад ва
+// пеш аз воқеан кӯчонидан хулосаи оқибатҳоро бо тугмаҳои тасдиқ/бекор нишон медиҳад
+func HandleAppTransferUsernameText(d *Deps, msg *tgbotapi.Message) {
+	lang := getUserLang(d, msg.From.ID)
+	username := strings.TrimSpace(msg.Text)
+	if username == "" || strings.ContainsAny(username, " /@\t\n") {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_github_username_transfer"))
+		return
+	}
+	PendingAppTransferUsername[msg.From.ID] = false
+	pendingTransferUsername[msg.From.ID] = username
+
+	botOwner, err := d.GitHubApp.CurrentOwner()
+	if err != nil {
+		utils.LogError("appbuilder: failed to resolve bot owner for transfer confirm: %v", err)
+		botOwner = "?"
+	}
+
+	text := fmt.Sprintf(api.GetMessage(lang, "transfer_confirm"), botOwner, username)
+	message := tgbotapi.NewMessage(msg.Chat.ID, text)
+	message.ParseMode = tgbotapi.ModeMarkdown
+	message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_confirm_transfer"), "apptransfer:confirm"),
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_cancel_order"), "apptransfer:cancel"),
+		),
+	)
+	d.Bot.Send(message)
+}
+
+// HandleAppTransferConfirmCallback тасдиқ/бекории кӯчониданро коркард мекунад
+func HandleAppTransferConfirmCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
+	callback := tgbotapi.NewCallback(cb.ID, "")
+	d.Bot.Request(callback)
+
+	lang := getUserLang(d, cb.From.ID)
+	chatID := cb.Message.Chat.ID
+
+	if cb.Data == "apptransfer:cancel" {
+		delete(pendingTransferUsername, cb.From.ID)
+		edit := tgbotapi.NewEditMessageText(chatID, cb.Message.MessageID, api.GetMessage(lang, "transfer_cancelled"))
+		d.Bot.Send(edit)
+		return
+	}
+
+	username, ok := pendingTransferUsername[cb.From.ID]
+	if !ok {
+		sendText(d, chatID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+	delete(pendingTransferUsername, cb.From.ID)
+
+	repo, err := d.DB.GetUserRepo(cb.From.ID)
+	if err != nil || repo == nil {
+		sendText(d, chatID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	if err := d.GitHubApp.TransferRepo(repo.FullName, username); err != nil {
+		utils.LogError("appbuilder: failed to transfer repo %s to %s: %v", repo.FullName, username, err)
+		edit := tgbotapi.NewEditMessageText(chatID, cb.Message.MessageID, api.GetMessage(lang, "transfer_failed"))
+		d.Bot.Send(edit)
+		return
+	}
+
+	// Бот дигар ба ин репо дастрасӣ надорад — нақшаро тоза мекунем, то
+	// дафъаи оянда "Барномасоз" репои НАВ дар зери бот созад
+	if err := d.DB.DeleteUserRepo(cb.From.ID); err != nil {
+		utils.LogError("appbuilder: failed to clear repo mapping for user=%d after transfer: %v", cb.From.ID, err)
+	}
+
+	edit := tgbotapi.NewEditMessageText(chatID, cb.Message.MessageID, api.GetMessage(lang, "transfer_started"))
+	d.Bot.Send(edit)
 }
 
 // telegramMaxFileBytes — ҳадди фиристодани файл аз бот (Telegram Bot API,
