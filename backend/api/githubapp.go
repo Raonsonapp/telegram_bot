@@ -68,6 +68,13 @@ jobs:
             sed -i "s/android:label=\"[^\"]*\"/android:label=\"$APP_NAME\"/" android/app/src/main/AndroidManifest.xml
           fi
 
+      - name: Ensure INTERNET permission (release builds need it explicitly)
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ] && ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
+          fi
+
       - name: Generate app icon if provided
         run: |
           if [ -f "assets/icon/icon.png" ]; then
@@ -128,6 +135,9 @@ jobs:
 
       - name: Ensure Feather icons dependency
         run: flutter pub add flutter_feather_icons
+
+      - name: Ensure http dependency (for functions with real network calls)
+        run: flutter pub add http
 
       - name: Get dependencies
         run: flutter pub get
@@ -419,8 +429,8 @@ func (c *GitHubAppClient) getFileSHA(fullName, path string) (string, error) {
 	return result.SHA, nil
 }
 
-// getFileContent матни (decoded) файли додашударо аз репо мегирад
-func (c *GitHubAppClient) getFileContent(fullName, path string) (string, error) {
+// GetFileContent матни (decoded) файли додашударо аз репо мегирад
+func (c *GitHubAppClient) GetFileContent(fullName, path string) (string, error) {
 	apiPath := fmt.Sprintf("/repos/%s/contents/%s", fullName, path)
 	body, status, err := c.doRequest(http.MethodGet, apiPath, nil)
 	if err != nil {
@@ -451,7 +461,7 @@ var androidLabelRe = regexp.MustCompile(`android:label="([^"]*)"`)
 // Барои таҳрирҳое (масалан танҳо тағйир додани тавсиф ё логотип) лозим аст,
 // ки номи кӯҳна набояд гум шавад
 func (c *GitHubAppClient) GetCurrentAppName(fullName string) (string, error) {
-	content, err := c.getFileContent(fullName, "android/app/src/main/AndroidManifest.xml")
+	content, err := c.GetFileContent(fullName, "android/app/src/main/AndroidManifest.xml")
 	if err != nil {
 		return "", err
 	}

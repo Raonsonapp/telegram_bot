@@ -43,6 +43,11 @@ var PendingAppEditLogo = make(map[int64]bool)
 var PendingAppTransferUsername = make(map[int64]bool)
 var pendingTransferUsername = make(map[int64]string)
 
+// PendingAppAddFunction корбаронеро нигоҳ медорад, ки мунтазири фиристодани
+// номи функсияи наве ҳастанд, ки бояд ба барномаи МАВҷУДА илова шавад
+// (бе аз нав сохтани ҳамаи экран)
+var PendingAppAddFunction = make(map[int64]bool)
+
 // HandleAppBuilderButton вақте пахш мешавад. Агар корбар аллакай барнома
 // дошта бошад, менюи таҳрир (танҳо тавсиф/ном/логотип ё ҳама аз нав)
 // нишон дода мешавад; вагарна зинаи якуми сохтани барномаи нав (номи
@@ -74,6 +79,9 @@ func showAppEditMenu(d *Deps, chatID int64, lang string) {
 	message := tgbotapi.NewMessage(chatID, api.GetMessage(lang, "appbuilder_edit_menu"))
 	message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_addfunction"), "appedit:addfunction"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(api.GetMessage(lang, "btn_edit_description"), "appedit:description"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -103,6 +111,9 @@ func HandleAppEditCallback(d *Deps, cb *tgbotapi.CallbackQuery) {
 	mode := strings.TrimPrefix(cb.Data, "appedit:")
 
 	switch mode {
+	case "addfunction":
+		PendingAppAddFunction[cb.From.ID] = true
+		sendText(d, chatID, api.GetMessage(lang, "ask_add_function"))
 	case "description":
 		PendingAppEditDescription[cb.From.ID] = true
 		sendText(d, chatID, api.GetMessage(lang, "ask_app_name"))
@@ -403,6 +414,72 @@ func HandleAppEditDescriptionText(d *Deps, msg *tgbotapi.Message) {
 
 	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_waiting_build"))
 	if waitForGreenBuild(d, msg, lang, repo.FullName, description, aiScreen) {
+		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), repo.FullName, repo.URL)
+		sendTextMarkdown(d, msg.Chat.ID, text)
+	}
+}
+
+// HandleAppAddFunctionText номи функсияи наверо мегирад ва онро ба
+// lib/main.dart-и МАВҷУДА илова мекунад (на аз нав месозад) — то корбар
+// тавонад пайдарпай функсия ба функсия илова кунад, бе гум шудани кори
+// қаблӣ
+func HandleAppAddFunctionText(d *Deps, msg *tgbotapi.Message) {
+	lang := getUserLang(d, msg.From.ID)
+	newFunction := strings.TrimSpace(msg.Text)
+	if newFunction == "" {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "ask_add_function"))
+		return
+	}
+	PendingAppAddFunction[msg.From.ID] = false
+
+	if !d.AICoder.Enabled() {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return
+	}
+
+	repo, err := d.DB.GetUserRepo(msg.From.ID)
+	if err != nil || repo == nil {
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	if allowed, retryAfter := checkAIRateLimit(msg.From.ID); !allowed {
+		minutes := int(retryAfter.Round(time.Minute) / time.Minute)
+		if minutes < 1 {
+			minutes = 1
+		}
+		sendText(d, msg.Chat.ID, fmt.Sprintf(api.GetMessage(lang, "ai_rate_limited"), minutes))
+		return
+	}
+
+	currentCode, err := d.GitHubApp.GetFileContent(repo.FullName, "lib/main.dart")
+	if err != nil {
+		utils.LogError("appbuilder: failed to fetch current lib/main.dart for %s: %v", repo.FullName, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_error"))
+		return
+	}
+
+	displayName, err := d.GitHubApp.GetCurrentAppName(repo.FullName)
+	if err != nil {
+		displayName = "Flutter App"
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
+
+	screen, err := d.AICoder.AddFunction(displayName, newFunction, currentCode)
+	if err != nil {
+		utils.LogError("appbuilder: AddFunction failed for %s (%q): %v", repo.FullName, newFunction, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return
+	}
+	if err := d.GitHubApp.PushFlutterScreen(repo.FullName, screen); err != nil {
+		utils.LogError("appbuilder: failed to push updated scaffold to %s: %v", repo.FullName, err)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
+		return
+	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_waiting_build"))
+	if waitForGreenBuild(d, msg, lang, repo.FullName, displayName, &screen) {
 		text := fmt.Sprintf(api.GetMessage(lang, "appbuilder_created"), repo.FullName, repo.URL)
 		sendTextMarkdown(d, msg.Chat.ID, text)
 	}

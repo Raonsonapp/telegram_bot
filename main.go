@@ -436,6 +436,10 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		handlers.HandleAppTransferUsernameText(d, msg)
 		return
 	}
+	if handlers.PendingAppAddFunction[msg.From.ID] {
+		handlers.HandleAppAddFunctionText(d, msg)
+		return
+	}
 
 	// Ҳисобкунаки нарх: аввал шумораи Screen, баъд шумораи Function
 	if handlers.PendingPriceScreens[msg.From.ID] {

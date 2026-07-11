@@ -65,7 +65,7 @@ func (s *ReferralStore) ensureLoaded() error {
 	}
 	s.repoFullName = full
 
-	content, err := s.gh.getFileContent(full, referralStateFilePath)
+	content, err := s.gh.GetFileContent(full, referralStateFilePath)
 	if err != nil {
 		// Файл ҳанӯз вуҷуд надорад (репои нав) — холӣ сар мекунем
 		s.data = referralStateFile{}

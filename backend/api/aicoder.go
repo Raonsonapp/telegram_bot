@@ -70,6 +70,12 @@ type GeneratedScreen struct {
 	MainDart string
 }
 
+// realFunctionalityInstruction — дар ҳар се дархости коднависӣ истифода
+// мешавад: ба ҷои ҳамеша "танҳо SnackBar" гуфтан, модел бояд функсияро
+// ВОҚЕАН амалӣ кунад агар бе backend/парол имконпазир бошад (holo state ё
+// API-и ройгони бе калид), вагарна ҳамчун placeholder-и равшан гузорад
+const realFunctionalityInstruction = `For each function: if it can be genuinely implemented using only local state (counters, lists, forms, toggles, local search/filter over sample/seed data) OR a free public API that needs NO API key or account (e.g. https://api.frankfurter.dev/latest for currency exchange rates, or another genuinely keyless public API that clearly fits), implement it for REAL — actual working logic. For network calls, use the "http" package (import 'package:http/http.dart' as http;) with proper async/await, a loading indicator, and error handling (try/catch showing a SnackBar on failure) — never invent fake data pretending to be a real network result. If a function genuinely requires a backend server, user accounts/authentication, or a paid/keyed API, keep it as a clearly-labeled placeholder (SnackBar on tap explaining what real backend it would need) instead of faking it.`
+
 // designPromptTemplate — модели АЛОҲИДА (на коднавис), ки танҳо нақшаи
 // дизайнро (ранг, чойгиршавӣ, шаффофият, фосила ва ғ.) месозад, БЕ навиштани
 // код. Натиҷааш баъд ба модели коднавис ҳамчун роҳнамо дода мешавад — ду
@@ -87,20 +93,22 @@ User's app description: %s
 
 Design specification from the design step — follow it closely for colors, spacing, elevation, corners, and icon tone (if empty, use your own best judgment): %s
 
-Identify exactly 5 major functions implied by the description. Design a proper home screen for a real app around them — NOT a plain column of stacked buttons. Each function's tap action should just show a SnackBar with that function's name (placeholder only — no real backend, networking, or database logic; this is a visual scaffold the user will extend).
+Identify exactly 5 major functions implied by the description. Design a proper home screen for a real app around them — NOT a plain column of stacked buttons.
+
+%s
 
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart" and "flutter_feather_icons/flutter_feather_icons.dart"):
+Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", "flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if actually needed):
 - import 'package:flutter/material.dart';
 - import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 - ALL icons anywhere in the file (feature cards, FloatingActionButton, anything else) MUST use FeatherIcons.<name> (e.g. FeatherIcons.home, FeatherIcons.user, FeatherIcons.search) — never Icons.<name> from Material. Pick the FeatherIcons constant that best matches each function.
 - void main() => runApp(const MyApp());
 - MyApp is a StatelessWidget returning a MaterialApp with title matching app_name, useMaterial3: true, and theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and a home of MyHomePage
 - MyHomePage is a StatelessWidget with a Scaffold: a colored AppBar (backgroundColor from the theme's colorScheme, centerTitle: true) showing the app title, and a body that is a scrollable, padded Column containing (in this order): (1) a short welcome/header Text styled with Theme.of(context).textTheme.headlineSmall, (2) a GridView.count(shrinkWrap: true, physics: NeverScrollableScrollPhysics(), crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12) with exactly 5 feature cards, one per function
-- each feature card is a Card (elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))) wrapping an InkWell (borderRadius matching) with onTap showing the SnackBar, whose child is a Padding containing a Column (mainAxisAlignment: MainAxisAlignment.center) with a large FeatherIcons Icon (sized ~32, colored from the theme) then SizedBox(height: 8) then a Text with the function's short label (textAlign: TextAlign.center, fontWeight: FontWeight.w600)
-- add a FloatingActionButton on the Scaffold for the single most important function, with a fitting FeatherIcons icon, that also shows the same SnackBar as its card
+- each feature card is a Card (elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))) wrapping an InkWell (borderRadius matching) with onTap performing that function's real action (or the SnackBar placeholder — see functionality rules below), whose child is a Padding containing a Column (mainAxisAlignment: MainAxisAlignment.center) with a large FeatherIcons Icon (sized ~32, colored from the theme) then SizedBox(height: 8) then a Text with the function's short label (textAlign: TextAlign.center, fontWeight: FontWeight.w600)
+- add a FloatingActionButton on the Scaffold for the single most important function, with a fitting FeatherIcons icon, wired to that same function's action
 - use consistent padding (e.g. EdgeInsets.all(16)) and spacing (SizedBox(height: 16) between the header and the grid) so the screen looks intentional, modern, and complete, not sparse or generic`
 
 // fullAppPromptTemplate — барои корбароне истифода мешавад, ки ҳадди
@@ -114,12 +122,14 @@ User's app description: %s
 
 Design specification from the design step — follow it closely for colors, spacing, elevation, corners, and icon tone (if empty, use your own best judgment): %s
 
-Identify 3 to 4 main sections/tabs implied by the description (e.g. Home, Search, Profile, Settings — pick ones that actually fit the description, not generic placeholders). Build a proper bottom-navigation app: a Scaffold with a BottomNavigationBar (3 to 4 items with fitting icons+labels) switching between an IndexedStack of that many tab widgets. Each tab must have its own realistic, complete UI (lists, cards, forms, avatars — whatever fits that tab's purpose), not just a placeholder button. Any action that would need a real backend should just show a SnackBar placeholder.
+Identify 3 to 4 main sections/tabs implied by the description (e.g. Home, Search, Profile, Settings — pick ones that actually fit the description, not generic placeholders). Build a proper bottom-navigation app: a Scaffold with a BottomNavigationBar (3 to 4 items with fitting icons+labels) switching between an IndexedStack of that many tab widgets. Each tab must have its own realistic, complete UI (lists, cards, forms, avatars — whatever fits that tab's purpose), not just a placeholder button.
+
+%s
 
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart" and "flutter_feather_icons/flutter_feather_icons.dart", with every tab widget defined as a private class in this same file):
+Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", "flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if actually needed, with every tab widget defined as a private class in this same file):
 - import 'package:flutter/material.dart';
 - import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 - ALL icons anywhere in the file (bottom nav items, in-tab icons, everything) MUST use FeatherIcons.<name> — never Icons.<name> from Material. Pick the FeatherIcons constant that best matches each purpose.
@@ -142,7 +152,28 @@ Build error log (tail):
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file importing only 'package:flutter/material.dart' and 'package:flutter_feather_icons/flutter_feather_icons.dart'. Keep using FeatherIcons.<name> for every icon (never Icons.<name>) unless a wrong FeatherIcons name is the actual cause of the build failure, in which case pick a valid one.`
+main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file. Allowed imports: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Keep using FeatherIcons.<name> for every icon (never Icons.<name>) unless a wrong FeatherIcons name is the actual cause of the build failure, in which case pick a valid one. Keep any real (non-placeholder) network logic working — only remove/simplify it if it is the actual cause of the build failure.`
+
+// addFunctionPromptTemplate — вақте истифода мешавад, ки корбар як
+// барномаи МАВҶУДА дошта бошад ва хоҳад як функсияи мушаххаси навро
+// илова кунад (масалан "чат кардан"), бе аз нав сохтани ҳамаи экран
+const addFunctionPromptTemplate = `You are updating an existing Flutter/Dart lib/main.dart file for an app. Add the following new function/feature to it, integrating it naturally into the existing screen(s) — as a new feature card, tab, button, or section, whichever fits the existing design best. Do NOT remove or break any existing functionality; keep everything else working exactly as it is.
+
+App description (for context): %s
+
+New function to add: %s
+
+Design specification to match the app's existing look (if empty, infer the style from the current code): %s
+
+Current lib/main.dart:
+%s
+
+%s
+
+Respond with ONLY valid JSON, no markdown fences, no explanation, in exactly this shape:
+{"app_name": "Short App Name", "main_dart": "..."}
+
+main_dart must be the FULL updated content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file. Allowed imports: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Keep using FeatherIcons.<name> for icons (never Icons.<name>).`
 
 // rateLimitError маънои онро дорад, ки OpenRouter модели интихобшударо
 // муваққатан маҳдуд кардааст (rate-limit-и умумии сатҳи ройгон). retryAfter
@@ -170,7 +201,7 @@ const maxRateLimitWait = 15 * time.Second
 // пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
 	designSpec := c.generateDesignSpec(description)
-	prompt := fmt.Sprintf(screenPromptTemplate, description, designSpec)
+	prompt := fmt.Sprintf(screenPromptTemplate, description, designSpec, realFunctionalityInstruction)
 	return c.runPromptAcrossModels(prompt)
 }
 
@@ -179,7 +210,16 @@ func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, err
 // корбароне, ки ҳадди даъватро (5 нафар) пур кардаанд
 func (c *AICoderClient) GenerateFullApp(description string) (GeneratedScreen, error) {
 	designSpec := c.generateDesignSpec(description)
-	prompt := fmt.Sprintf(fullAppPromptTemplate, description, designSpec)
+	prompt := fmt.Sprintf(fullAppPromptTemplate, description, designSpec, realFunctionalityInstruction)
+	return c.runPromptAcrossModels(prompt)
+}
+
+// AddFunction як функсияи навро ба lib/main.dart-и МАВҶУДА (currentCode)
+// илова мекунад, бе аз нав сохтани ҳамаи барнома — то корбар тавонад
+// пайдарпай функсия ба функсия илова кунад
+func (c *AICoderClient) AddFunction(description, newFunction, currentCode string) (GeneratedScreen, error) {
+	designSpec := c.generateDesignSpec(description)
+	prompt := fmt.Sprintf(addFunctionPromptTemplate, description, newFunction, designSpec, currentCode, realFunctionalityInstruction)
 	return c.runPromptAcrossModels(prompt)
 }
 

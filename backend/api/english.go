@@ -134,6 +134,8 @@ var EnglishMessages = map[string]string{
 	"appbuilder_build_timeout":     "⏳ The build didn't finish in time (GitHub Actions may be busy). Check \"📦 Fetch APK\" again in a couple minutes.",
 	"appbuilder_updating":          "🔄 Updating...",
 	"appbuilder_edit_menu":         "🏗 You already have an app. What do you want to do?",
+	"btn_edit_addfunction":         "➕ Add a new function",
+	"ask_add_function":             "➕ Which function should I add? (e.g. \"chat\", \"currency exchange\", \"map\", \"notifications\")\n\nThis will only add this ONE function to your app — everything else (screens, design, name) stays as it is.\n\nSend the function name:",
 	"btn_edit_description":         "✏️ Change topic/functions",
 	"btn_edit_name":                "🏷 Change name",
 	"btn_edit_logo":                "🖼 Change logo",
