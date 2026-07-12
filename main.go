@@ -79,6 +79,12 @@ func main() {
 		utils.LogInfo("Admin: ADMIN_CHAT_ID танзим нашудааст (холӣ ё нодуруст) — хусусияти \"Бо админ гап зан\" паёмро намефиристад")
 	}
 
+	if cfg.SponsorEnabled {
+		utils.LogInfo("Sponsor: gate-и обуна ФАЪОЛ аст (%d канал) — барои хомӯш кардан SPONSOR_ENABLED-ро тоза кунед", len(cfg.RequiredChannels))
+	} else {
+		utils.LogInfo("Sponsor: gate-и обуна ХОМӮШ аст — ҳеҷ спонсор нишон дода намешавад (барои фаъол кардан SPONSOR_ENABLED=true)")
+	}
+
 	// ReferralStore маълумоти даъватҳоро дар репои давлатии GitHub (на дар
 	// SQLite-и муваққатии Render) нигоҳ медорад — то бо ҳар деплой гум нашавад
 	referralStore := api.NewReferralStore(gitHubAppClient)

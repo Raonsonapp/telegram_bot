@@ -115,6 +115,7 @@ Deploy as a Web Service from this repo (Render auto-detects the `Dockerfile`), s
 | `OPENROUTER_MODEL` | — | Override the default primary model |
 | `ADMIN_CHAT_ID` | — | Telegram ID that receives "Contact Admin" messages & orders (send `/myid` to the bot to find yours) |
 | `REQUIRED_CHANNELS` | — | Comma-separated `@channels` users must join before use (sponsor gate) |
+| `SPONSOR_ENABLED` | — | Master switch for the sponsor gate (default off); set `true` to enforce `REQUIRED_CHANNELS` |
 | `DEFAULT_LANGUAGE` | — | `fa` (default), `ru`, or `en` |
 | `DB_PATH` | — | SQLite path (default `./data/appbuilder.db`) |
 | `PORT` | — | HTTP port (default `10000`) |

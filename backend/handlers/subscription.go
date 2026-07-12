@@ -13,6 +13,11 @@ import (
 // (спонсорҳо) обуна аст. Натиҷаи мусбат муддате дар cache нигоҳ дошта мешавад,
 // то барои ҳар паёми корбар API-и Telegram-ро дархост накунем
 func CheckSubscription(d *Deps, userID int64) (bool, []string) {
+	// Агар gate-и спонсор хомӯш бошад (масалан барои демо), ҳамаро иҷозат
+	// медиҳем — коди обуна ба ҳоли худ мемонад, танҳо ғайрифаъол мешавад
+	if !d.Config.SponsorEnabled {
+		return true, nil
+	}
 	if len(d.Config.RequiredChannels) == 0 {
 		return true, nil
 	}
