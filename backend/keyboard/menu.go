@@ -16,14 +16,15 @@ func MainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_fetch_apk")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_import_code")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_price_calc")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_feedback")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_invite")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_feedback")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_settings")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_help")),
 		),
 	)

@@ -285,6 +285,11 @@ func routeUpdate(d *handlers.Deps, update tgbotapi.Update) {
 		handlers.HandleAppEditLogoPhoto(d, msg)
 		return
 	}
+	// Импорти код: агар корбар файли ZIP-и коди худашро фиристад
+	if msg.Document != nil && handlers.PendingImportCode[msg.From.ID] {
+		handlers.HandleImportCodeDocument(d, msg)
+		return
+	}
 
 	routeText(d, msg)
 }
@@ -378,6 +383,9 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_fetch_apk"):
 			handlers.HandleFetchAPKButton(d, msg)
 			return
+		case buttonLabel(lang, "btn_import_code"):
+			handlers.HandleImportCodeButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_back_to_menu"):
 			handlers.HandleBackToMainMenuButton(d, msg)
 			return
@@ -444,6 +452,11 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 	}
 	if handlers.PendingAppAddFunction[msg.From.ID] {
 		handlers.HandleAppAddFunctionText(d, msg)
+		return
+	}
+	// Импорти код тавассути линки репои GitHub (агар ба ҷои ZIP матн фиристад)
+	if handlers.PendingImportCode[msg.From.ID] {
+		handlers.HandleImportCodeText(d, msg)
 		return
 	}
 

@@ -14,6 +14,7 @@ Interface languages: **Тоҷикӣ 🇹🇯 · Русский 🇷🇺 · Engli
 |---|---|
 | 🏗 **App Builder** | Ask for an app name → logo (optional) → a free-text description. A **design model** first produces a UI spec (colors, spacing, elevation, typography, icon tone), then a **coder model** writes a complete Flutter `lib/main.dart` following that spec. |
 | ➕ **Add a function** | Add one new feature to an existing app (e.g. "chat", "map", "currency exchange") without regenerating everything else. |
+| 📥 **Import my code** | Bring your own project — as a **ZIP** (≤20 MB) or a **public GitHub repo link** — and the bot commits it to your repo and builds it. A build workflow auto-detects **Flutter** or **Android/Gradle** projects and produces the APK. |
 | 📦 **Fetch APK** | Downloads the latest built `.apk` artifact from GitHub Actions and sends it as a Telegram document. |
 | ✏️ **Edit app** | Change the description, display name, or logo of an existing app — each edit touches only what changed. |
 | 🔁 **Transfer to your GitHub** | Transfer the app's repository to the user's own GitHub account (via GitHub's Transfer API, with recipient confirmation). |

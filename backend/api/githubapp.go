@@ -703,3 +703,308 @@ func extractAPKFromZip(zipBytes []byte) ([]byte, string, error) {
 	}
 	return nil, "", fmt.Errorf("no .apk file found inside artifact zip")
 }
+
+// universalBuildWorkflow — workflow-и build-и универсалӣ барои коди
+// воридшудаи корбар. Худаш навъи лоиҳаро муайян мекунад: Flutter (агар
+// pubspec.yaml бошад) ё Android/Gradle (агар gradlew/settings.gradle бошад,
+// дар реша ё дар android/), баъд APK месозад ва ҳамаи *.apk-ро бор мекунад.
+// Забонҳои дигаре, ки ба APK табдил намешаванд, дастгирӣ намешаванд
+const universalBuildWorkflow = `name: Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Detect project type and build APK
+        run: |
+          set -e
+          if [ -f "pubspec.yaml" ]; then
+            echo "Detected Flutter project"
+            flutter pub get
+            flutter build apk --release
+          elif [ -f "android/gradlew" ]; then
+            echo "Detected Android project under android/ (e.g. React Native)"
+            cd android
+            chmod +x gradlew
+            ./gradlew assembleRelease || ./gradlew assembleDebug
+          elif [ -f "gradlew" ] || [ -f "settings.gradle" ] || [ -f "settings.gradle.kts" ] || [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
+            echo "Detected native Android/Gradle project"
+            [ -f "gradlew" ] && chmod +x gradlew || true
+            if [ -f "gradlew" ]; then
+              ./gradlew assembleRelease || ./gradlew assembleDebug
+            else
+              gradle assembleRelease || gradle assembleDebug
+            fi
+          else
+            echo "::error::No buildable Android project found (need Flutter pubspec.yaml or an Android Gradle project). This code cannot be turned into an APK."
+            exit 1
+          fi
+
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          find . -name "*.apk" -exec cp {} out/ \; || true
+          if [ -z "$(ls -A out 2>/dev/null)" ]; then
+            echo "::error::Build finished but no .apk file was produced."
+            exit 1
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: out/*.apk
+`
+
+// importMaxFileBytes — файлҳои калонтар аз ин ҳангоми импорт гузаронда
+// мешаванд (масалан видео/архивҳои дохилӣ), то commit сабук монад
+const importMaxFileBytes = 25 * 1024 * 1024
+
+// PushFilesAsCommit ҳамаи файлҳоро (коди воридшуда) дар ЯК commit ба репо
+// мегузорад, тавассути Git Data API (blob → tree → commit → update ref).
+// Дарахти нав пурра иваз мешавад (base_tree истифода намешавад) — то коди
+// корбар пок бошад, на бо файлҳои кӯҳнаи AI омехта. Худи workflow дар files
+// дохил карда мешавад (аз ҷониби даъваткунанда)
+func (c *GitHubAppClient) PushFilesAsCommit(fullName string, files map[string][]byte, message string) error {
+	// 1. HEAD-и ҳозираи main
+	body, status, err := c.doRequest(http.MethodGet, fmt.Sprintf("/repos/%s/git/ref/heads/main", fullName), nil)
+	if err != nil {
+		return err
+	}
+	if status != http.StatusOK {
+		return fmt.Errorf("failed to get main ref: status %d, body: %s", status, truncateStr(string(body), 300))
+	}
+	var refResp struct {
+		Object struct {
+			SHA string `json:"sha"`
+		} `json:"object"`
+	}
+	if err := json.Unmarshal(body, &refResp); err != nil {
+		return err
+	}
+	baseCommitSHA := refResp.Object.SHA
+
+	// 2. Барои ҳар файл blob месозем
+	type treeEntry struct {
+		Path string `json:"path"`
+		Mode string `json:"mode"`
+		Type string `json:"type"`
+		SHA  string `json:"sha"`
+	}
+	var entries []treeEntry
+	for path, content := range files {
+		if len(content) > importMaxFileBytes {
+			continue
+		}
+		blobPayload, _ := json.Marshal(map[string]interface{}{
+			"content":  base64.StdEncoding.EncodeToString(content),
+			"encoding": "base64",
+		})
+		bb, bs, err := c.doRequest(http.MethodPost, fmt.Sprintf("/repos/%s/git/blobs", fullName), blobPayload)
+		if err != nil {
+			return err
+		}
+		if bs != http.StatusCreated {
+			return fmt.Errorf("failed to create blob for %q: status %d, body: %s", path, bs, truncateStr(string(bb), 200))
+		}
+		var blobResp struct {
+			SHA string `json:"sha"`
+		}
+		if err := json.Unmarshal(bb, &blobResp); err != nil {
+			return err
+		}
+		entries = append(entries, treeEntry{Path: path, Mode: "100644", Type: "blob", SHA: blobResp.SHA})
+	}
+	if len(entries) == 0 {
+		return fmt.Errorf("no importable files found")
+	}
+
+	// 3. Tree месозем (бе base_tree — дарахти пурра нав)
+	treePayload, _ := json.Marshal(map[string]interface{}{"tree": entries})
+	tb, ts, err := c.doRequest(http.MethodPost, fmt.Sprintf("/repos/%s/git/trees", fullName), treePayload)
+	if err != nil {
+		return err
+	}
+	if ts != http.StatusCreated {
+		return fmt.Errorf("failed to create tree: status %d, body: %s", ts, truncateStr(string(tb), 300))
+	}
+	var treeResp struct {
+		SHA string `json:"sha"`
+	}
+	if err := json.Unmarshal(tb, &treeResp); err != nil {
+		return err
+	}
+
+	// 4. Commit месозем
+	commitPayload, _ := json.Marshal(map[string]interface{}{
+		"message": message,
+		"tree":    treeResp.SHA,
+		"parents": []string{baseCommitSHA},
+	})
+	cb, cs, err := c.doRequest(http.MethodPost, fmt.Sprintf("/repos/%s/git/commits", fullName), commitPayload)
+	if err != nil {
+		return err
+	}
+	if cs != http.StatusCreated {
+		return fmt.Errorf("failed to create commit: status %d, body: %s", cs, truncateStr(string(cb), 300))
+	}
+	var commitResp struct {
+		SHA string `json:"sha"`
+	}
+	if err := json.Unmarshal(cb, &commitResp); err != nil {
+		return err
+	}
+
+	// 5. main-ро ба commit-и нав нишон медиҳем (force — чун дарахт пурра иваз шуд)
+	updatePayload, _ := json.Marshal(map[string]interface{}{"sha": commitResp.SHA, "force": true})
+	ub, us, err := c.doRequest(http.MethodPatch, fmt.Sprintf("/repos/%s/git/refs/heads/main", fullName), updatePayload)
+	if err != nil {
+		return err
+	}
+	if us != http.StatusOK {
+		return fmt.Errorf("failed to update ref: status %d, body: %s", us, truncateStr(string(ub), 300))
+	}
+	return nil
+}
+
+var githubRepoURLRe = regexp.MustCompile(`github\.com[/:]([\w.-]+)/([\w.-]+?)(?:\.git)?(?:/.*)?$`)
+
+// ParseGitHubRepoURL owner ва repo-ро аз линки GitHub мебарорад
+func ParseGitHubRepoURL(raw string) (owner, repo string, ok bool) {
+	m := githubRepoURLRe.FindStringSubmatch(strings.TrimSpace(raw))
+	if len(m) < 3 || m[1] == "" || m[2] == "" {
+		return "", "", false
+	}
+	return m[1], strings.TrimSuffix(m[2], ".git"), true
+}
+
+// DownloadRepoArchive репои умумии GitHub-ро ҳамчун zip мегирад (шохаи
+// пешфарзаш). Токен барои репоҳои хусусӣ ҳангоми redirect-и codeload
+// нигоҳ дошта намешавад, пас ин барои репоҳои УМУМӢ (public) кор мекунад
+func (c *GitHubAppClient) DownloadRepoArchive(owner, repo string) ([]byte, error) {
+	// шохаи пешфарзро мегирем
+	body, status, err := c.doRequest(http.MethodGet, fmt.Sprintf("/repos/%s/%s", owner, repo), nil)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("repo not found or not accessible: status %d", status)
+	}
+	var info struct {
+		DefaultBranch string `json:"default_branch"`
+	}
+	if err := json.Unmarshal(body, &info); err != nil {
+		return nil, err
+	}
+	branch := info.DefaultBranch
+	if branch == "" {
+		branch = "main"
+	}
+
+	archiveURL := fmt.Sprintf("https://codeload.github.com/%s/%s/zip/refs/heads/%s", owner, repo, branch)
+	resp, err := c.http.Get(archiveURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download archive: status %d", resp.StatusCode)
+	}
+	return io.ReadAll(resp.Body)
+}
+
+// ExtractZipFiles як архиви zip-ро ба map[роҳ]мазмун мекушояд. Агар ҳамаи
+// файлҳо дар як феҳристи болоӣ бошанд (мисли архивҳои GitHub: "repo-main/"),
+// он префикс бурида мешавад, то файлҳо дар решаи репо ҷойгир шаванд. Феҳристи
+// .git ва файлҳои хеле калон гузаронда мешаванд
+func ExtractZipFiles(zipBytes []byte) (map[string][]byte, error) {
+	r, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
+	if err != nil {
+		return nil, err
+	}
+
+	// префикси умумии болоӣ-ро муайян мекунем
+	commonPrefix := ""
+	for i, f := range r.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		top := f.Name
+		if idx := strings.Index(top, "/"); idx >= 0 {
+			top = top[:idx+1]
+		} else {
+			top = ""
+		}
+		if i == 0 {
+			commonPrefix = top
+		} else if top != commonPrefix {
+			commonPrefix = ""
+			break
+		}
+	}
+
+	files := make(map[string][]byte)
+	for _, f := range r.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		name := f.Name
+		if commonPrefix != "" {
+			name = strings.TrimPrefix(name, commonPrefix)
+		}
+		if name == "" || strings.HasPrefix(name, ".git/") || strings.Contains(name, "/.git/") {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return nil, err
+		}
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			return nil, err
+		}
+		files[name] = data
+	}
+	if len(files) == 0 {
+		return nil, fmt.Errorf("archive contained no files")
+	}
+	return files, nil
+}
+
+// ImportCode коди воридшударо (files) ба репои корбар мегузорад — ҳамроҳи
+// workflow-и build-и универсалӣ — ва build-ро оғоз мекунад
+func (c *GitHubAppClient) ImportCode(fullName string, files map[string][]byte) error {
+	// Агар худи лоиҳа аллакай workflow дошта бошад, онро иваз мекунем, то
+	// build-и мо ҳатман иҷро шавад (ва бо навъи лоиҳа мутобиқ бошад)
+	files[".github/workflows/build.yml"] = []byte(universalBuildWorkflow)
+	// workflow-и auto-create-и Flutter-ро (агар аз лоиҳаи корбар набошад)
+	// нест мекунем — чун дарахт пурра иваз мешавад, ин худкор мешавад
+
+	if err := c.PushFilesAsCommit(fullName, files, "Import user code"); err != nil {
+		return err
+	}
+	// push худаш build.yml-ро оғоз мекунад (on: push). Барои эътимод боз
+	// мустақим низ оғоз мекунем
+	time.Sleep(2 * time.Second)
+	if err := c.TriggerWorkflow(fullName, "build.yml", nil); err != nil {
+		utils.LogError("githubapp: failed to trigger import build for %s: %v", fullName, err)
+	}
+	return nil
+}
