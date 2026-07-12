@@ -1,8 +1,8 @@
 package api
 
 import (
-	"anime-bot/backend/models"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/models"
+	"appbuilder-bot/backend/utils"
 )
 
 // AnimeProvider Jikan-ро ҳамчун манбаи асосӣ истифода мебарад ва агар он хато

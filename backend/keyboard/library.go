@@ -5,8 +5,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
-	"anime-bot/backend/models"
+	"appbuilder-bot/backend/api"
+	"appbuilder-bot/backend/models"
 )
 
 // animeButtonLabel матни тугмаро аз номи аниме ва сол месозад

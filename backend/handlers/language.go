@@ -3,9 +3,9 @@ package handlers
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
-	"anime-bot/backend/keyboard"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/api"
+	"appbuilder-bot/backend/keyboard"
+	"appbuilder-bot/backend/utils"
 )
 
 // HandleLanguageCallback интихоби забонро (lang:en / lang:ru / lang:fa) коркард мекунад

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"anime-bot/backend/models"
+	"appbuilder-bot/backend/models"
 
 	_ "modernc.org/sqlite"
 )

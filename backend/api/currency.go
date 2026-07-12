@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/utils"
 )
 
 // currencyEndpoint API-и ройгону бе калиди Frankfurter (аз рӯи нархҳои ECB)

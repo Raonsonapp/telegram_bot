@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/utils"
 )
 
 const githubAPIBase = "https://api.github.com"

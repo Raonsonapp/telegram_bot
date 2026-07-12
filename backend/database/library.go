@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"anime-bot/backend/models"
+	"appbuilder-bot/backend/models"
 )
 
 // genreNames номи жанрҳоро бо вергул якҷоя мекунад, то дар як сатри БД нигоҳ дошта шавад

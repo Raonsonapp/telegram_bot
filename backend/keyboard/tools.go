@@ -3,7 +3,7 @@ package keyboard
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
+	"appbuilder-bot/backend/api"
 )
 
 // ToolsMenu менюи абзорҳои ёрирасон (на ба аниме алоқаманд)-ро месозад

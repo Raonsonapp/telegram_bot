@@ -1,95 +1,138 @@
-# 🎌 AnimeBot — Боти Telegram барои Аниме
+# 🏗 App Builder Bot
 
-Боти Telegram бо забони **Go**, ки маълумоти аниме-ро аз **Jikan API** (манбаи ройгони MyAnimeList, бе калиди API) мегирад.
+A Telegram bot, written in **Go**, that lets anyone build a **real, installable Android app (APK)** by describing it in plain language — no coding required.
 
-## ✨ Хусусиятҳо
+The user describes what they want; the bot uses an LLM to design and generate a Flutter app, pushes it to a GitHub repository, builds it with GitHub Actions, waits for the build to go green (auto-fixing build failures with the LLM), and delivers the finished `.apk` file straight back in the chat.
 
-- 🔍 Ҷустуҷӯи аниме бо ном
-- 🎲 Пешниҳоди аниме-и тасодуфӣ
-- 🏆 Рӯйхати беҳтарин аниме-ҳо
-- 📺 Дидани рӯйхати эпизодҳо (бо саҳифабандӣ)
-- 🌐 Забонҳои интерфейс: **English 🇬🇧 | Русский 🇷🇺 | فارسی 🇮🇷**
-- 💾 Нигоҳдории забон/танзимоти корбар дар **SQLite**
-- ⚡️ Cache-и дохилӣ барои кам кардани дархостҳо ба API (rate-limit-и Jikan-ро риоя мекунад)
-- 🐳 Тайёр барои Docker
+Interface languages: **Тоҷикӣ 🇹🇯 · Русский 🇷🇺 · English 🇬🇧**
 
-## 📁 Сохтори лоиҳа
+---
 
-```
-anime-bot/
-├── main.go              # Нуқтаи оғоз ва роутер-и update-ҳо
-├── config/               # Хониши .env ва танзимот
-├── handlers/             # Мантиқи ҳар як фармон/тугма
-├── api/                  # Client-и Jikan API + сатрҳои чандзабона
-├── keyboard/              # Клавиатураҳои inline/reply
-├── models/                # Сохторҳои маълумот (Anime, User, Settings)
-├── database/              # SQLite: пайвастшавӣ ва миграция
-└── utils/                 # Logger, cache, HTTP client, ёрирасонҳо
-```
+## ✨ Features
 
-## 🚀 Насб ва иҷро
-
-### 1. Тайёркунӣ
-
-```bash
-cp .env.example .env
-```
-
-Дар файли `.env` токени боти худро аз [@BotFather](https://t.me/BotFather) гузоред:
-
-```
-TELEGRAM_BOT_TOKEN=токени_шумо
-```
-
-> ⚠️ **Диққат:** токене, ки шумо дар паём фиристодед, ошкоро дар матн буд — тавсия медиҳем онро **фавран тавассути @BotFather бекор кунед (revoke) ва токени нав созед**, зеро ҳар кас метавонад аз он истифода барад.
-
-### 2. Иҷрои маҳаллӣ (бе Docker)
-
-```bash
-go mod tidy      # мутмаин шавед пайвастшавии интернет ҳаст (барои боркунии package-ҳо)
-go run main.go
-```
-
-### 3. Иҷро тавассути Docker (тавсияшуда)
-
-```bash
-docker compose up -d --build
-```
-
-Барои дидани логҳо:
-
-```bash
-docker compose logs -f
-```
-
-### 4. Деплой дар Render
-
-Азбаски шумо аллакай як сервери Render доред
-(`https://telegram-bot-p8md.onrender.com`), метавонед:
-- Repo-ро ба GitHub гузоред
-- Дар Render "New Web/Background Service" месозед аз рӯи ҳамин repo
-- `Dockerfile`-ро интихоб мекунед (Render онро худкор ошкор мекунад)
-- Environment variable-ҳои `.env`-ро дар Render Dashboard илова мекунед
-
-## 🔑 API-ҳои истифодашуда
-
-| API | Мақсад | Калид лозим? |
-|---|---|---|
-| [Jikan API v4](https://docs.api.jikan.moe/) | Маълумоти аниме (MyAnimeList) | ❌ Не, комилан ройгон |
-| Telegram Bot API | Худи бот | ✅ Токен аз BotFather |
-
-## 🧩 Фармонҳои бот
-
-| Фармон | Тавсиф |
+| Feature | What it does |
 |---|---|
-| `/start` | Оғоз/интихоби забон |
-| `/search <ном>` | Ҷустуҷӯи аниме |
-| `/random` | Аниме-и тасодуфӣ |
-| `/top` | Беҳтарин аниме-ҳо |
-| `/settings` | Тағйири забон |
-| `/help` | Роҳнамо |
+| 🏗 **App Builder** | Ask for an app name → logo (optional) → a free-text description. A **design model** first produces a UI spec (colors, spacing, elevation, typography, icon tone), then a **coder model** writes a complete Flutter `lib/main.dart` following that spec. |
+| ➕ **Add a function** | Add one new feature to an existing app (e.g. "chat", "map", "currency exchange") without regenerating everything else. |
+| 📦 **Fetch APK** | Downloads the latest built `.apk` artifact from GitHub Actions and sends it as a Telegram document. |
+| ✏️ **Edit app** | Change the description, display name, or logo of an existing app — each edit touches only what changed. |
+| 🔁 **Transfer to your GitHub** | Transfer the app's repository to the user's own GitHub account (via GitHub's Transfer API, with recipient confirmation). |
+| 🧮 **Price Calculator** | Estimates a price for larger custom projects (screens × functions × package) and forwards the order to the admin. |
+| 🎁 **Referrals** | Invite 5 subscribed users to unlock **unlimited AI** — a richer, multi-tab app instead of a single screen. |
+| 💬 **Contact Admin** | Two-way relay: user messages reach the admin, admin replies are relayed back. |
+| ⚙️ **Settings / Help** | Language switch and an in-bot guide. |
 
-## 📝 Ёддошт
+### Design & code quality of generated apps
 
-- `go.sum` дар зип нест — пас аз кушодан як бор `go mod tidy` иҷро кунед (бо интернет), то package-ҳо боркунӣ ва checksum-ҳо сохта шаванд.
-- Jikan API маҳдудияти суръат дорад (тахминан 3 дархост/сония, 60/дақиқа) — client дар `utils/response.go` ин маҳдудиятро худкор риоя мекунад.
+- **Two-stage generation** — a dedicated *design* pass feeds a UI spec into the *coding* pass, so screens look intentional, not generic.
+- **Feather icons** — generated apps use the [`flutter_feather_icons`](https://pub.dev/packages/flutter_feather_icons) set (the same outline icon family as `react-icons/fi`).
+- **Real functionality, not just mockups** — where a feature can genuinely work with local state or a **keyless public API**, the LLM implements it for real (with `http`, async/await, loading + error states). Features that truly need a backend/auth/paid API stay as clearly-labelled placeholders.
+- **Self-healing builds** — if a build fails, the failing job log is fed back to the LLM, which fixes the code, and the build is retried automatically before reporting to the user.
+
+---
+
+## 🏛 Architecture
+
+```
+telegram_bot/
+├── main.go                    # Entry point, webhook/long-poll setup, update router
+├── Dockerfile                 # Multi-stage build → tiny static binary
+├── backend/
+│   ├── config/                # Env-var loading (config.go, env.go)
+│   ├── handlers/              # One file per feature (appbuilder, pricecalc,
+│   │                          #   referral, feedback, ratelimit, subscription, …)
+│   ├── api/                    # External clients & core logic:
+│   │                          #   aicoder.go     – OpenRouter LLM (design + code + fix)
+│   │                          #   githubapp.go   – GitHub REST: repos, files, Actions, APK
+│   │                          #   referralstore.go – durable state (referrals.json on GitHub)
+│   │                          #   tajik/russian/english.go – i18n strings
+│   ├── keyboard/              # Reply/inline keyboards
+│   ├── database/              # SQLite (users, language, per-user repo mapping)
+│   └── utils/                 # Logger, cache, HTTP helpers
+```
+
+### How an app gets built (end to end)
+
+1. **Collect input** — display name → logo → description (three short steps).
+2. **Create/reuse repo** — one deterministic repo per user (`app-user-<telegramID>`); reused on every subsequent request so a user never accumulates repos.
+3. **Scaffold** — `auto-create.yml` runs `flutter create`, sets the app label, injects the `INTERNET` permission (needed for release builds), applies the logo via `flutter_launcher_icons`, and commits the project back to the repo.
+4. **Generate** — the LLM writes `lib/main.dart` (design pass → code pass) and it is pushed to the repo.
+5. **Build** — `build.yml` runs `flutter build apk --release` and uploads the APK artifact.
+6. **Wait & auto-fix** — the bot polls the workflow run; on failure it feeds the log back to the LLM, pushes a fix, and retries.
+7. **Deliver** — on success, the user taps **Fetch APK** and receives the file.
+
+### Durable state
+
+Render's disk is ephemeral (wiped on redeploy), so anything that must survive a deploy is **not** trusted to local SQLite:
+- **Per-user repo naming** is deterministic (`app-user-<id>`), so GitHub itself is the source of truth.
+- **Referral counts** are stored as `referrals.json` in a dedicated private GitHub repo (`appbuilder-bot-state`).
+
+### Reliability details worth noting
+
+- **Webhook, not long-polling**, in production — Render's zero-downtime deploys run two instances briefly, which breaks `getUpdates` with a Telegram *Conflict*; webhooks avoid this.
+- **Model fallback** — free OpenRouter models rotate/rate-limit often, so requests fall through a list of models and finally the `openrouter/free` auto-router, honoring `retry_after_seconds`.
+- **AI usage rate limiting** — a generous free allowance per user, then a cooldown that scales with overuse.
+
+---
+
+## 🚀 Running it
+
+### Prerequisites
+
+- Go 1.21+
+- A Telegram bot token from [@BotFather](https://t.me/BotFather)
+- A **classic** GitHub Personal Access Token with the `repo` scope (the App Builder feature needs it to create repos and trigger Actions)
+- An [OpenRouter](https://openrouter.ai) API key (free tier works)
+
+### Local
+
+```bash
+cp .env.example .env      # then fill in the values
+go mod tidy
+go run .
+```
+
+### Docker
+
+```bash
+docker build -t appbuilder-bot .
+docker run --env-file .env -p 10000:10000 appbuilder-bot
+```
+
+### Render (production)
+
+Deploy as a Web Service from this repo (Render auto-detects the `Dockerfile`), set the environment variables below, and Render's `RENDER_EXTERNAL_URL` enables webhook mode automatically.
+
+---
+
+## 🔧 Environment variables
+
+| Variable | Required | Purpose |
+|---|:--:|---|
+| `TELEGRAM_BOT_TOKEN` | ✅ | Bot token from BotFather |
+| `GITHUB_APP_BUILDER_TOKEN` | ✅ | Classic PAT (`repo` scope) — builds & delivers APKs |
+| `OPENROUTER_API_KEY` | ✅ | LLM access for design + code generation |
+| `OPENROUTER_MODEL` | — | Override the default primary model |
+| `ADMIN_CHAT_ID` | — | Telegram ID that receives "Contact Admin" messages & orders (send `/myid` to the bot to find yours) |
+| `REQUIRED_CHANNELS` | — | Comma-separated `@channels` users must join before use (sponsor gate) |
+| `DEFAULT_LANGUAGE` | — | `fa` (default), `ru`, or `en` |
+| `DB_PATH` | — | SQLite path (default `./data/appbuilder.db`) |
+| `PORT` | — | HTTP port (default `10000`) |
+
+---
+
+## 🧩 Commands
+
+| Command | Description |
+|---|---|
+| `/start` | Start / choose language (supports `?start=ref_<id>` referral links) |
+| `/settings` | Change interface language |
+| `/help` | Show the in-bot guide |
+| `/myid` | Show your Telegram ID (for setting `ADMIN_CHAT_ID`) |
+
+---
+
+## 📝 Notes
+
+- Generated APKs are **release** builds signed with the debug keystore — installable immediately, no signing setup required.
+- Telegram bots can upload files up to ~50 MB; the bot guards against oversized APKs and reports clearly instead of failing silently.

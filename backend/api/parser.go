@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"anime-bot/backend/models"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/models"
+	"appbuilder-bot/backend/utils"
 )
 
 // JikanClient client барои кор бо Jikan API (v4) - манбаи ройгони MyAnimeList

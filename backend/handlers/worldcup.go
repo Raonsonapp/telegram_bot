@@ -8,8 +8,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/api"
+	"appbuilder-bot/backend/utils"
 )
 
 // worldCupDateLayout формати санаи "local_date"-и API мутобиқи мисоли

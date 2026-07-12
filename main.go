@@ -11,11 +11,11 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
-	"anime-bot/backend/config"
-	"anime-bot/backend/database"
-	"anime-bot/backend/handlers"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/api"
+	"appbuilder-bot/backend/config"
+	"appbuilder-bot/backend/database"
+	"appbuilder-bot/backend/handlers"
+	"appbuilder-bot/backend/utils"
 )
 
 func main() {
@@ -153,7 +153,7 @@ func main() {
 func startServer(port string, webhookPath string, bot *tgbotapi.BotAPI, updates chan tgbotapi.Update) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Anime Bot Running"))
+		w.Write([]byte("App Builder Bot is running"))
 	})
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))

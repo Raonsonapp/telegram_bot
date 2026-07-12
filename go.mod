@@ -1,4 +1,4 @@
-module anime-bot
+module appbuilder-bot
 
 go 1.21
 

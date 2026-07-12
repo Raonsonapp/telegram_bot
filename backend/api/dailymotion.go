@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/utils"
 )
 
 // dailymotionEndpoint API-и ҷустуҷӯи Dailymotion — барои ҷустуҷӯи оддӣ калиди

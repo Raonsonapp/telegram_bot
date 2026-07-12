@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/utils"
 )
 
 // aparatBaseURL нуқтаи асосии API-и Aparat (платформаи видеои эронӣ, ки дар он

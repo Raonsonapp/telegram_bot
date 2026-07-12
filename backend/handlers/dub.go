@@ -11,8 +11,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/api"
+	"appbuilder-bot/backend/utils"
 )
 
 // dubResult натиҷаи якхелаи видео новобаста аз он ки аз кадом платформа омадааст
@@ -407,7 +407,7 @@ func isLinkAlive(rawURL string) bool {
 	if err != nil {
 		return true
 	}
-	req.Header.Set("User-Agent", "anime-bot/1.0 (+https://github.com)")
+	req.Header.Set("User-Agent", "appbuilder-bot/1.0 (+https://github.com)")
 	req.Header.Set("Range", "bytes=0-2048")
 	resp, err := linkCheckClient.Do(req)
 	if err != nil {

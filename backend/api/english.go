@@ -32,7 +32,7 @@ var EnglishMessages = map[string]string{
 	"btn_back_to_menu":            "⬅️ Back to menu",
 	"settings_title":              "⚙️ *Settings*\n\nCurrent language: %s",
 	"btn_change_lang":             "🌐 Change Language",
-	"help_text":                   "🤖 *What I can do:*\n\n🏗 *App Builder* — send the app name, I'll create a repo on the bot owner's GitHub with a ready-made APK build workflow.\n\n📦 *Fetch APK* — once you've pushed your code and GitHub Actions built it, send the repo name — I'll send the APK.\n\nCommands:\n/start - restart the bot\n/settings - change language\n/help - show this message",
+	"help_text":                   "🤖 *App Builder Bot — help*\n\nI help you build a real Android app (APK) — no coding needed.\n\n🏗 *App Builder* — tell me the app name, send a logo (or skip), then describe in your own words what it should do. AI writes the design and the code, GitHub Actions builds it, and I wait for the finished APK myself.\n➕ *Add a function* — add a new function (e.g. \"chat\", \"map\") to your existing app without rebuilding everything.\n📦 *Fetch APK* — get the finished APK file to install on your phone.\n🧮 *Price Calculator* — estimates the price for a bigger project and sends the order to the admin.\n🎁 *Invite* — invite 5 friends to unlock unlimited AI (a fuller app) for free.\n💬 *Contact Admin* — I'll forward your question or suggestion to the admin.\n\nCommands:\n/start — restart the bot\n/settings — change language\n/help — show this message",
 	"error_generic":               "⚠️ Something went wrong. Please try again later.",
 	"subscription_required":       "📢 To use this bot, please subscribe to these channels first, then tap \"✅ Check\":",
 	"btn_check_subscription":      "✅ Check",

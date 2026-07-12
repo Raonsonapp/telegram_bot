@@ -7,7 +7,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
+	"appbuilder-bot/backend/api"
 )
 
 // priceCalcState ҳолати ҳисоби нархи як корбарро (то фиристодани фармоиш) нигоҳ медорад

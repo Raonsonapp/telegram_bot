@@ -102,7 +102,7 @@ func LoadConfig() *Config {
 	return &Config{
 		TelegramToken:    getEnv("TELEGRAM_BOT_TOKEN", ""),
 		JikanBaseURL:     getEnv("JIKAN_BASE_URL", "https://api.jikan.moe/v4"),
-		DBPath:           getEnv("DB_PATH", "./data/anime.db"),
+		DBPath:           getEnv("DB_PATH", "./data/appbuilder.db"),
 		DefaultLanguage:  getEnv("DEFAULT_LANGUAGE", "fa"),
 		Debug:            getEnv("DEBUG", "false") == "true",
 		Port:             getEnv("PORT", "10000"),

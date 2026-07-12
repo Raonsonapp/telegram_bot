@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"strings"
 
-	"anime-bot/backend/models"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/models"
+	"appbuilder-bot/backend/utils"
 )
 
 // aniListEndpoint нуқтаи ягонаи GraphQL-и AniList

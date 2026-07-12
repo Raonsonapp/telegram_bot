@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/utils"
 )
 
 // openRouterEndpoint API-и OpenRouter (дастрасии ройгону пулакӣ ба

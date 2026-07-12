@@ -69,7 +69,7 @@ func (h *HTTPClient) do(buildReq func() (*http.Request, error)) ([]byte, error) 
 		}
 		// Баъзе провайдерҳо (масалан Cloudflare дар пеши Jikan) дархостҳои
 		// бе User-Agent-и муайянро дар вақти сербории сервер рад мекунанд
-		req.Header.Set("User-Agent", "anime-bot/1.0 (+https://github.com)")
+		req.Header.Set("User-Agent", "appbuilder-bot/1.0 (+https://github.com)")
 		req.Header.Set("Accept", "application/json")
 
 		resp, err := h.client.Do(req)

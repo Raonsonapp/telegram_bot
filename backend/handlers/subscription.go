@@ -5,8 +5,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"anime-bot/backend/api"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/api"
+	"appbuilder-bot/backend/utils"
 )
 
 // CheckSubscription санҷиш мекунад, ки оё корбар ба ҳамаи каналҳои ҳатмӣ

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/utils"
 )
 
 // youtubeSearchEndpoint нуқтаи ҷустуҷӯи YouTube Data API v3

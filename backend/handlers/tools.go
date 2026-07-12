@@ -10,9 +10,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	qrcode "github.com/skip2/go-qrcode"
 
-	"anime-bot/backend/api"
-	"anime-bot/backend/keyboard"
-	"anime-bot/backend/utils"
+	"appbuilder-bot/backend/api"
+	"appbuilder-bot/backend/keyboard"
+	"appbuilder-bot/backend/utils"
 )
 
 // PendingQR ва PendingCurrency нигоҳ медоранд кадом корбарон мунтазири
