@@ -12,14 +12,14 @@ Interface languages: **Тоҷикӣ 🇹🇯 · Русский 🇷🇺 · Engli
 
 | Feature | What it does |
 |---|---|
-| 🏗 **App Builder** | Ask for an app name → logo (optional) → a free-text description. A **design model** first produces a UI spec (colors, spacing, elevation, typography, icon tone), then a **coder model** writes a complete Flutter `lib/main.dart` following that spec. |
+| 🏗 **App Builder** | Ask for an app name → logo (optional) → a free-text description. A **design model** first produces a UI spec (colors, spacing, elevation, typography, icon tone), then a **coder model** writes a complete Flutter `lib/main.dart` following it. Produces a full multi-screen **MVP** with bottom navigation; when the description resembles a well-known app category (social feed, short-video, editor, chat, shop), it scaffolds that category's standard screens — as a **generic** app under the user's own name, never reproducing a real brand's name, logo, or trade dress. |
 | ➕ **Add a function** | Add one new feature to an existing app (e.g. "chat", "map", "currency exchange") without regenerating everything else. |
 | 📥 **Import my code** | Bring your own project — as a **ZIP** (≤20 MB) or a **public GitHub repo link** — and the bot commits it to your repo and builds it. A build workflow auto-detects **Flutter** or **Android/Gradle** projects and produces the APK. |
 | 📦 **Fetch APK** | Downloads the latest built `.apk` artifact from GitHub Actions and sends it as a Telegram document. |
 | ✏️ **Edit app** | Change the description, display name, or logo of an existing app — each edit touches only what changed. |
 | 🔁 **Transfer to your GitHub** | Transfer the app's repository to the user's own GitHub account (via GitHub's Transfer API, with recipient confirmation). |
 | 🧮 **Price Calculator** | Estimates a price for larger custom projects (screens × functions × package) and forwards the order to the admin. |
-| 🎁 **Referrals** | Invite 5 subscribed users to unlock **unlimited AI** — a richer, multi-tab app instead of a single screen. |
+| 🎁 **Referrals** | Everyone gets a full multi-screen MVP; free use has a daily limit. Invite 5 subscribed users to **remove the daily limit** (unlimited usage). |
 | 💬 **Contact Admin** | Two-way relay: user messages reach the admin, admin replies are relayed back. |
 | ⚙️ **Settings / Help** | Language switch and an in-bot guide. |
 

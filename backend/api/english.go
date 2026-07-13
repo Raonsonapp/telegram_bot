@@ -92,10 +92,10 @@ var EnglishMessages = map[string]string{
 	"feedback_admin_not_configured": "⚠️ This feature isn't set up yet (ADMIN_CHAT_ID missing). If you're the bot owner, send /myid to get your ID.",
 
 	"btn_invite":        "🎁 Invite",
-	"invite_progress":   "🎁 *Invite friends — unlock unlimited AI!*\n\nYour personal link:\n%s\n\nAnyone who joins the bot through this link and subscribes counts.\n\nInvited: %d/%d\nRemaining: %d\n\nOnce you hit that goal, App Builder unlocks unlimited AI for you (a fuller app, not just 1 screen) — for free.",
-	"invite_unlocked":   "🎁 *Your invite link:*\n%s\n\n✅ You've already hit the invite goal — App Builder has unlocked unlimited AI for you!",
+	"invite_progress":   "🎁 *Invite friends — remove the daily limit!*\n\nEveryone gets a full MVP, but free use has a daily limit. Invite 5 friends and the limit is lifted — build as many apps as you want with no waiting.\n\nYour personal link:\n%s\n\nAnyone who joins the bot through this link and subscribes counts.\n\nInvited: %d/%d\nRemaining: %d",
+	"invite_unlocked":   "🎁 *Your invite link:*\n%s\n\n✅ You've hit the invite goal — your AI usage is UNLIMITED (no daily cap)!",
 	"referral_progress": "🎉 Someone joined the bot through your link and subscribed!\n\nInvited: %d/%d",
-	"referral_unlocked": "🎉 Congrats! You reached %d invites — App Builder has now unlocked unlimited AI (a fuller app) for you!",
+	"referral_unlocked": "🎉 Congrats! You reached %d invites — your AI usage is now UNLIMITED (no more daily cap)!",
 
 	"btn_tools":             "🛠 Tools",
 	"tools_menu_title":      "🛠 Handy tools — which one do you need?",

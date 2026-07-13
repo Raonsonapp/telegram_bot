@@ -87,57 +87,44 @@ App description: %s
 Respond with ONLY valid JSON, no markdown fences, no explanation, in exactly this shape:
 {"seed_color": "#RRGGBB", "layout_style": "short description of layout/composition", "spacing": "short guidance on padding and gaps", "elevation_and_shadow": "short guidance on elevation/shadow depth", "corner_radius": "short guidance on corner rounding", "typography": "short guidance on text weight/emphasis", "icon_style_notes": "short note on which kind of FeatherIcons fit this app's tone (e.g. rounded/friendly vs sharp/professional)", "notes": "1-2 sentences of any other guidance that would make the screen look modern and polished"}`
 
-const screenPromptTemplate = `You generate Flutter/Dart code for a polished, realistic-looking single-screen home UI demo app. Design quality is the TOP priority — a beautiful, professional-looking screen matters more than anything else here, since the user judges the whole app by how this first screen looks.
+// fullAppPromptTemplate — генератори MVP-и ПУРРА. Агар корбар номи як
+// барномаи машҳурро гӯяд (Instagram, TikTok, CapCut, WhatsApp ва ғ.), MVP-и
+// УМУМИИ ҳамон НАВъи барномаро бо ҳамаи экранҳои асосиаш месозад — вале бе
+// логотип/ном/ранги бренди воқеӣ ва бе даъвои "ин ҳамон барнома аст" (то
+// мушкили trademark набошад). Ҳанӯз 1 файл (lib/main.dart), то системаи
+// мавҷудаи push/build/fix бе тағйир кор кунад
+const fullAppPromptTemplate = `You generate a COMPLETE, realistic Flutter MVP app in a single lib/main.dart file. It must look and feel like a real, finished app with several connected screens — not a single demo screen.
 
 User's app description: %s
 
-Design specification from the design step — follow it closely for colors, spacing, elevation, corners, and icon tone (if empty, use your own best judgment): %s
+Design specification from the design step — follow it for colors, spacing, elevation, corners, and icon tone (if empty, use your own best judgment): %s
 
-Identify exactly 5 major functions implied by the description. Design a proper home screen for a real app around them — NOT a plain column of stacked buttons.
+Build a proper MVP of the app the user described:
+- If the description names or resembles a well-known app, build a GENERIC MVP of that TYPE of app with its standard screens/features. IMPORTANT: do NOT use the real brand's name, logo, exact brand colors, or claim to be that app — this is the user's own app with the name they chose. Just replicate the common feature set of that category. Typical feature sets by category:
+  * Social photo-sharing (Instagram-like): Home feed of posts (avatar + username, image placeholder, like/comment/share row, caption), a horizontal Stories bar at the top of Home, an Explore/Search grid of images, a vertical short-video/Reels screen, an Activity/Notifications list, a Direct-messages/chat list, a Profile screen with stats and a photo grid.
+  * Short video (TikTok-like): a vertical full-screen video feed (PageView), Discover/search, a big center "+" create button, an Inbox, a Profile.
+  * Video/photo editor (CapCut-like): a Projects list with a "New Project" button, an Editor screen showing a preview area + a timeline + a horizontal tool row (Trim/Split, Text, Effects, Filters, Audio, Stickers, Speed, Transitions), an AI-tools screen (e.g. AI cutout, auto captions, enhance — as buttons), and an Export screen with resolution options.
+  * Chat/messaging (WhatsApp-like): a Chats list (avatar, name, last message, time), a Chat screen (message bubbles + input bar), Contacts, Calls, Settings.
+  * Shopping/store: product grid, product detail, cart, orders, profile.
+  * Otherwise: infer the 4-6 screens a real app of this kind would have.
+- Build 4 to 6 screens. Connect the primary ones with a BottomNavigationBar; open secondary screens (e.g. a chat, a product detail, the editor) via Navigator.push from taps.
+- EVERY screen must be populated with a few sample/seed items from local Dart lists (sample posts, sample chats, sample products, a real-looking editor timeline + tool buttons) so it looks complete — never an empty "coming soon" placeholder.
 
 %s
 
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", "flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if actually needed):
-- import 'package:flutter/material.dart';
-- import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-- Prefer Feather icons for a clean outline look, but you MUST use ONLY icon names that actually exist in the package. Use ONLY names from this verified list: FeatherIcons.home, user, users, userPlus, search, settings, plus, plusCircle, minus, edit, edit2, edit3, trash2, heart, star, bell, mail, messageCircle, messageSquare, send, camera, image, video, film, music, headphones, mic, map, mapPin, navigation, compass, calendar, clock, shoppingCart, shoppingBag, dollarSign, creditCard, tag, gift, download, upload, share2, play, pause, playCircle, pauseCircle, skipForward, skipBack, menu, grid, list, filter, sliders, check, checkCircle, x, xCircle, phone, phoneCall, bookmark, folder, file, fileText, book, bookOpen, globe, wifi, lock, unlock, eye, eyeOff, sun, moon, refreshCw, arrowRight, arrowLeft, chevronRight, chevronLeft, moreVertical, moreHorizontal, thumbsUp, award, zap, activity, barChart2, pieChart, trendingUp, coffee, briefcase, truck, package, cpu, database, server, cloud, logOut, logIn, volume2, repeat, shuffle, moreHorizontal. If NONE of those fits a function well, use a Material icon instead: Icons.<name> (Material icons always exist). Never invent a FeatherIcons name that is not in the list above.
-- void main() => runApp(const MyApp());
-- MyApp is a StatelessWidget returning a MaterialApp with title matching app_name, useMaterial3: true, and theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and a home of MyHomePage
-- MyHomePage is a StatelessWidget with a Scaffold: a colored AppBar (backgroundColor from the theme's colorScheme, centerTitle: true) showing the app title, and a body that is a scrollable, padded Column containing (in this order): (1) a short welcome/header Text styled with Theme.of(context).textTheme.headlineSmall, (2) a GridView.count(shrinkWrap: true, physics: NeverScrollableScrollPhysics(), crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12) with exactly 5 feature cards, one per function
-- each feature card is a Card (elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))) wrapping an InkWell (borderRadius matching) with onTap performing that function's real action (or the SnackBar placeholder — see functionality rules below), whose child is a Padding containing a Column (mainAxisAlignment: MainAxisAlignment.center) with a large FeatherIcons Icon (sized ~32, colored from the theme) then SizedBox(height: 8) then a Text with the function's short label (textAlign: TextAlign.center, fontWeight: FontWeight.w600)
-- add a FloatingActionButton on the Scaffold for the single most important function, with a fitting FeatherIcons icon, wired to that same function's action
-- use consistent padding (e.g. EdgeInsets.all(16)) and spacing (SizedBox(height: 16) between the header and the grid) so the screen looks intentional, modern, and complete, not sparse or generic`
-
-// fullAppPromptTemplate — барои корбароне истифода мешавад, ки ҳадди
-// даъватро (5 нафар) пур кардаанд: ба ҷои 1 экрани оддӣ, барномаи
-// бо якчанд қисм (bottom navigation) месозад — ҳанӯз 1 файл (lib/main.dart),
-// то системаи мавҷудаи push/build/fix бе тағйир кор кунад, вале аз назари
-// корбар "барномаи пурратар" ба назар мерасад
-const fullAppPromptTemplate = `You generate Flutter/Dart code for a fuller, more complete app (still a single lib/main.dart file, but richer than a single screen). Design quality is the TOP priority — every tab must look like a real, professionally designed screen, not a rough sketch.
-
-User's app description: %s
-
-Design specification from the design step — follow it closely for colors, spacing, elevation, corners, and icon tone (if empty, use your own best judgment): %s
-
-Identify 3 to 4 main sections/tabs implied by the description (e.g. Home, Search, Profile, Settings — pick ones that actually fit the description, not generic placeholders). Build a proper bottom-navigation app: a Scaffold with a BottomNavigationBar (3 to 4 items with fitting icons+labels) switching between an IndexedStack of that many tab widgets. Each tab must have its own realistic, complete UI (lists, cards, forms, avatars — whatever fits that tab's purpose), not just a placeholder button.
-
-%s
-
-Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
-{"app_name": "Short App Name", "main_dart": "..."}
-
-Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", "flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if actually needed, with every tab widget defined as a private class in this same file):
+Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — a COMPLETE, valid, self-contained Dart file compiling with the standard Flutter SDK; allowed imports only: "package:flutter/material.dart", "package:flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if needed; every screen a private class in this same file):
 - import 'package:flutter/material.dart';
 - import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 - Prefer Feather icons, but use ONLY names that exist in the package. Use ONLY names from this verified list: FeatherIcons.home, user, users, userPlus, search, settings, plus, plusCircle, minus, edit, edit2, edit3, trash2, heart, star, bell, mail, messageCircle, messageSquare, send, camera, image, video, film, music, headphones, mic, map, mapPin, navigation, compass, calendar, clock, shoppingCart, shoppingBag, dollarSign, creditCard, tag, gift, download, upload, share2, play, pause, playCircle, pauseCircle, skipForward, skipBack, menu, grid, list, filter, sliders, check, checkCircle, x, xCircle, phone, phoneCall, bookmark, folder, file, fileText, book, bookOpen, globe, wifi, lock, unlock, eye, eyeOff, sun, moon, refreshCw, arrowRight, arrowLeft, chevronRight, chevronLeft, moreVertical, moreHorizontal, thumbsUp, award, zap, activity, barChart2, pieChart, trendingUp, coffee, briefcase, truck, package, cpu, database, server, cloud, logOut, logIn, volume2, repeat, shuffle. If none fits, use a Material Icons.<name> instead (Material icons always exist). Never invent a FeatherIcons name not in this list.
 - void main() => runApp(const MyApp());
-- MyApp is a StatelessWidget: MaterialApp with useMaterial3: true, theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and home MyHomePage
-- MyHomePage is a StatefulWidget holding the selected tab index in its State; its Scaffold has body: IndexedStack(index: _selectedIndex, children: [...one widget per tab...]) and bottomNavigationBar: BottomNavigationBar(currentIndex: _selectedIndex, onTap: (i) => setState(() => _selectedIndex = i), type: BottomNavigationBarType.fixed, items: [...])
-- each tab is its own private StatelessWidget or StatefulWidget class (e.g. _HomeTab, _SearchTab, _ProfileTab) with its own Scaffold-less body (each tab supplies just its content; wrap each tab's content in its own AppBar+body via a Scaffold per tab, or share one AppBar in MyHomePage whose title updates with the tab — pick whichever is simpler to implement correctly)
-- keep the file complete and compiling — prioritize correctness over maximal feature count; it is fine to keep each tab's content moderately simple as long as it looks like a real, finished, well-designed screen`
+- MyApp: MaterialApp with useMaterial3: true, theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a fitting color>), useMaterial3: true), home MyHomePage.
+- MyHomePage: StatefulWidget holding the selected tab index; Scaffold with body: IndexedStack(index: _selectedIndex, children: [...main tab screens...]) and bottomNavigationBar: BottomNavigationBar(currentIndex: _selectedIndex, onTap: (i) => setState(() => _selectedIndex = i), type: BottomNavigationBarType.fixed, items: [...]).
+- Each tab and each secondary screen is its own private widget class with a realistic body (ListView/GridView/PageView of sample data, cards, avatars, forms, timelines — whatever fits).
+- Use CircleAvatar with a background color + initials or a FeatherIcons icon for avatars, and a Container with a colored/gradient box (with an icon centered) for image/video placeholders — do NOT load network images.
+- CRITICAL: the file MUST compile as one valid Dart file. If a screen gets too complex, simplify it — a slightly simpler screen that builds beats a rich one that doesn't. Never reference an undefined name, icon, or API.`
 
 const fixPromptTemplate = `The following Flutter/Dart lib/main.dart failed to build in GitHub Actions ("flutter build apk"). Your ONLY goal now is to make it COMPILE and build successfully. Getting a working APK matters more than any styling detail — it is completely fine to simplify or drop a problematic widget/feature if that is what it takes to build.
 
@@ -200,21 +187,12 @@ func (e *rateLimitError) Error() string {
 // бошад, ба ҷои интизорӣ бевосита модели навбатиро озмоед
 const maxRateLimitWait = 15 * time.Second
 
-// GenerateScreen тавсифи озоди корбарро мегирад ва lib/main.dart-и Flutter-ро
-// тавассути OpenRouter мебарорад. Якчанд модели ройгон паиҳам озмуда
-// мешаванд (аввал c.model, баъд fallbackModels) — то агар яке аз рӯйхати
-// ройгон хориҷ шуда бошад, натиҷа гум нашавад. Агар модел rate-limit шуда
-// бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора кӯшиш мекунад
-// пеш аз гузаштан ба модели навбатӣ
-func (c *AICoderClient) GenerateScreen(description string) (GeneratedScreen, error) {
-	designSpec := c.generateDesignSpec(description)
-	prompt := fmt.Sprintf(screenPromptTemplate, description, designSpec, realFunctionalityInstruction)
-	return c.runPromptAcrossModels(prompt)
-}
-
-// GenerateFullApp мисли GenerateScreen аст, вале дархости пурратар
-// (bottom-navigation бо якчанд tab, на 1 экрани оддӣ) мефиристад — барои
-// корбароне, ки ҳадди даъватро (5 нафар) пур кардаанд
+// GenerateFullApp тавсифи озоди корбарро мегирад ва MVP-и пурраи Flutter-ро
+// (якчанд экран, genre-aware) ҳамчун lib/main.dart тавассути OpenRouter
+// мебарорад. Якчанд модели ройгон паиҳам озмуда мешаванд (аввал c.model,
+// баъд fallbackModels) — то агар яке аз рӯйхати ройгон хориҷ шуда бошад,
+// натиҷа гум нашавад. Агар модел rate-limit шуда бошад ва вақти интизорӣ
+// кӯтоҳ бошад, як маротиба дубора кӯшиш мекунад пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) GenerateFullApp(description string) (GeneratedScreen, error) {
 	designSpec := c.generateDesignSpec(description)
 	prompt := fmt.Sprintf(fullAppPromptTemplate, description, designSpec, realFunctionalityInstruction)
@@ -317,6 +295,9 @@ func (c *AICoderClient) callModelRaw(prompt, model string) (string, error) {
 		"messages": []map[string]string{
 			{"role": "user", "content": prompt},
 		},
+		// MVP-и пурра (якчанд экран) output-и калон мехоҳад — max_tokens-и
+		// баланд то ҷавоб бурида (truncate) нашавад ва JSON вайрон нагардад
+		"max_tokens": 16000,
 	})
 	if err != nil {
 		return "", err

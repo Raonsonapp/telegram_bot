@@ -263,38 +263,35 @@ func HandleAppNameText(d *Deps, msg *tgbotapi.Message) {
 	}
 }
 
-// generateAndPushScreen тавсифро ба AI медиҳад ва экрани сохташударо push
-// мекунад. Агар корбар ҳадди даъватро (5 нафар) пур карда бошад, аз
-// GenerateFullApp (bottom-navigation, якчанд tab) истифода мешавад; вагарна
-// аз GenerateScreen-и оддӣ (1 экран, 5 функсия)
+// generateAndPushScreen тавсифро ба AI медиҳад ва MVP-и пурраи сохташударо
+// push мекунад. ҲАМАИ корбарон MVP-и пурра (якчанд экран, genre-aware)
+// мегиранд. Корбароне, ки ҳадди даъватро (5 нафар) пур кардаанд, аз лимити
+// рӯзонаи истифода ОЗОДанд (ин мукофоти даъват аст)
 func generateAndPushScreen(d *Deps, msg *tgbotapi.Message, lang, fullName, description string) *api.GeneratedScreen {
 	if !d.AICoder.Enabled() {
 		return nil
 	}
-
-	if allowed, retryAfter := checkAIRateLimit(msg.From.ID); !allowed {
-		minutes := int(retryAfter.Round(time.Minute) / time.Minute)
-		if minutes < 1 {
-			minutes = 1
-		}
-		text := fmt.Sprintf(api.GetMessage(lang, "ai_rate_limited"), minutes)
-		sendText(d, msg.Chat.ID, text)
-		return nil
-	}
-
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
 
 	unlimited, err := d.Referrals.HasUnlimitedAI(msg.From.ID)
 	if err != nil {
 		utils.LogError("appbuilder: failed to check unlimited-AI status for %d: %v", msg.From.ID, err)
 	}
 
-	var screen api.GeneratedScreen
-	if unlimited {
-		screen, err = d.AICoder.GenerateFullApp(description)
-	} else {
-		screen, err = d.AICoder.GenerateScreen(description)
+	// Корбарони "бемаҳдуд" аз лимити рӯзона озоданд; дигарон санҷида мешаванд
+	if !unlimited {
+		if allowed, retryAfter := checkAIRateLimit(msg.From.ID); !allowed {
+			minutes := int(retryAfter.Round(time.Minute) / time.Minute)
+			if minutes < 1 {
+				minutes = 1
+			}
+			sendText(d, msg.Chat.ID, fmt.Sprintf(api.GetMessage(lang, "ai_rate_limited"), minutes))
+			return nil
+		}
 	}
+
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_generating_screen"))
+
+	screen, err := d.AICoder.GenerateFullApp(description)
 	if err != nil {
 		utils.LogError("appbuilder: AI screen generation failed for %q: %v", description, err)
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_ai_error"))
