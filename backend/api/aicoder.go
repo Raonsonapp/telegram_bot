@@ -103,7 +103,7 @@ Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactl
 Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", "flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if actually needed):
 - import 'package:flutter/material.dart';
 - import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-- ALL icons anywhere in the file (feature cards, FloatingActionButton, anything else) MUST use FeatherIcons.<name> (e.g. FeatherIcons.home, FeatherIcons.user, FeatherIcons.search) — never Icons.<name> from Material. Pick the FeatherIcons constant that best matches each function.
+- Prefer Feather icons for a clean outline look, but you MUST use ONLY icon names that actually exist in the package. Use ONLY names from this verified list: FeatherIcons.home, user, users, userPlus, search, settings, plus, plusCircle, minus, edit, edit2, edit3, trash2, heart, star, bell, mail, messageCircle, messageSquare, send, camera, image, video, film, music, headphones, mic, map, mapPin, navigation, compass, calendar, clock, shoppingCart, shoppingBag, dollarSign, creditCard, tag, gift, download, upload, share2, play, pause, playCircle, pauseCircle, skipForward, skipBack, menu, grid, list, filter, sliders, check, checkCircle, x, xCircle, phone, phoneCall, bookmark, folder, file, fileText, book, bookOpen, globe, wifi, lock, unlock, eye, eyeOff, sun, moon, refreshCw, arrowRight, arrowLeft, chevronRight, chevronLeft, moreVertical, moreHorizontal, thumbsUp, award, zap, activity, barChart2, pieChart, trendingUp, coffee, briefcase, truck, package, cpu, database, server, cloud, logOut, logIn, volume2, repeat, shuffle, moreHorizontal. If NONE of those fits a function well, use a Material icon instead: Icons.<name> (Material icons always exist). Never invent a FeatherIcons name that is not in the list above.
 - void main() => runApp(const MyApp());
 - MyApp is a StatelessWidget returning a MaterialApp with title matching app_name, useMaterial3: true, and theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and a home of MyHomePage
 - MyHomePage is a StatelessWidget with a Scaffold: a colored AppBar (backgroundColor from the theme's colorScheme, centerTitle: true) showing the app title, and a body that is a scrollable, padded Column containing (in this order): (1) a short welcome/header Text styled with Theme.of(context).textTheme.headlineSmall, (2) a GridView.count(shrinkWrap: true, physics: NeverScrollableScrollPhysics(), crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12) with exactly 5 feature cards, one per function
@@ -132,14 +132,14 @@ Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactl
 Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — this must be a COMPLETE, valid, self-contained Dart file that compiles with the standard Flutter SDK, no external packages beyond "flutter/material.dart", "flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if actually needed, with every tab widget defined as a private class in this same file):
 - import 'package:flutter/material.dart';
 - import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-- ALL icons anywhere in the file (bottom nav items, in-tab icons, everything) MUST use FeatherIcons.<name> — never Icons.<name> from Material. Pick the FeatherIcons constant that best matches each purpose.
+- Prefer Feather icons, but use ONLY names that exist in the package. Use ONLY names from this verified list: FeatherIcons.home, user, users, userPlus, search, settings, plus, plusCircle, minus, edit, edit2, edit3, trash2, heart, star, bell, mail, messageCircle, messageSquare, send, camera, image, video, film, music, headphones, mic, map, mapPin, navigation, compass, calendar, clock, shoppingCart, shoppingBag, dollarSign, creditCard, tag, gift, download, upload, share2, play, pause, playCircle, pauseCircle, skipForward, skipBack, menu, grid, list, filter, sliders, check, checkCircle, x, xCircle, phone, phoneCall, bookmark, folder, file, fileText, book, bookOpen, globe, wifi, lock, unlock, eye, eyeOff, sun, moon, refreshCw, arrowRight, arrowLeft, chevronRight, chevronLeft, moreVertical, moreHorizontal, thumbsUp, award, zap, activity, barChart2, pieChart, trendingUp, coffee, briefcase, truck, package, cpu, database, server, cloud, logOut, logIn, volume2, repeat, shuffle. If none fits, use a Material Icons.<name> instead (Material icons always exist). Never invent a FeatherIcons name not in this list.
 - void main() => runApp(const MyApp());
 - MyApp is a StatelessWidget: MaterialApp with useMaterial3: true, theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: <a color fitting the app's theme>), useMaterial3: true), and home MyHomePage
 - MyHomePage is a StatefulWidget holding the selected tab index in its State; its Scaffold has body: IndexedStack(index: _selectedIndex, children: [...one widget per tab...]) and bottomNavigationBar: BottomNavigationBar(currentIndex: _selectedIndex, onTap: (i) => setState(() => _selectedIndex = i), type: BottomNavigationBarType.fixed, items: [...])
 - each tab is its own private StatelessWidget or StatefulWidget class (e.g. _HomeTab, _SearchTab, _ProfileTab) with its own Scaffold-less body (each tab supplies just its content; wrap each tab's content in its own AppBar+body via a Scaffold per tab, or share one AppBar in MyHomePage whose title updates with the tab — pick whichever is simpler to implement correctly)
 - keep the file complete and compiling — prioritize correctness over maximal feature count; it is fine to keep each tab's content moderately simple as long as it looks like a real, finished, well-designed screen`
 
-const fixPromptTemplate = `The following Flutter/Dart lib/main.dart failed to build in GitHub Actions ("flutter build apk"). Fix it so it builds successfully, while preserving the same screen design and functionality intent.
+const fixPromptTemplate = `The following Flutter/Dart lib/main.dart failed to build in GitHub Actions ("flutter build apk"). Your ONLY goal now is to make it COMPILE and build successfully. Getting a working APK matters more than any styling detail — it is completely fine to simplify or drop a problematic widget/feature if that is what it takes to build.
 
 Original app description: %s
 
@@ -149,10 +149,17 @@ Previous lib/main.dart:
 Build error log (tail):
 %s
 
+Read the ACTUAL error(s) in the log above and fix their real cause. Common causes and how to fix them:
+- "The getter '<X>' isn't defined for the type 'FeatherIcons'" or any undefined FeatherIcons name → that Feather icon name does not exist. Replace ONLY those icons with a standard Material icon: use Icons.<name> from 'package:flutter/material.dart' (Material icons always exist). It is OK to mix: keep valid FeatherIcons.<name> where they work, and use Icons.<name> where a Feather name was invalid. When unsure, prefer Icons.<name>.
+- "isn't defined" / "not a function" / "too many positional arguments" → a wrong or nonexistent API; replace it with a correct standard Flutter API or remove that call.
+- "Undefined name" / missing import → add the needed import (only from the allowed list) or remove the reference.
+- const / final / type errors → fix the type or drop the const.
+- A broken network call (http) → wrap correctly with async/await + try/catch, or if it is the cause and can't be fixed simply, replace that action with a SnackBar placeholder.
+
 Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
 {"app_name": "Short App Name", "main_dart": "..."}
 
-main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file. Allowed imports: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Keep using FeatherIcons.<name> for every icon (never Icons.<name>) unless a wrong FeatherIcons name is the actual cause of the build failure, in which case pick a valid one. Keep any real (non-placeholder) network logic working — only remove/simplify it if it is the actual cause of the build failure.`
+main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — a complete, self-contained Dart file that WILL compile. Allowed imports only: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Do not leave any reference to an undefined name, icon, or API.`
 
 // addFunctionPromptTemplate — вақте истифода мешавад, ки корбар як
 // барномаи МАВҶУДА дошта бошад ва хоҳад як функсияи мушаххаси навро
@@ -242,7 +249,9 @@ func (c *AICoderClient) generateDesignSpec(description string) string {
 // AI-сохташуда ноком шуда бошад — матни хатогии build-ро (логи job-и
 // ноком) ва коди пешинаро ба AI медиҳад, то версияи ислоҳшударо баргардонад
 func (c *AICoderClient) FixScreen(description, previousCode, errorLog string) (GeneratedScreen, error) {
-	prompt := fmt.Sprintf(fixPromptTemplate, description, previousCode, truncateStr(errorLog, 3000))
+	// ТАЙЛи логро мегирем, на аввалашро — хатои воқеии Dart дар охири лог
+	// (қадами "Build APK") аст, на дар қадамҳои setup дар аввал
+	prompt := fmt.Sprintf(fixPromptTemplate, description, previousCode, tailStr(errorLog, 6000))
 	return c.runPromptAcrossModels(prompt)
 }
 
@@ -410,4 +419,13 @@ func truncateStr(s string, n int) string {
 		return s
 	}
 	return s[:n] + "..."
+}
+
+// tailStr n аломати ОХИРи сатрро бармегардонад — барои логи build, ки
+// хатои аслӣ дар охираш аст
+func tailStr(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return "..." + s[len(s)-n:]
 }

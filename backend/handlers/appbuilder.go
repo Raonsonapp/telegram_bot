@@ -314,13 +314,18 @@ const (
 	// Пеш аз пурсидани "охирин run", лаҳзае интизор мешавем, то push/dispatch-и
 	// охирин дар GitHub Actions сабт шавад (run фавран пайдо намешавад)
 	buildRunSettleDelay = 5 * time.Second
+	// То ин қадар маротиба AI-ро барои ислоҳи build-и ноком мехонем — ҳар
+	// дафъа бо матни хатогии НАВтарин, то ҳамаи хатоҳо паиҳам ислоҳ шаванд,
+	// на танҳо якум (мушкили пештара: танҳо 1 кӯшиши ислоҳ буд)
+	maxBuildFixAttempts = 4
 )
 
 // waitForGreenBuild то тамом шудани build.yml мунтазир мешавад ва натиҷаро
-// ба корбар мегӯяд. Агар build ноком шавад ва экрани AI дошта бошем, як
-// маротиба AI-ро бо матни хатогии build мехонем, то худкор ислоҳ кунад,
-// ва боз як бор мунтазир мешавем. Бо "true" бармегардад, агар дар охир
-// build сабз шуда бошад (танҳо дар ин ҳолат паёми "тайёр" фиристода мешавад)
+// ба корбар мегӯяд. Агар build ноком шавад ва экрани AI дошта бошем, AI-ро
+// то maxBuildFixAttempts маротиба паиҳам бо матни хатогии НАВтарини build
+// мехонем — ҳар кӯшиш коди ислоҳшударо push мекунад ва боз мунтазир мешавад,
+// то ҳамаи хатоҳо пурра бартараф шаванд. Бо "true" бармегардад, агар дар
+// ниҳоят build сабз шуда бошад
 func waitForGreenBuild(d *Deps, msg *tgbotapi.Message, lang, fullName, description string, aiScreen *api.GeneratedScreen) bool {
 	time.Sleep(buildRunSettleDelay)
 
@@ -341,47 +346,57 @@ func waitForGreenBuild(d *Deps, msg *tgbotapi.Message, lang, fullName, descripti
 		return true
 	}
 
-	utils.LogError("appbuilder: build run %d on %s finished with conclusion=%s", runID, fullName, conclusion)
-
+	// Бе экрани AI (масалан коди воридшуда) ислоҳи худкор имконнопазир аст
 	if aiScreen == nil || !d.AICoder.Enabled() {
+		utils.LogError("appbuilder: build run %d on %s failed (conclusion=%s), no AI screen to fix", runID, fullName, conclusion)
 		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
 		return false
 	}
 
-	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_fixing"))
+	currentCode := aiScreen.MainDart
+	for attempt := 1; attempt <= maxBuildFixAttempts; attempt++ {
+		utils.LogError("appbuilder: build run %d on %s failed (conclusion=%s) — AI fix attempt %d/%d", runID, fullName, conclusion, attempt, maxBuildFixAttempts)
+		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_fixing"))
 
-	errorLog, logErr := d.GitHubApp.GetRunFailureLog(fullName, runID)
-	if logErr != nil {
-		utils.LogError("appbuilder: failed to fetch failure log for run %d on %s: %v", runID, fullName, logErr)
+		errorLog, logErr := d.GitHubApp.GetRunFailureLog(fullName, runID)
+		if logErr != nil {
+			utils.LogError("appbuilder: failed to fetch failure log for run %d on %s: %v", runID, fullName, logErr)
+		}
+
+		fixedScreen, fixErr := d.AICoder.FixScreen(description, currentCode, errorLog)
+		if fixErr != nil {
+			utils.LogError("appbuilder: AI auto-fix attempt %d failed for %s: %v", attempt, fullName, fixErr)
+			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
+			return false
+		}
+		if err := d.GitHubApp.PushFlutterScreen(fullName, fixedScreen); err != nil {
+			utils.LogError("appbuilder: failed to push AI-fixed scaffold to %s: %v", fullName, err)
+			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
+			return false
+		}
+		currentCode = fixedScreen.MainDart
+
+		time.Sleep(buildRunSettleDelay)
+		runID, err = d.GitHubApp.GetLatestRunID(fullName, "build.yml")
+		if err != nil {
+			utils.LogError("appbuilder: failed to resolve retry build run for %s: %v", fullName, err)
+			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
+			return false
+		}
+		conclusion, err = d.GitHubApp.WaitForRunCompletion(fullName, runID, buildWaitTimeout, buildPollEvery)
+		if err != nil {
+			utils.LogError("appbuilder: timed out waiting for retry build run %d on %s: %v", runID, fullName, err)
+			sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_timeout"))
+			return false
+		}
+		if conclusion == "success" {
+			return true
+		}
 	}
 
-	fixedScreen, fixErr := d.AICoder.FixScreen(description, aiScreen.MainDart, errorLog)
-	if fixErr != nil {
-		utils.LogError("appbuilder: AI auto-fix failed for %s: %v", fullName, fixErr)
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
-		return false
-	}
-	if err := d.GitHubApp.PushFlutterScreen(fullName, fixedScreen); err != nil {
-		utils.LogError("appbuilder: failed to push AI-fixed scaffold to %s: %v", fullName, err)
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
-		return false
-	}
-
-	time.Sleep(buildRunSettleDelay)
-	retryRunID, err := d.GitHubApp.GetLatestRunID(fullName, "build.yml")
-	if err != nil {
-		utils.LogError("appbuilder: failed to resolve retry build run for %s: %v", fullName, err)
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
-		return false
-	}
-	retryConclusion, err := d.GitHubApp.WaitForRunCompletion(fullName, retryRunID, buildWaitTimeout, buildPollEvery)
-	if err != nil || retryConclusion != "success" {
-		utils.LogError("appbuilder: retry build run %d on %s finished with conclusion=%q err=%v", retryRunID, fullName, retryConclusion, err)
-		sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
-		return false
-	}
-
-	return true
+	utils.LogError("appbuilder: build still failing after %d fix attempts for %s", maxBuildFixAttempts, fullName)
+	sendText(d, msg.Chat.ID, api.GetMessage(lang, "appbuilder_build_failed"))
+	return false
 }
 
 // HandleAppEditDescriptionText танҳо тавсифи функсияҳоро иваз мекунад —
