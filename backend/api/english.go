@@ -124,7 +124,7 @@ var EnglishMessages = map[string]string{
 	"ask_app_name":                 "🏗 Describe what the app should be (e.g. \"social app with profile, messages, search\") — I'll create a repo on your GitHub and (if AI is enabled) generate a first screen with 5 functions:",
 	"appbuilder_creating":          "🏗 Creating the repo...",
 	"appbuilder_generating_screen": "🎨 Generating the app screen with AI...",
-	"appbuilder_ai_error":          "⚠️ Repo created, but the AI screen generation failed (maybe a bad OpenRouter token or an AI error). The repo is empty — you can push your own code.",
+	"appbuilder_ai_error":          "⚠️ The AI couldn't generate the code right now — the free AI servers may be temporarily busy. Please try again in 1-2 minutes (🏗 App Builder).",
 	"appbuilder_created":           "✅ Done, build succeeded!\n\nRepo: `%s`\nLink: %s\n\nNow tap \"📦 Fetch APK\".",
 	"appbuilder_error":             "😔 Failed to create the repo. Maybe the name already exists or the token is wrong — check it.",
 	"appbuilder_updating_existing": "🔄 You already have a repo — updating the screen in it (each user only gets 1 repo)...",

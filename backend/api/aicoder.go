@@ -87,6 +87,18 @@ App description: %s
 Respond with ONLY valid JSON, no markdown fences, no explanation, in exactly this shape:
 {"seed_color": "#RRGGBB", "layout_style": "short description of layout/composition", "spacing": "short guidance on padding and gaps", "elevation_and_shadow": "short guidance on elevation/shadow depth", "corner_radius": "short guidance on corner rounding", "typography": "short guidance on text weight/emphasis", "icon_style_notes": "short note on which kind of FeatherIcons fit this app's tone (e.g. rounded/friendly vs sharp/professional)", "notes": "1-2 sentences of any other guidance that would make the screen look modern and polished"}`
 
+// dartOutputFormat — формати ЯГОНАИ ҷавоб барои ҳамаи дархостҳои коднависӣ.
+// Ба ҷои JSON (ки коди калонро escape кардан лозим буду зуд-зуд вайрон
+// мешуд) модел коди ХОМ-ро байни ду ҷудокунанда менависад — escape лозим
+// нест, пас ҷавоб хеле боэътимодтар таҳлил (parse) мешавад
+const dartOutputFormat = `
+
+Output format — reply with EXACTLY this and NOTHING else. No JSON, no markdown, no backticks, no code fences, no explanation before or after:
+APP_NAME: <a short app name>
+===DART_BEGIN===
+<the full raw source code of lib/main.dart, written normally with real line breaks — do NOT escape characters, do NOT wrap it in quotes or code fences, just the plain Dart code>
+===DART_END===`
+
 // fullAppPromptTemplate — генератори MVP-и ПУРРА. Агар корбар номи як
 // барномаи машҳурро гӯяд (Instagram, TikTok, CapCut, WhatsApp ва ғ.), MVP-и
 // УМУМИИ ҳамон НАВъи барномаро бо ҳамаи экранҳои асосиаш месозад — вале бе
@@ -107,15 +119,12 @@ Build a proper MVP of the app the user described:
   * Chat/messaging (WhatsApp-like): a Chats list (avatar, name, last message, time), a Chat screen (message bubbles + input bar), Contacts, Calls, Settings.
   * Shopping/store: product grid, product detail, cart, orders, profile.
   * Otherwise: infer the 4-6 screens a real app of this kind would have.
-- Build 4 to 6 screens. Connect the primary ones with a BottomNavigationBar; open secondary screens (e.g. a chat, a product detail, the editor) via Navigator.push from taps.
+- Build 3 to 5 screens. Connect the primary ones with a BottomNavigationBar; open secondary screens (e.g. a chat, a product detail, the editor) via Navigator.push from taps. Keep each screen's code compact but realistic so the whole file stays complete and not truncated.
 - EVERY screen must be populated with a few sample/seed items from local Dart lists (sample posts, sample chats, sample products, a real-looking editor timeline + tool buttons) so it looks complete — never an empty "coming soon" placeholder.
 
 %s
 
-Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
-{"app_name": "Short App Name", "main_dart": "..."}
-
-Rules for main_dart (full content of lib/main.dart, as a single string with \n for newlines — a COMPLETE, valid, self-contained Dart file compiling with the standard Flutter SDK; allowed imports only: "package:flutter/material.dart", "package:flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if needed; every screen a private class in this same file):
+Rules for the Dart file (a COMPLETE, valid, self-contained lib/main.dart compiling with the standard Flutter SDK; allowed imports only: "package:flutter/material.dart", "package:flutter_feather_icons/flutter_feather_icons.dart", "package:http/http.dart" as http, and "dart:convert" if needed; every screen a private class in this same file):
 - import 'package:flutter/material.dart';
 - import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 - Prefer Feather icons, but use ONLY names that exist in the package. Use ONLY names from this verified list: FeatherIcons.home, user, users, userPlus, search, settings, plus, plusCircle, minus, edit, edit2, edit3, trash2, heart, star, bell, mail, messageCircle, messageSquare, send, camera, image, video, film, music, headphones, mic, map, mapPin, navigation, compass, calendar, clock, shoppingCart, shoppingBag, dollarSign, creditCard, tag, gift, download, upload, share2, play, pause, playCircle, pauseCircle, skipForward, skipBack, menu, grid, list, filter, sliders, check, checkCircle, x, xCircle, phone, phoneCall, bookmark, folder, file, fileText, book, bookOpen, globe, wifi, lock, unlock, eye, eyeOff, sun, moon, refreshCw, arrowRight, arrowLeft, chevronRight, chevronLeft, moreVertical, moreHorizontal, thumbsUp, award, zap, activity, barChart2, pieChart, trendingUp, coffee, briefcase, truck, package, cpu, database, server, cloud, logOut, logIn, volume2, repeat, shuffle. If none fits, use a Material Icons.<name> instead (Material icons always exist). Never invent a FeatherIcons name not in this list.
@@ -124,7 +133,7 @@ Rules for main_dart (full content of lib/main.dart, as a single string with \n f
 - MyHomePage: StatefulWidget holding the selected tab index; Scaffold with body: IndexedStack(index: _selectedIndex, children: [...main tab screens...]) and bottomNavigationBar: BottomNavigationBar(currentIndex: _selectedIndex, onTap: (i) => setState(() => _selectedIndex = i), type: BottomNavigationBarType.fixed, items: [...]).
 - Each tab and each secondary screen is its own private widget class with a realistic body (ListView/GridView/PageView of sample data, cards, avatars, forms, timelines — whatever fits).
 - Use CircleAvatar with a background color + initials or a FeatherIcons icon for avatars, and a Container with a colored/gradient box (with an icon centered) for image/video placeholders — do NOT load network images.
-- CRITICAL: the file MUST compile as one valid Dart file. If a screen gets too complex, simplify it — a slightly simpler screen that builds beats a rich one that doesn't. Never reference an undefined name, icon, or API.`
+- CRITICAL: the file MUST compile as one valid Dart file. If a screen gets too complex, simplify it — a slightly simpler screen that builds beats a rich one that doesn't. Never reference an undefined name, icon, or API.` + dartOutputFormat
 
 const fixPromptTemplate = `The following Flutter/Dart lib/main.dart failed to build in GitHub Actions ("flutter build apk"). Your ONLY goal now is to make it COMPILE and build successfully. Getting a working APK matters more than any styling detail — it is completely fine to simplify or drop a problematic widget/feature if that is what it takes to build.
 
@@ -143,10 +152,7 @@ Read the ACTUAL error(s) in the log above and fix their real cause. Common cause
 - const / final / type errors → fix the type or drop the const.
 - A broken network call (http) → wrap correctly with async/await + try/catch, or if it is the cause and can't be fixed simply, replace that action with a SnackBar placeholder.
 
-Respond with ONLY valid JSON, no markdown code fences, no explanation, in exactly this shape:
-{"app_name": "Short App Name", "main_dart": "..."}
-
-main_dart must be the FULL corrected content of lib/main.dart (a single string with \n for newlines) — a complete, self-contained Dart file that WILL compile. Allowed imports only: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Do not leave any reference to an undefined name, icon, or API.`
+Return the FULL corrected content of lib/main.dart — a complete, self-contained Dart file that WILL compile. Allowed imports only: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Do not leave any reference to an undefined name, icon, or API.` + dartOutputFormat
 
 // addFunctionPromptTemplate — вақте истифода мешавад, ки корбар як
 // барномаи МАВҶУДА дошта бошад ва хоҳад як функсияи мушаххаси навро
@@ -164,10 +170,7 @@ Current lib/main.dart:
 
 %s
 
-Respond with ONLY valid JSON, no markdown fences, no explanation, in exactly this shape:
-{"app_name": "Short App Name", "main_dart": "..."}
-
-main_dart must be the FULL updated content of lib/main.dart (a single string with \n for newlines) — still a complete, self-contained Dart file. Allowed imports: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Keep using FeatherIcons.<name> for icons (never Icons.<name>).`
+Return the FULL updated content of lib/main.dart — still a complete, self-contained Dart file. Allowed imports: 'package:flutter/material.dart', 'package:flutter_feather_icons/flutter_feather_icons.dart', 'package:http/http.dart' as http, and 'dart:convert'. Keep using FeatherIcons.<name> for icons (never invent a Feather name; if unsure use Material Icons.<name>).` + dartOutputFormat
 
 // rateLimitError маънои онро дорад, ки OpenRouter модели интихобшударо
 // муваққатан маҳдуд кардааст (rate-limit-и умумии сатҳи ройгон). retryAfter
@@ -239,11 +242,30 @@ func (c *AICoderClient) FixScreen(description, previousCode, errorLog string) (G
 // rate-limit шуда бошад ва вақти интизорӣ кӯтоҳ бошад, як маротиба дубора
 // кӯшиш мекунад пеш аз гузаштан ба модели навбатӣ
 func (c *AICoderClient) runPromptAcrossModels(prompt string) (GeneratedScreen, error) {
-	raw, err := c.runRawPromptAcrossModels(prompt)
-	if err != nil {
-		return GeneratedScreen{}, err
+	var attempts []string
+	for _, model := range c.candidateModels() {
+		content, err := c.callModelRaw(prompt, model)
+		if err != nil {
+			var rle *rateLimitError
+			if errors.As(err, &rle) && rle.retryAfter > 0 && rle.retryAfter <= maxRateLimitWait {
+				time.Sleep(rle.retryAfter)
+				content, err = c.callModelRaw(prompt, model)
+			}
+		}
+		if err != nil {
+			attempts = append(attempts, fmt.Sprintf("%s: %v", model, err))
+			continue
+		}
+		// Агар ин модел натиҷаи вайрон/нопурра диҳад, ба модели навбатӣ
+		// мегузарем (на фавран ноком мешавем) — ин боэътимодиро зиёд мекунад
+		screen, perr := parseGeneratedScreen(content)
+		if perr != nil {
+			attempts = append(attempts, fmt.Sprintf("%s: parse: %v", model, perr))
+			continue
+		}
+		return screen, nil
 	}
-	return parseGeneratedScreen(raw)
+	return GeneratedScreen{}, fmt.Errorf("all models failed — %s", strings.Join(attempts, " | "))
 }
 
 // runRawPromptAcrossModels як prompt-и додашударо (матни хоми ҷавоб, бе
@@ -295,9 +317,11 @@ func (c *AICoderClient) callModelRaw(prompt, model string) (string, error) {
 		"messages": []map[string]string{
 			{"role": "user", "content": prompt},
 		},
-		// MVP-и пурра (якчанд экран) output-и калон мехоҳад — max_tokens-и
-		// баланд то ҷавоб бурида (truncate) нашавад ва JSON вайрон нагардад
-		"max_tokens": 16000,
+		// MVP-и якчандэкрана output-и калон мехоҳад, вале max_tokens-и хеле
+		// баланд (масалан 16000) аз ҷониби баъзе моделҳои ройгон рад мешавад
+		// ("too large") — 8000 аз ҷониби ҳамаи моделҳои асосӣ қабул мешавад
+		// ва барои MVP-и 3-5 экрана кофист
+		"max_tokens": 8000,
 	})
 	if err != nil {
 		return "", err
@@ -356,41 +380,64 @@ func (c *AICoderClient) callModelRaw(prompt, model string) (string, error) {
 	return result.Choices[0].Message.Content, nil
 }
 
-// parseGeneratedScreen матни хоми ҷавоби модели коднависро ба GeneratedScreen мубаддал мекунад
+// parseGeneratedScreen ҷавоби формати "APP_NAME: ...\n===DART_BEGIN===\n
+// <код>\n===DART_END===" (формати боэътимоди мо, на JSON)-ро таҳлил мекунад.
+// Барои моделҳое, ки формат риоя накунанд, chandin fallback ҳаст, вале агар
+// коди воқеии Dart наёбад, хато медиҳад — то runPromptAcrossModels ба модели
+// дигар гузарад
 func parseGeneratedScreen(raw string) (GeneratedScreen, error) {
-	content := extractJSONObject(raw)
-
-	var screen struct {
-		AppName  string `json:"app_name"`
-		MainDart string `json:"main_dart"`
-	}
-	if err := json.Unmarshal([]byte(content), &screen); err != nil {
-		return GeneratedScreen{}, fmt.Errorf("failed to parse generated screen JSON: %w (raw: %s)", err, truncateStr(content, 300))
-	}
-	if screen.MainDart == "" {
-		return GeneratedScreen{}, fmt.Errorf("generated screen missing required fields")
+	appName := ""
+	if idx := strings.Index(raw, "APP_NAME:"); idx >= 0 {
+		rest := raw[idx+len("APP_NAME:"):]
+		if nl := strings.IndexAny(rest, "\r\n"); nl >= 0 {
+			appName = strings.TrimSpace(rest[:nl])
+		} else {
+			appName = strings.TrimSpace(rest)
+		}
 	}
 
-	return GeneratedScreen{
-		AppName:  screen.AppName,
-		MainDart: screen.MainDart,
-	}, nil
+	dart := ""
+	begin := strings.Index(raw, "===DART_BEGIN===")
+	end := strings.LastIndex(raw, "===DART_END===")
+	switch {
+	case begin >= 0 && end > begin:
+		dart = raw[begin+len("===DART_BEGIN===") : end]
+	case begin >= 0:
+		// маркери END нест — ҷавоб буридаву нопурра аст; хато то модели дигар
+		return GeneratedScreen{}, fmt.Errorf("response truncated (no DART_END marker, %d chars)", len(raw))
+	default:
+		// модел форматро риоя накард — коди Dart-ро аз худи матн ёфта мебарорем
+		dart = salvageDart(raw)
+	}
+
+	dart = strings.TrimSpace(dart)
+	dart = strings.TrimPrefix(dart, "```dart")
+	dart = strings.TrimPrefix(dart, "```")
+	dart = strings.TrimSuffix(dart, "```")
+	dart = strings.TrimSpace(dart)
+
+	if !strings.Contains(dart, "void main(") || !strings.Contains(dart, "import 'package:flutter/material.dart'") {
+		return GeneratedScreen{}, fmt.Errorf("no valid Flutter Dart found in model output (%d chars)", len(dart))
+	}
+	if appName == "" {
+		appName = "My App"
+	}
+	return GeneratedScreen{AppName: appName, MainDart: dart}, nil
 }
 
-// extractJSONObject агар AI сарфи назар аз дархост JSON-ро бо ```json``` печонда
-// бошад, ё матни иловагӣ пеш/пас аз он гузошта бошад, танҳо худи объекти
-// JSON-ро мебарорад
-func extractJSONObject(s string) string {
-	s = strings.TrimSpace(s)
-	s = strings.TrimPrefix(s, "```json")
-	s = strings.TrimPrefix(s, "```")
-	s = strings.TrimSuffix(s, "```")
-	s = strings.TrimSpace(s)
-
-	start := strings.Index(s, "{")
-	end := strings.LastIndex(s, "}")
-	if start >= 0 && end > start {
-		return s[start : end+1]
+// salvageDart вақте истифода мешавад, ки модел форматро риоя накарда бошад —
+// коди Dart-ро аз худи матн (аз аввалин "import 'package:flutter" ё "void
+// main") то охир мебарорад, ва fence-ҳои ```-ро тоза мекунад
+func salvageDart(raw string) string {
+	s := raw
+	if i := strings.Index(s, "import 'package:flutter/material.dart'"); i >= 0 {
+		s = s[i:]
+	} else if i := strings.Index(s, "void main("); i >= 0 {
+		s = s[i:]
+	}
+	if i := strings.LastIndex(s, "```"); i >= 0 {
+		// матни баъд аз блоки код-ро бурида партоем
+		s = s[:i]
 	}
 	return s
 }
