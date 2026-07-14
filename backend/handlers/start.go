@@ -45,7 +45,10 @@ func HandleStart(d *Deps, msg *tgbotapi.Message) {
 		return
 	}
 
-	applyPendingReferralIfAny(d, telegramID, isNew)
+	// Коркарди даъват (даъватшуда → GitHub API-и ReferralStore) метавонад
+	// якчанд сония тӯл кашад — онро дар background мебарорем, то паёми
+	// хушомадгӯӣ ба корбар ФАВРӢ фиристода шавад, на пас аз интизорӣ
+	go applyPendingReferralIfAny(d, telegramID, isNew)
 
 	if isNew {
 		text := api.GetMessage(d.Config.DefaultLanguage, "welcome")

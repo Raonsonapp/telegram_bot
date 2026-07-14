@@ -133,6 +133,13 @@ func main() {
 		updatesChan := make(chan tgbotapi.Update, 100)
 		updates = updatesChan
 		startServer(cfg.Port, webhookPath, bot, updatesChan)
+
+		// Render (нақшаи ройгон) пас аз ~15 дақиқа бе фаъолият инстансро
+		// хомӯш (spin down) мекунад — баъд дархости навбатӣ 30-60с (ё зиёдтар)
+		// интизор мешавад, то контейнер аз нав бор шавад. Барои пешгирӣ, бот
+		// ҳар 10 дақиқа худашро ping мекунад (ба /health-и худаш) — то Render
+		// инстансро ҳеҷ гоҳ хомӯш накунад ва ҷавобҳо фаврӣ бошанд
+		startKeepAlive(externalURL)
 	} else {
 		// Дар муҳити маҳаллӣ (беруна аз Render) webhook надорем — агар қаблан
 		// монда бошад, тоза мекунем, вагарна getUpdates хато медиҳад
@@ -182,6 +189,28 @@ func startServer(port string, webhookPath string, bot *tgbotapi.BotAPI, updates 
 			utils.LogError("Хатогии HTTP-сервер: %v", err)
 		}
 	}()
+}
+
+// startKeepAlive ҳар 10 дақиқа ба /health-и худи бот дархост мефиристад, то
+// Render (нақшаи ройгон) инстансро аз сабаби "бе фаъолият" хомӯш накунад.
+// Ин трафики воридотии мунтазам эҷод мекунад, ки таймери idle-и Render-ро
+// нав мекунад — бинобар ин бот ҳамеша "гарм" мемонад ва фаврӣ ҷавоб медиҳад
+func startKeepAlive(externalURL string) {
+	healthURL := externalURL + "/health"
+	client := &http.Client{Timeout: 20 * time.Second}
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			resp, err := client.Get(healthURL)
+			if err != nil {
+				utils.LogError("keep-alive: ping ноком шуд: %v", err)
+				continue
+			}
+			resp.Body.Close()
+		}
+	}()
+	utils.LogInfo("Keep-alive фаъол шуд: ҳар 10 дақиқа %s ping мешавад (то Render хомӯш накунад)", healthURL)
 }
 
 // filimoLandingHandler саҳифаи хурди ба забони тоҷикӣ месозад, ки корбарро ба
