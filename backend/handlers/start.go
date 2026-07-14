@@ -45,6 +45,10 @@ func HandleStart(d *Deps, msg *tgbotapi.Message) {
 		return
 	}
 
+	// /start ҳамеша ба ҳолати тоза бармегардад — агар корбар дар ҳолати
+	// гуфтугӯ бо AI монда бошад, онро мебандем
+	delete(PendingAIChat, telegramID)
+
 	// Коркарди даъват (даъватшуда → GitHub API-и ReferralStore) метавонад
 	// якчанд сония тӯл кашад — онро дар background мебарорем, то паёми
 	// хушомадгӯӣ ба корбар ФАВРӢ фиристода шавад, на пас аз интизорӣ

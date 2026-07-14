@@ -236,6 +236,25 @@ func (c *AICoderClient) FixScreen(description, previousCode, errorLog string) (G
 	return c.runPromptAcrossModels(prompt)
 }
 
+// chatSystemPrompt — дастури модели муошират (на коднавис). Бо ҳамон забони
+// корбар ҷавоби кӯтоҳу дӯстона медиҳад
+const chatSystemPrompt = `You are a friendly, helpful AI assistant inside a Telegram bot. Answer the user's message helpfully and in the SAME language they wrote in (Tajik, Russian, English, etc.). Keep replies concise and conversational, suitable for a chat. You can help brainstorm app ideas, answer questions, explain things, translate, and chat generally.`
+
+// Chat як паёми озоди корбарро мегирад ва ҷавоби AI-ро (муошират, на код)
+// бармегардонад. Аз ҳамон рӯйхати моделҳои ройгон бо fallback истифода мебарад
+func (c *AICoderClient) Chat(userMessage string) (string, error) {
+	prompt := chatSystemPrompt + "\n\nUser message:\n" + userMessage + "\n\nYour reply (same language as the user, concise):"
+	reply, err := c.runRawPromptAcrossModels(prompt)
+	if err != nil {
+		return "", err
+	}
+	reply = strings.TrimSpace(reply)
+	if reply == "" {
+		return "", fmt.Errorf("empty chat reply")
+	}
+	return reply, nil
+}
+
 // runPromptAcrossModels як prompt-и додашударо дар якчанд модели ройгон
 // паиҳам меозмояд (аввал c.model, баъд fallbackModels) — то агар яке аз
 // рӯйхати ройгон хориҷ шуда бошад, натиҷа гум нашавад. Агар модел

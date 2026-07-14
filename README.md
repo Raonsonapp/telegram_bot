@@ -20,6 +20,7 @@ Interface languages: **Тоҷикӣ 🇹🇯 · Русский 🇷🇺 · Engli
 | 🔁 **Transfer to your GitHub** | Transfer the app's repository to the user's own GitHub account (via GitHub's Transfer API, with recipient confirmation). |
 | 🧮 **Price Calculator** | Estimates a price for larger custom projects (screens × functions × package) and forwards the order to the admin. |
 | 🎁 **Referrals** | Everyone gets a full multi-screen MVP; free use has a daily limit. Invite 5 subscribed users to **remove the daily limit** (unlimited usage). |
+| 🤖 **Chat with AI** | A general conversational assistant (separate from the code generator): the user types anything and the AI replies in their language. |
 | 💬 **Contact Admin** | Two-way relay: user messages reach the admin, admin replies are relayed back. |
 | ⚙️ **Settings / Help** | Language switch and an in-bot guide. |
 

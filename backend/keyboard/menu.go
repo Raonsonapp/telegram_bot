@@ -17,10 +17,13 @@ func MainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_import_code")),
-			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_price_calc")),
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_ai_chat")),
 		),
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_price_calc")),
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_invite")),
+		),
+		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(api.GetMessage(lang, "btn_feedback")),
 		),
 		tgbotapi.NewKeyboardButtonRow(

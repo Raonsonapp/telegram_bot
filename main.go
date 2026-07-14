@@ -415,6 +415,12 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 		case buttonLabel(lang, "btn_import_code"):
 			handlers.HandleImportCodeButton(d, msg)
 			return
+		case buttonLabel(lang, "btn_ai_chat"):
+			handlers.HandleAIChatButton(d, msg)
+			return
+		case buttonLabel(lang, "btn_exit_chat"):
+			handlers.HandleExitAIChatButton(d, msg)
+			return
 		case buttonLabel(lang, "btn_back_to_menu"):
 			handlers.HandleBackToMainMenuButton(d, msg)
 			return
@@ -503,6 +509,13 @@ func routeText(d *handlers.Deps, msg *tgbotapi.Message) {
 	// онро ба админ мефиристем
 	if handlers.PendingFeedback[msg.From.ID] {
 		handlers.HandleFeedbackText(d, msg)
+		return
+	}
+
+	// Ҳолати гуфтугӯ бо AI: ҳар паёми матниро ба AI мефиристем ва ҷавоб мегирем
+	// (охирин санҷиш — то дигар ҳолатҳои интизориро надузд)
+	if handlers.PendingAIChat[msg.From.ID] {
+		handlers.HandleAIChatText(d, msg)
 		return
 	}
 

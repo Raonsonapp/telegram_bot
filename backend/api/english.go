@@ -92,6 +92,10 @@ var EnglishMessages = map[string]string{
 	"feedback_admin_not_configured": "⚠️ This feature isn't set up yet (ADMIN_CHAT_ID missing). If you're the bot owner, send /myid to get your ID.",
 
 	"btn_invite":        "🎁 Invite",
+	"btn_ai_chat":       "🤖 Chat with AI",
+	"btn_exit_chat":     "⬅️ Exit chat",
+	"ai_chat_intro":     "🤖 You're now chatting with the AI. Write anything — a question, a translation, an app idea, or just to talk. I'll reply.\n\nTap \"⬅️ Exit chat\" to leave.",
+	"ai_chat_error":     "😔 The AI couldn't reply right now (the free servers may be busy). Please try again.",
 	"invite_progress":   "🎁 *Invite friends — remove the daily limit!*\n\nEveryone gets a full MVP, but free use has a daily limit. Invite 5 friends and the limit is lifted — build as many apps as you want with no waiting.\n\nYour personal link:\n%s\n\nAnyone who joins the bot through this link and subscribes counts.\n\nInvited: %d/%d\nRemaining: %d",
 	"invite_unlocked":   "🎁 *Your invite link:*\n%s\n\n✅ You've hit the invite goal — your AI usage is UNLIMITED (no daily cap)!",
 	"referral_progress": "🎉 Someone joined the bot through your link and subscribed!\n\nInvited: %d/%d",
